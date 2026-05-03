@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** WRK-04 REAL docker smoke test (Scenario A) выполнен локально; режим sandbox возвращён в fake.
+**Статус:** BE-05 Phase 1 hardening complete (B-1 + M-1/M-2/M-3 findings fixed)
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -99,6 +99,19 @@
 
 ## Изменения
 
+### 2026-05-04 — DevOps OpenCode smoke test plan (plan-only, без выполнения)
+- **Агент:** devops-automator
+- **Сделано:** составлен структурированный план controlled smoke test реального OpenCode server в plan-only режиме.
+  - Определён способ запуска (Docker или npx на localhost:3001)
+  - Минимальный compose-файл (план, не создавался)
+  - Pre-flight + post-start checks (health, SSE, порт)
+  - Интеграционный smoke test через AMC API с `RUNTIME_PROVIDER=opencode_http`
+  - Cleanup checklist с возвратом `RUNTIME_PROVIDER=stub`
+  - Approve gates: compose-файл, config.py, transport adapter требуют approve
+  - Запреты: не трогать production/staging, не менять docker-compose, не открывать порты наружу
+- **Проверки:** план не требует запуска (read-only документ)
+- Task summary: [.ai_memory/tasks/2026-05-04-devops-opencode-smoke-test-plan.md](.ai_memory/tasks/2026-05-04-devops-opencode-smoke-test-plan.md)
+
 ### 2026-05-04 — BE-04 transport hardening (provider/transport fail-closed)
 - **Агент:** backend-architect
 - **Сделано:**
@@ -109,6 +122,44 @@
   - Добавлены тесты на fail-closed и отсутствие silent fallback.
 - **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (167/167)
 - **Ограничения:** real OpenCode runtime/server не запускался.
+
+### 2026-05-04 — BE-05 Phase 1 hardening (B-1 + M-1/M-2/M-3 security findings fixed)
+- **Агент:** backend-architect
+- **Контур:** local only; без deploy/migrations/secrets/OpenCode.
+- **Закрыто 4 findings:**
+  - **B-1 (blocking):** `test_no_silent_fallback_to_stub_for_opencode_http` обновлён под новую семантику factory. Тест теперь проверяет: нет silent fallback на stub, нет stub fingerprint ("plan-only"/"No code execution"), ошибка идёт через runtime_error→task_failed, provider остаётся opencode_http.
+  - **M-1:** `_truncate_plan(self, plan_text, session_id)` — session_id теперь используется в truncation marker `(session=<id>)` для traceability. Ранее параметр был неиспользуемым.
+  - **M-2:** SSE non-JSON chunk size limit (64KB) в `_parse_sse_event()`. Чанки свыше лимита безопасно усекаются с metadata `_sse_chunk_truncated=True`; клиент эмитит `runtime_event_truncated` с reason. JSON SSE chunks НЕ ограничиваются.
+  - **M-3 (critical):** Explicit safety gate `RUNTIME_ALLOW_REAL_OPENCODE_HTTP: bool = False` (default) в config. Factory для `opencode_http` теперь требует ОБА условия: URL задан И allow flag=True. Иначе — `RuntimeConfigurationError` (fail-closed). Fake/mocked transport разрешён только через explicit DI (`transport_factory`) + allow flag.
+- **Новые/обновлённые тесты (8 тестов покрывают все required scenarios):**
+  1. default provider remains stub ✅
+  2. opencode_http без URL fail-closed ✅
+  3. opencode_http без RUNTIME_ALLOW_REAL_OPENCODE_HTTP fail-closed ✅ (NEW)
+  4. opencode_http с allow flag + недоступный сервер → runtime_error/task_failed ✅ (NEW)
+  5. no silent fallback to stub ✅ (UPDATED B-1)
+  6. SSE non-JSON chunk > 64KB truncates safely ✅ (NEW × 4 в transport tests)
+  7. _truncate_plan session_id в truncation marker ✅ (UPDATED)
+  8. real OpenCode server не запускался ✅ (NEW)
+- **Изменённые файлы:** config.py, factory.py, transport.py, client.py, test_runtime_be04.py, test_opencode_transport.py
+- **Проверки:** compileall ✅, ruff ✅, pytest ✅ (205/205)
+- **Ограничения:** реальный OpenCode server не запускался, default=stub подтверждён
+
+### 2026-05-04 — BE-05 RealOpenCodeHttpTransport + gap closures (implementation phase 1)
+- **Агент:** backend-architect
+- **Сделано:**
+  - `RealOpenCodeHttpTransport` (HTTP/SSE на httpx) реализован в `apps/api/app/integrations/opencode/transport.py`
+  - Закрыто 3 gaps:
+    1. **max_plan_size**: `RUNTIME_MAX_PLAN_BYTES=100_000`, hard truncation + `runtime_event_truncated` event
+    2. **timeout enforcement**: session total (60s) + idle (20s) в transport и client
+    3. **tool.call path confinement**: `ensure_path_confined()` для read/search, блокирует escape/traversal/UNC/drive mismatch
+  - SSE robustness улучшена: malformed → `runtime_event_malformed`, unknown type → `runtime_error`, non-JSON → wrapped as delta
+  - Factory default для `opencode_http`: `RealOpenCodeHttpTransport` когда нет DI
+  - `docs/smoke-test-opencode.md` — процедура будущего smoke test с abort criteria
+  - Добавлен `runtime_event_truncated` в ALLOWED_EVENT_TYPES
+  - Тесты: `test_opencode_transport.py` (19 new) + `test_runtime_be04.py` (+12 new guardrail tests)
+- **Проверки:** compileall ✅, ruff ✅, pytest ✅ (197/197)
+- **Ограничения:** реальный OpenCode server не запускался, все тесты через mocked/fake HTTP/SSE, default=stub сохранён
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be05-transport-gap-closures.md](.ai_memory/tasks/2026-05-04-task-be05-transport-gap-closures.md)
 
 ### 2026-05-04 — BE-04 review blockers fixed (security+architecture)
 - **Агент:** backend-architect

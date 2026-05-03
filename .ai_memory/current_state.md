@@ -7,7 +7,7 @@
 ## Статус проекта
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes выполнены. CRITICAL/HIGH закрыты.
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures выполнены. CRITICAL/HIGH закрыты.
 **Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
@@ -41,6 +41,8 @@
 - WRK-04 real docker smoke test (backend-architect): Scenario A выполнен с реальным контейнером; команда `python -m compileall .`, `exit_code=0`, single mount policy подтверждён (`manual-test-wrk04 -> /workspace`), cleanup completed, режим возвращён в `fake`
 - WRK-04 manual-test hardening (backend-architect): `manual-test-*` worktree prefix теперь разрешён только при `SANDBOX_MANUAL_TEST_MODE=True`; в normal mode только `task-*`; path traversal всегда отклонён; 5 новых тестов; `FakeSandboxRunner` остаётся default
 - BE-04 transport hardening (backend-architect): удалён hidden fallback на fake transport для `opencode_http`; default provider=`stub`; unknown provider и missing `OPENCODE_SERVER_URL` теперь fail-closed (`runtime_error` + `task_failed`); fake transport только через explicit DI в тестах; `pytest tests -v` passed
+- BE-05 RealOpenCodeHttpTransport + gap closures (backend-architect): реализован RealOpenCodeHttpTransport (HTTP/SSE на httpx), закрыты 3 gaps (max_plan_size 100KB truncation, session/idle timeout enforcement, tool.call path confinement), SSE robustness улучшена, docs/smoke-test-opencode.md создан, 197/197 tests passed; real OpenCode server не запускался
+- BE-05 Phase 1 hardening (backend-architect): закрыты B-1 (test adaptation), M-1 (_truncate_plan session_id), M-2 (SSE non-JSON chunk 64KB limit), M-3 (RUNTIME_ALLOW_REAL_OPENCODE_HTTP safety gate, default=False). 205/205 tests passed. Default=stub подтверждён.
 
 ## Активные задачи
 
@@ -73,6 +75,8 @@
 | WRK-04: REAL Docker smoke test (Scenario A) | ✅ Выполнена | backend-architect |
 | WRK-04: manual-test hardening | ✅ Выполнена | backend-architect |
 | BE-04: transport hardening | ✅ Выполнена | backend-architect |
+| BE-05: RealOpenCodeHttpTransport + gap closures | ✅ Выполнена | backend-architect |
+| BE-05 Phase 1 hardening (B-1+M-1/M-2/M-3) | ✅ Выполнена | backend-architect |
 
 ## Следующие шаги
 
@@ -107,5 +111,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 25 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening) |
+| Логи задач | 30 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3) |
 | Проекты | 0 |

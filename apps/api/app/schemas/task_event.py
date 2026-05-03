@@ -44,6 +44,7 @@ ALLOWED_EVENT_TYPES: frozenset[str] = frozenset([
     "runtime_retry_scheduled",
     "runtime_duplicate_event_ignored",
     "runtime_event_malformed",
+    "runtime_event_truncated",
 ])
 
 

@@ -1,4 +1,9 @@
-"""Runtime client factory for provider wiring."""
+"""Runtime client factory for provider wiring.
+
+BE-05 M-3: opencode_http now requires explicit RUNTIME_ALLOW_REAL_OPENCODE_HTTP=True
+to instantiate RealOpenCodeHttpTransport (fail-closed by default).
+Explicit DI with transport_factory still supported for tests (requires allow flag).
+"""
 
 from __future__ import annotations
 
@@ -28,15 +33,25 @@ def build_runtime_client(
             raise RuntimeConfigurationError(
                 "RUNTIME_PROVIDER=opencode_http requires OPENCODE_SERVER_URL"
             )
-        if transport_factory is None:
+        if not settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP:
             raise RuntimeConfigurationError(
-                "No transport configured for opencode_http (explicit DI required in tests)"
+                "RUNTIME_PROVIDER=opencode_http requires "
+                "RUNTIME_ALLOW_REAL_OPENCODE_HTTP=True. "
+                "Real OpenCode HTTP transport is disabled by default (fail-closed)."
             )
-        transport = transport_factory()
+        if transport_factory is None:
+            # Production path: use real HTTP/SSE transport
+            from app.integrations.opencode.transport import RealOpenCodeHttpTransport
+            transport = RealOpenCodeHttpTransport()
+        else:
+            # Test path: explicit DI with fake transport
+            transport = transport_factory()
         return OpenCodeHttpPlanClient(
             transport=transport,
             on_event=event_callback,
             max_retries=settings.RUNTIME_MAX_RETRIES,
         )
 
-    raise RuntimeConfigurationError(f"Unknown runtime provider: {settings.RUNTIME_PROVIDER}")
+    raise RuntimeConfigurationError(
+        f"Unknown runtime provider: {settings.RUNTIME_PROVIDER}"
+    )
