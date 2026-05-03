@@ -1,0 +1,109 @@
+# current_state.md — Текущий активный статус
+
+Обновлено: 2026-05-04 | Автор: backend-architect
+
+---
+
+## Статус проекта
+
+**Фаза:** Phase 0 — Подготовка инфраструктуры
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening выполнены. CRITICAL/HIGH закрыты.
+**Блокеры:** Нет
+**Критические проблемы:** Нет
+
+## Что происходит сейчас
+
+- FND-01 (git-workflow-master): .gitignore, CHANGELOG, CONTRIBUTING созданы
+- FND-02 (backend-architect): FastAPI app, /health, pydantic-settings config созданы
+- FND-03 (backend-architect): SQLAlchemy модели + Alembic baseline созданы
+- DOP-01 (devops-automator): dev docker-compose создан (postgres+redis+api)
+- DOP-01 check (devops-automator): `docker compose config/up/ps/logs` для postgres+redis выполнены успешно
+- FND-03 fix (backend-architect): `pyproject.toml` исправлен (`[tool]` → `[build-system]` + hatch build config)
+- FND-03 verification (backend-architect): `compileall` ok, `alembic history` ok, `alembic upgrade head --sql` ok (8 tables, vector extension, ivfflat)
+- BE-01 (backend-architect): CRUD endpoints /projects, /agents, /telegram/topics созданы (schemas + services + routers + tests)
+- BE-02 (backend-architect): Tasks + Approvals + TaskEvents domain созданы (14+10+2 endpoints, 41 тест пройден)
+- TG-01 (backend-architect): Telegram bot gateway создан (commands + topic-aware task creation)
+- TG-02 (backend-architect): `/bind_topic`, `/unbind_topic`, `/topic_status` + routing bridge
+- BE-03 (backend-architect): runtime adapter plan-only + endpoint `/runtime/tasks/{task_id}/plan`
+- WRK-01 (backend-architect): Celery worker skeleton с 7 очередями, healthcheck, stub-задачи, retry/backoff
+- WRK-02 (backend-architect): Plan pipeline — trigger-plan endpoint, agent_plan + notifications с Notifier adapter, Telegram bot integration
+- MEM-01 (knowledge-steward): Memory provisioning service, 5 templates, docs/memory-system.md, forbidden content detection
+- MEM-02 (backend-architect): Memory CRUD API — 6 endpoints, policy service (access tiers + secrets guard), 76 новых тестов
+- MEM-03 (backend-architect): Memory indexing + retrieval — chunking, deterministic embeddings, `/memory/reindex`, `/memory/search`, worker memory_index API trigger
+- DOP-02 (devops-automator): Dockerfiles + sandbox compose — non-root, no-new-privileges, read_only, isolated internal network, resource limits
+- Security review (security-engineer): WRK-03 допустим только при mandatory guardrails; устранена несостыковка policy (staging deploy = approval_required)
+- WRK-03 (backend-architect): Safe execute pipeline — approved-only gate, command/worktree policy, fake sandbox runner, audit events, redaction
+- WRK-03-hardening (backend-architect): CRITICAL/HIGH закрыты — shell escape, chaining operators, event_type validation, network/privesc tools
+- WRK-03 fake E2E (backend-architect): оба сценария подтверждены через FakeSandboxRunner (success + blocked), transitions/events/redaction/result_summary проверены
+- WRK-04 (backend-architect): DockerSandboxRunner реализован как opt-in adapter (argv-only, dynamic task-worktree mount, timeout, cleanup, redaction, config-driven limits), FakeSandboxRunner остался default
+- WRK-04-polish (backend-architect): закрыты medium/low замечания review (cleanup failure test, docker unavailable unit test + redaction, dynamic result_summary, docs checklist)
+- WRK-04 manual local backend test (backend-architect): сценарии A-E подтверждены локально через worker execute pipeline + DockerSandboxRunner evidence; перед/после теста подтверждён `SANDBOX_RUNNER_MODE=fake`, временный docker override только в процессе теста
+- WRK-04 real docker smoke test (backend-architect): Scenario A выполнен с реальным контейнером; команда `python -m compileall .`, `exit_code=0`, single mount policy подтверждён (`manual-test-wrk04 -> /workspace`), cleanup completed, режим возвращён в `fake`
+- WRK-04 manual-test hardening (backend-architect): `manual-test-*` worktree prefix теперь разрешён только при `SANDBOX_MANUAL_TEST_MODE=True`; в normal mode только `task-*`; path traversal всегда отклонён; 5 новых тестов; `FakeSandboxRunner` остаётся default
+
+## Активные задачи
+
+| Задача | Статус | Агент |
+|--------|--------|-------|
+| FND-01: Repo Bootstrap | ✅ Выполнена | studio-orchestrator |
+| FND-02: API Skeleton | ✅ Выполнена | studio-orchestrator |
+| FND-03: DB Foundation | ✅ Выполнена | backend-architect |
+| DOP-01: Dev Docker Compose | ✅ Выполнена | devops-automator |
+| DOP-01: Safe Local Check | ✅ Выполнена | devops-automator |
+| FND-03: pyproject.toml fix + alembic verify | ✅ Выполнена | backend-architect |
+| BE-01: CRUD Endpoints | ✅ Выполнена | backend-architect |
+| BE-02: Tasks + Approvals | ✅ Выполнена | backend-architect |
+| TG-01: Telegram Bot Gateway | ✅ Выполнена | backend-architect |
+| TG-02: Topic Binding + Routing | ✅ Выполнена | backend-architect |
+| BE-03: Runtime Adapter (plan-only) | ✅ Выполнена | backend-architect |
+| WRK-01: Celery Worker Skeleton | ✅ Выполнена | backend-architect |
+| WRK-02: Plan Pipeline | ✅ Выполнена | backend-architect |
+| MEM-01: Memory Provisioning | ✅ Выполнена | knowledge-steward |
+| MEM-02: Memory CRUD API | ✅ Выполнена | backend-architect |
+| MEM-03: Memory Indexing + Retrieval | ✅ Выполнена | backend-architect |
+| DOP-02: Dockerfiles + Sandbox Compose | ✅ Выполнена | devops-automator |
+| Security Review before WRK-03 | ✅ Выполнена | security-engineer |
+| WRK-03: Safe Execute Pipeline | ✅ Выполнена | backend-architect |
+| WRK-03-hardening: Security Hardening | ✅ Выполнена | backend-architect |
+| WRK-03 Fake E2E | ✅ Выполнена | backend-architect |
+| WRK-04: DockerSandboxRunner (opt-in) | ✅ Выполнена | backend-architect |
+| WRK-04-polish: Pre-manual-test hardening | ✅ Выполнена | backend-architect |
+| WRK-04: Manual local backend test | ✅ Выполнена | backend-architect |
+| WRK-04: REAL Docker smoke test (Scenario A) | ✅ Выполнена | backend-architect |
+| WRK-04: manual-test hardening | ✅ Выполнена | backend-architect |
+
+## Следующие шаги
+
+1. Memory retrieval tuning: ranking quality + scope heuristics
+2. Полный план: [../docs/mvp-backlog.md](../docs/mvp-backlog.md)
+
+## Кодовая база (новое)
+
+| Компонент | Статус | Файлы |
+|-----------|--------|-------|
+| FastAPI app | ✅ | `apps/api/app/main.py` |
+| /health endpoint | ✅ | `apps/api/app/routers/health.py` |
+| Settings (pydantic) | ✅ | `apps/api/app/config.py` |
+| pyproject.toml | ✅ | `apps/api/pyproject.toml` |
+| SQLAlchemy models | ✅ | `apps/api/app/models/*.py` |
+| Alembic | ✅ | `apps/api/alembic/*` |
+| Dev docker-compose | ✅ | `infra/docker/docker-compose.yml` |
+| Telegram bot gateway | ✅ | `apps/telegram-bot/app/*` |
+| Runtime adapter (plan-only) | ✅ | `apps/api/app/integrations/opencode/*`, `apps/api/app/services/runtime_service.py`, `apps/api/app/routers/runtime.py` |
+| Celery worker skeleton | ✅ | `apps/worker/app/*` (celery_app, config, queues, 7 task modules) |
+| Memory provisioning | ✅ | `apps/api/app/services/memory_provisioning_service.py`, `apps/api/app/schemas/memory.py` |
+| Memory CRUD API | ✅ | `apps/api/app/routers/memory.py`, `apps/api/app/services/memory_policy_service.py`, `apps/api/app/services/memory_service.py` |
+| Memory indexing + retrieval | ✅ | `apps/api/app/services/memory_{chunking,embedding,indexing,retrieval}_service.py`, `POST /memory/reindex`, `POST /memory/search` |
+| Sandbox infra (WRK-03 prep) | ✅ | `infra/docker/Dockerfile.{api,telegram-bot,worker,sandbox}`, `infra/docker/sandbox.compose.yml` |
+| Safe execute pipeline | ✅ | `apps/worker/app/tasks/agent_execute.py`, `apps/worker/app/services/{command_policy,worktree_policy,redaction,sandbox_runner}.py` |
+
+## Memory vault статус
+
+| Компонент | Статус |
+|-----------|--------|
+| Правила | ✅ |
+| Навигация | ✅ |
+| Шаблоны (5) | ✅ |
+| ADR (4) | ✅ |
+| Логи задач | 25 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening) |
+| Проекты | 0 |

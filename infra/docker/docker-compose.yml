@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: amc-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agent_mc
+      POSTGRES_USER: agent_mc
+      POSTGRES_PASSWORD: agent_mc
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_mc -d agent_mc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - agentrouter_dev_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: amc-dev-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - agentrouter_dev_net
+
+  api:
+    image: python:3.12-slim
+    container_name: amc-dev-api
+    restart: unless-stopped
+    working_dir: /workspace/apps/api
+    command: >
+      sh -c "pip install -e . &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agent_mc:agent_mc@postgres:5432/agent_mc
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MEMORY_VAULT_PATH: /workspace/.ai_memory
+      DEBUG: "true"
+    volumes:
+      - ../../:/workspace
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+    networks:
+      - agentrouter_dev_net
+
+volumes:
+  postgres_data:
+    name: amc_dev_postgres_data
+  redis_data:
+    name: amc_dev_redis_data
+
+networks:
+  agentrouter_dev_net:
+    name: amc_dev_net
+    driver: bridge

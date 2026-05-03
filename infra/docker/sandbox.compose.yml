@@ -1,0 +1,53 @@
+services:
+  agent-sandbox:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.sandbox
+    image: amc-agent-sandbox:dev
+    container_name: amc-agent-sandbox
+
+    # WRK-04: do not mount repo root here.
+    # Task-specific validated worktree is mounted dynamically by DockerSandboxRunner.
+    working_dir: /workspace
+
+    # Security: non-root image user + capability restrictions
+    privileged: false
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    # Keep writable FS minimal while allowing /workspace writes
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+    # Resource limits for deterministic sandbox behavior
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 256
+
+    # No implicit secret/env ingestion
+    environment:
+      SANDBOX_MODE: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    # Isolated network for sandbox only
+    networks:
+      - agentrouter_sandbox_net
+
+    # Explicitly no docker socket mounts and no host networking
+    restart: "no"
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "print('sandbox-healthcheck-ok')"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  agentrouter_sandbox_net:
+    name: amc_sandbox_net
+    driver: bridge
+    internal: true

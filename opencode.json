@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "mcp-vault": {
+      "type": "local",
+      "command": [
+        "npx.cmd",
+        "-y",
+        "@bitbonsai/mcpvault@latest",
+        "F:\\dev\\agentrouter\\.ai_memory"
+      ],
+      "enabled": true
+    }
+  },
+  "instructions": ["README.md", ".ai_memory/agent_mission_control_pipeline.md"],
+  "permission": {
+    "edit": "allow",
+    "bash": "ask"
+  },
+  "default_agent": "studio-orchestrator"
+}

@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN addgroup --system workergroup \
+    && adduser --system --ingroup workergroup --home /home/workeruser workeruser
+
+COPY apps/worker/pyproject.toml /app/pyproject.toml
+COPY apps/worker/app /app/app
+
+RUN pip install --upgrade pip \
+    && pip install .
+
+USER workeruser
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD python -c "from app.celery_app import celery_app; print(bool(celery_app))" || exit 1
+
+CMD ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]

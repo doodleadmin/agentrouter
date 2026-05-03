@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN addgroup --system botgroup \
+    && adduser --system --ingroup botgroup --home /home/botuser botuser
+
+COPY apps/telegram-bot/pyproject.toml /app/pyproject.toml
+COPY apps/telegram-bot/app /app/app
+
+RUN pip install --upgrade pip \
+    && pip install .
+
+USER botuser
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD python -c "import app.main" || exit 1
+
+CMD ["python", "-m", "app.main"]
