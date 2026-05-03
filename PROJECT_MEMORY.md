@@ -99,6 +99,42 @@
 
 ## Изменения
 
+### 2026-05-04 — BE-04 transport hardening (provider/transport fail-closed)
+- **Агент:** backend-architect
+- **Сделано:**
+  - Runtime provider wiring ужесточён: default `RUNTIME_PROVIDER=stub`, unknown provider => fail-closed (`runtime_error` + `task_failed`).
+  - `opencode_http` теперь только explicit opt-in + required `OPENCODE_SERVER_URL`; без обязательной конфигурации — fail-closed.
+  - Удалён скрытый fallback: production factory больше не создаёт fake transport для `opencode_http`.
+  - Fake/mocked transport разрешён только через explicit DI в тестах.
+  - Добавлены тесты на fail-closed и отсутствие silent fallback.
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (167/167)
+- **Ограничения:** real OpenCode runtime/server не запускался.
+
+### 2026-05-04 — BE-04 review blockers fixed (security+architecture)
+- **Агент:** backend-architect
+- **Фиксы:**
+  - Закрыт redaction leak: value-level redaction (key/value secrets, bearer tokens, private keys, env-like assignments).
+  - Исправлена layering зависимость: guardrails перенесены в policy layer (`app/policy/runtime_guardrails.py`).
+  - Исправлена provider abstraction: runtime client wiring через factory/DI, без жёсткой привязки service к fake transport.
+  - Добавлена observability: `runtime_event_received`, `runtime_duplicate_event_ignored`, `runtime_retry_scheduled`.
+  - Root confinement теперь применяется единообразно до provider branch.
+- **Проверки:** `compileall` ✅, `ruff` ✅, `pytest` ✅ (162/162).
+- **Ограничения соблюдены:** plan-only only, real OpenCode runtime/server не запускался.
+
+### 2026-05-04 — BE-04 Completed (Runtime plan-only guardrails)
+- **Агент:** backend-architect
+- **Сделано:**
+  - Provider safety: `RUNTIME_PROVIDER=stub|opencode_http`, default `stub`, unknown provider fail-closed (`runtime_error` + `task_failed`, без fallback).
+  - Plan-only policy в fake OpenCode SSE: разрешены только `read/search/analyze/plan`; запрещённые tool/event сценарии блокируются.
+  - Root confinement внедрён для runtime provider path checks (canonical resolve + containment).
+  - Memory minimization: только top-k retrieval chunks + redaction перед runtime request.
+  - SSE hardening: malformed/timeout/unknown/duplicate handling в mocked flow.
+  - Idempotency: `correlation_id`, `session_id`, `idempotency_key`, no duplicate finalization при retry.
+  - Approval invariants подтверждены тестами: low auto-approve, medium/high waiting approval.
+  - Event schema расширена новыми runtime event types (BE-04).
+- **Проверки:** API `compileall` ✅, `ruff` ✅, `pytest` ✅ (160/160).
+- **Ограничения:** реальный OpenCode runtime/server не запускался; использованы только fake/mocked HTTP/SSE в тестах.
+
 ### 2026-05-03 — WRK-04 Manual DevOps slice (local compose verification)
 - **Агент:** devops-automator
 - **Сделано:**

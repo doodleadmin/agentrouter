@@ -185,3 +185,19 @@ WRK-03-hardening реализован:
 - Docker secrets для production
 - Агенты **не** имеют доступа к secrets напрямую
 - Никогда не логировать значения secrets
+
+## BE-04 Runtime Plan-Only Guardrails
+
+- `RUNTIME_PROVIDER` поддерживает только `stub | opencode_http`, default=`stub`.
+- Unknown provider обрабатывается fail-closed: `runtime_error` + `task_failed`, без fallback.
+- `opencode_http` включается только через явный opt-in (`RUNTIME_PROVIDER=opencode_http`) и валидный `OPENCODE_SERVER_URL`; отсутствие обязательной конфигурации => fail-closed (`runtime_error` + `task_failed`).
+- Production factory **не** создаёт fake transport для `opencode_http`; fake/mocked transport допускается только в тестах через explicit DI.
+- Любая некорректная provider-конфигурация не должна иметь silent fallback на `stub`/`fake`.
+- Plan-only policy: разрешены только действия `read/search/analyze/plan`; mutating/tooling/deploy/migrate/env-secrets операции блокируются через `policy_blocked`.
+- Root confinement: canonical resolve + containment в `RUNTIME_ALLOWED_ROOT`; блокируются traversal, UNC/network paths, drive mismatch, absolute escape.
+- Memory minimization: в runtime context передаются только `top-k` retrieval chunks (sanitized), full `.ai_memory` и `.env/secrets` не передаются.
+- Redaction обязательна для runtime request payload, streamed deltas и payload task_events.
+- SSE hardening (mock/fake in tests): timeout, malformed event handling, unknown event/tool handling, duplicate event dedupe, partial plan not final.
+- Idempotency: `correlation_id`, `session_id`, `idempotency_key`, защита от дублирования финализации план-сессии.
+- Approval invariants: `low=>approved`, `medium/high/critical=>waiting_approval + approval_requested`, adapter не может это обойти.
+- Дополнительные event types: `runtime_session_created`, `runtime_event_received`, `policy_blocked`, `runtime_error`, `runtime_timeout`, `runtime_retry_scheduled`, `runtime_duplicate_event_ignored`, `runtime_event_malformed`.

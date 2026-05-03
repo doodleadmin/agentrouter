@@ -3,6 +3,14 @@
 import pytest
 from httpx import AsyncClient
 
+from app.config import settings
+
+
+@pytest.fixture(autouse=True)
+def _reset_runtime_provider() -> None:
+    settings.RUNTIME_PROVIDER = "stub"
+    settings.OPENCODE_SERVER_URL = ""
+
 
 @pytest.fixture
 async def project_id(async_client: AsyncClient) -> str:
@@ -11,7 +19,7 @@ async def project_id(async_client: AsyncClient) -> str:
         json={
             "slug": "proj-runtime",
             "name": "Runtime Project",
-            "repo_path": "/tmp/repo",
+            "repo_path": "apps/api",
             "memory_path": ".ai_memory/projects/proj-runtime",
         },
     )

@@ -1,6 +1,6 @@
 """Schemas for runtime adapter context/result contracts."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RuntimePlanContext(BaseModel):
@@ -13,6 +13,9 @@ class RuntimePlanContext(BaseModel):
     agent_role: str
     raw_text: str
     normalized_text: str
+    correlation_id: str
+    idempotency_key: str
+    memory_chunks: list[str] = Field(default_factory=list)
 
 
 class RuntimePlanResult(BaseModel):
@@ -20,3 +23,4 @@ class RuntimePlanResult(BaseModel):
 
     plan_text: str
     mode: str = "plan_only"
+    session_id: str | None = None

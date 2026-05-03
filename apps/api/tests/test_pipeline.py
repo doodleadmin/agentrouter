@@ -11,7 +11,7 @@ async def project_id(async_client: AsyncClient) -> str:
         json={
             "slug": "proj-pipeline",
             "name": "Pipeline Project",
-            "repo_path": "/tmp/repo",
+            "repo_path": "apps/api",
             "memory_path": ".ai_memory/projects/proj-pipeline",
         },
     )

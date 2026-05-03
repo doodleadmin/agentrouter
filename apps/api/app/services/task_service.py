@@ -21,7 +21,7 @@ class TaskService:
     # ── external_id counter ─────────────────────────────────────────────
 
     async def _next_external_id(self) -> str:
-        stmt = select(Task.external_id).order_by(Task.created_at.desc()).limit(1)
+        stmt = select(Task.external_id).order_by(Task.created_at.desc(), Task.id.desc()).limit(1)
         result = await self._session.execute(stmt)
         last = result.scalar_one_or_none()
         if last is None:

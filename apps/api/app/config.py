@@ -56,5 +56,14 @@ class Settings(BaseSettings):
     REPOS_PATH: str = "/opt/mc/repos"
     WORKTREES_PATH: str = "/opt/mc/worktrees"
 
+    # Runtime provider (BE-04)
+    RUNTIME_PROVIDER: str = "stub"  # stub | opencode_http
+    OPENCODE_SERVER_URL: str = ""  # required for opencode_http
+    RUNTIME_ALLOWED_ROOT: str = "."
+    RUNTIME_MEMORY_TOP_K: int = 5
+    RUNTIME_SESSION_TIMEOUT_SECONDS: int = 60
+    RUNTIME_IDLE_TIMEOUT_SECONDS: int = 20
+    RUNTIME_MAX_RETRIES: int = 2
+
 
 settings = Settings()

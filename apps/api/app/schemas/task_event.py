@@ -36,6 +36,14 @@ ALLOWED_EVENT_TYPES: frozenset[str] = frozenset([
     "security_violation",
     "sandbox_timeout",
     "sandbox_error",
+    "runtime_session_created",
+    "runtime_event_received",
+    "policy_blocked",
+    "runtime_error",
+    "runtime_timeout",
+    "runtime_retry_scheduled",
+    "runtime_duplicate_event_ignored",
+    "runtime_event_malformed",
 ])
 
 

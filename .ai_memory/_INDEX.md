@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 25 |
+| **Task logs** | 28 |
 | **Шаблоны** | 5 |
 
 ---
@@ -93,6 +93,9 @@
 | [2026-05-03-task-wrk04-manual-local-test.md](tasks/2026-05-03-task-wrk04-manual-local-test.md) | WRK-04 manual local test |
 | [2026-05-03-task-wrk04-real-docker-smoke-test.md](tasks/2026-05-03-task-wrk04-real-docker-smoke-test.md) | WRK-04 real docker smoke test |
 | [2026-05-04-task-wrk04-manual-test-hardening.md](tasks/2026-05-04-task-wrk04-manual-test-hardening.md) | WRK-04 manual-test hardening |
+| [2026-05-04-task-be04-runtime-guardrails.md](tasks/2026-05-04-task-be04-runtime-guardrails.md) | BE-04 runtime guardrails |
+| [2026-05-04-task-be04-review-blockers-fix.md](tasks/2026-05-04-task-be04-review-blockers-fix.md) | BE-04 review blockers fix |
+| [2026-05-04-task-be04-transport-hardening.md](tasks/2026-05-04-task-be04-transport-hardening.md) | BE-04 transport hardening |
 
 ---
 

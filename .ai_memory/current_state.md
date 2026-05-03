@@ -7,8 +7,8 @@
 ## Статус проекта
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening выполнены. CRITICAL/HIGH закрыты.
-**Блокеры:** Нет
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes выполнены. CRITICAL/HIGH закрыты.
+**Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
@@ -40,6 +40,7 @@
 - WRK-04 manual local backend test (backend-architect): сценарии A-E подтверждены локально через worker execute pipeline + DockerSandboxRunner evidence; перед/после теста подтверждён `SANDBOX_RUNNER_MODE=fake`, временный docker override только в процессе теста
 - WRK-04 real docker smoke test (backend-architect): Scenario A выполнен с реальным контейнером; команда `python -m compileall .`, `exit_code=0`, single mount policy подтверждён (`manual-test-wrk04 -> /workspace`), cleanup completed, режим возвращён в `fake`
 - WRK-04 manual-test hardening (backend-architect): `manual-test-*` worktree prefix теперь разрешён только при `SANDBOX_MANUAL_TEST_MODE=True`; в normal mode только `task-*`; path traversal всегда отклонён; 5 новых тестов; `FakeSandboxRunner` остаётся default
+- BE-04 transport hardening (backend-architect): удалён hidden fallback на fake transport для `opencode_http`; default provider=`stub`; unknown provider и missing `OPENCODE_SERVER_URL` теперь fail-closed (`runtime_error` + `task_failed`); fake transport только через explicit DI в тестах; `pytest tests -v` passed
 
 ## Активные задачи
 
@@ -71,6 +72,7 @@
 | WRK-04: Manual local backend test | ✅ Выполнена | backend-architect |
 | WRK-04: REAL Docker smoke test (Scenario A) | ✅ Выполнена | backend-architect |
 | WRK-04: manual-test hardening | ✅ Выполнена | backend-architect |
+| BE-04: transport hardening | ✅ Выполнена | backend-architect |
 
 ## Следующие шаги
 
