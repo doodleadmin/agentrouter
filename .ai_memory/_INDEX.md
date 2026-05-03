@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 30 |
+| **Task logs** | 31 |
 | **Шаблоны** | 5 |
 
 ---
@@ -98,6 +98,7 @@
 | [2026-05-04-task-be04-transport-hardening.md](tasks/2026-05-04-task-be04-transport-hardening.md) | BE-04 transport hardening |
 | [2026-05-04-task-be05-transport-gap-closures.md](tasks/2026-05-04-task-be05-transport-gap-closures.md) | BE-05 RealOpenCodeHttpTransport + gaps |
 | [2026-05-04-task-be05-hardening-b1-m1-m2-m3.md](tasks/2026-05-04-task-be05-hardening-b1-m1-m2-m3.md) | BE-05 hardening (B-1 + M-1/M-2/M-3) |
+| [2026-05-04-task-be06-controlled-smoke-test-plan.md](tasks/2026-05-04-task-be06-controlled-smoke-test-plan.md) | BE-06 controlled OpenCode smoke test plan/preflight |
 
 ---
 

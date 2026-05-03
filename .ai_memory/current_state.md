@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-04 | Автор: backend-architect
+Обновлено: 2026-05-04 | Автор: studio-orchestrator
 
 ---
 
@@ -43,6 +43,7 @@
 - BE-04 transport hardening (backend-architect): удалён hidden fallback на fake transport для `opencode_http`; default provider=`stub`; unknown provider и missing `OPENCODE_SERVER_URL` теперь fail-closed (`runtime_error` + `task_failed`); fake transport только через explicit DI в тестах; `pytest tests -v` passed
 - BE-05 RealOpenCodeHttpTransport + gap closures (backend-architect): реализован RealOpenCodeHttpTransport (HTTP/SSE на httpx), закрыты 3 gaps (max_plan_size 100KB truncation, session/idle timeout enforcement, tool.call path confinement), SSE robustness улучшена, docs/smoke-test-opencode.md создан, 197/197 tests passed; real OpenCode server не запускался
 - BE-05 Phase 1 hardening (backend-architect): закрыты B-1 (test adaptation), M-1 (_truncate_plan session_id), M-2 (SSE non-JSON chunk 64KB limit), M-3 (RUNTIME_ALLOW_REAL_OPENCODE_HTTP safety gate, default=False). 205/205 tests passed. Default=stub подтверждён.
+- BE-06 preflight plan (studio-orchestrator): подготовлен controlled smoke test plan-only checklist для real OpenCode HTTP adapter (localhost:3001), включая временные env overrides через environment variables (без изменения .env), safe low-risk prompt, abort criteria, post-smoke validation. Ничего не запускалось.
 
 ## Активные задачи
 
@@ -111,5 +112,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 30 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3) |
+| Логи задач | 31 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan) |
 | Проекты | 0 |
