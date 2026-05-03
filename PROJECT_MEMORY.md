@@ -99,6 +99,17 @@
 
 ## Изменения
 
+### 2026-05-04 — BE-06 docs fix (smoke-test-opencode)
+- **Агент:** backend-architect
+- **Сделано:** обновлён `docs/smoke-test-opencode.md` для BE-06 controlled smoke test:
+  - удалены инструкции изменения основного `.env`
+  - добавлены только временные process env overrides (`RUNTIME_PROVIDER`, `OPENCODE_SERVER_URL`, `RUNTIME_ALLOW_REAL_OPENCODE_HTTP`)
+  - унифицировано имя временного файла: `.env.opencode-smoke`
+  - зафиксировано, что `.env.opencode-smoke` должен быть gitignored
+  - добавлен явный rollback к runtime defaults (`stub`, empty URL, allow=false)
+- **Ограничения:** OpenCode server не запускался, код не менялся, deploy/migrations/.env/secrets не трогались.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be06-smoke-docs-fix.md](.ai_memory/tasks/2026-05-04-task-be06-smoke-docs-fix.md)
+
 ### 2026-05-04 — DevOps OpenCode smoke test plan (plan-only, без выполнения)
 - **Агент:** devops-automator
 - **Сделано:** составлен структурированный план controlled smoke test реального OpenCode server в plan-only режиме.

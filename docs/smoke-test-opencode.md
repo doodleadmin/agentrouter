@@ -13,14 +13,16 @@
 - [ ] `compileall` passes: `python -m compileall app`
 - [ ] `ruff check app` passes
 - [ ] No production/staging servers involved
-- [ ] No `.env` changes beyond the smoke test variables
+- [ ] Main project `.env` is NOT modified
 - [ ] Docker sandbox mode is `fake` (not `docker`)
+- [ ] `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false` by default is confirmed
+- [ ] `.env.opencode-smoke` (if used) is gitignored and temporary
 
 ## Smoke Test Steps
 
 ### Step 1: Start OpenCode server
 
-Start a real OpenCode server in **plan-only mode** on `localhost:3001`:
+Start a real OpenCode server in **plan-only mode** on `127.0.0.1:3001`:
 
 ```bash
 # Option A: Docker
@@ -33,20 +35,32 @@ docker run -d --name opencode-smoke \
 npx @opencode/server --port 3001 --mode plan-only
 ```
 
-**Verify:** `curl http://localhost:3001/health` returns 200.
+**Verify:** `curl http://127.0.0.1:3001/health` returns 200.
+
+> Must bind to localhost only (`127.0.0.1`). Do NOT use `0.0.0.0`.
 
 ### Step 2: Configure AMC for opencode_http
 
-Set in `.env` (project root):
+Use temporary runtime overrides only (process env), **without editing main `.env`**:
+
+```powershell
+# PowerShell example (current shell only)
+$env:RUNTIME_PROVIDER="opencode_http"
+$env:OPENCODE_SERVER_URL="http://127.0.0.1:3001"
+$env:RUNTIME_ALLOW_REAL_OPENCODE_HTTP="true"
+```
+
+Optional temporary file (if needed): `.env.opencode-smoke` (must remain gitignored):
 
 ```env
 RUNTIME_PROVIDER=opencode_http
-OPENCODE_SERVER_URL=http://localhost:3001
-RUNTIME_SESSION_TIMEOUT_SECONDS=30
-RUNTIME_IDLE_TIMEOUT_SECONDS=10
+OPENCODE_SERVER_URL=http://127.0.0.1:3001
+RUNTIME_ALLOW_REAL_OPENCODE_HTTP=true
 ```
 
-Restart the API server.
+Do NOT modify `.env` in project root.
+
+Restart the API server in the shell/session where overrides are set.
 
 ### Step 3: Run integration smoke test
 
@@ -76,12 +90,16 @@ Expected events (subset):
 # Stop OpenCode server
 docker stop opencode-smoke && docker rm opencode-smoke
 
-# Restore default config
-# Remove or comment out RUNTIME_PROVIDER and OPENCODE_SERVER_URL from .env
-# Restart API server
+# Restore default runtime config (main .env remains unchanged)
+Remove-Item Env:RUNTIME_PROVIDER -ErrorAction SilentlyContinue
+Remove-Item Env:OPENCODE_SERVER_URL -ErrorAction SilentlyContinue
+Remove-Item Env:RUNTIME_ALLOW_REAL_OPENCODE_HTTP -ErrorAction SilentlyContinue
 ```
 
-**Verify:** `RUNTIME_PROVIDER=stub` is active again.
+**Verify defaults restored:**
+- `RUNTIME_PROVIDER=stub`
+- `OPENCODE_SERVER_URL=""`
+- `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false`
 
 ## Abort Criteria
 
@@ -99,8 +117,8 @@ Stop the smoke test immediately if any of the following occurs:
 After cleanup, run:
 
 ```bash
-# 1. Confirm provider is back to stub
-python -c "from app.config import settings; assert settings.RUNTIME_PROVIDER == 'stub'"
+# 1. Confirm runtime defaults are back
+python -c "from app.config import settings; assert settings.RUNTIME_PROVIDER == 'stub'; assert settings.OPENCODE_SERVER_URL == ''; assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False"
 
 # 2. Run all tests
 pytest apps/api/tests -v
@@ -123,4 +141,4 @@ Do NOT run this smoke test without:
 1. Prior approval from project lead
 2. Isolated environment (localhost only, no external network)
 3. Confirmed `plan-only` mode on OpenCode server
-4. Backup of current `.env` configuration
+4. Confirmation that main `.env` will not be edited
