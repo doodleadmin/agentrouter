@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     RUNTIME_ALLOW_REAL_OPENCODE_HTTP: bool = False  # BE-05 M-3: explicit gate for real transport
     RUNTIME_ALLOWED_ROOT: str = "."
     RUNTIME_MEMORY_TOP_K: int = 5
-    RUNTIME_SESSION_TIMEOUT_SECONDS: int = 60
+    RUNTIME_SESSION_TIMEOUT_SECONDS: int = 180
     RUNTIME_IDLE_TIMEOUT_SECONDS: int = 20
     RUNTIME_MAX_RETRIES: int = 2
     RUNTIME_MAX_PLAN_BYTES: int = 100_000  # 100 KB hard cap for plan text

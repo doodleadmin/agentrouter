@@ -156,6 +156,7 @@ class RuntimeService:
             correlation_id=corr_id,
             idempotency_key=idem_key,
             memory_chunks=memory_chunks,
+            task_title=task.title or "",
         )
 
         try:

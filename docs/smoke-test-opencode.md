@@ -44,7 +44,11 @@ Compatibility note from backend:
 - AMC runtime transport expects endpoints at `OPENCODE_SERVER_URL` root:
   - `POST /session`
   - `POST /session/{id}/message`
-- `POST /session` response must include `session_id` or `id`
+- `POST /session`:
+  - **BE-08:** OpenCode 1.14.33 auto-detects workspace from CWD and IGNORES directory/cwd/path/workspace/mode/model.
+    Only `title` field is accepted: `{"title": "<task title or 'Plan task'>"}`.
+  - Response must include `session_id` or `id`
+- Session timeout: **180s** (RUNTIME_SESSION_TIMEOUT_SECONDS, increased from 60s after BE-08 smoke showed insufficient)
 - `POST /session/{id}/message` response must be JSON object with `parts` list
 - Contract note (BE-07): request body for `POST /session/{id}/message` is aligned to confirmed shape:
   - `{"parts": [{"type": "text", "text": "<normalized task text>"}]}`
@@ -65,8 +69,8 @@ Preflight probes (PowerShell examples):
 curl.exe -sS "http://127.0.0.1:4096/global/health"
 curl.exe -sS "http://127.0.0.1:4096/doc"
 
-# 2) Runtime endpoint probe: create session
-$create = curl.exe -sS -X POST "http://127.0.0.1:4096/session" -H "Content-Type: application/json" -d "{}"
+# 2) Runtime endpoint probe: create session (BE-08: title-only payload)
+$create = curl.exe -sS -X POST "http://127.0.0.1:4096/session" -H "Content-Type: application/json" -d "{\"title\":\"Smoke test probe\"}"
 $obj = $create | ConvertFrom-Json
 $sid = if ($obj.session_id) { $obj.session_id } elseif ($obj.id) { $obj.id } else { throw "No session_id/id in /session response" }
 

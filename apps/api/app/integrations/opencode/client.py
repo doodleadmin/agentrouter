@@ -11,6 +11,7 @@ from typing import Any, Awaitable, Callable, Protocol
 
 from app.config import settings
 from app.integrations.opencode.schemas import (
+    OpenCodeSessionCreateRequest,
     OpenCodeSessionMessageRequest,
     RuntimePlanContext,
     RuntimePlanResult,
@@ -134,18 +135,14 @@ class OpenCodeHttpPlanClient:
         return truncated + f"\n\n[TRUNCATED — plan exceeded max size] (session={session_id})"
 
     async def generate_plan(self, context: RuntimePlanContext) -> RuntimePlanResult:
-        payload = {
-            "mode": "plan_only",
-            "correlation_id": context.correlation_id,
-            "idempotency_key": context.idempotency_key,
-            "input": {
-                "project_slug": context.project_slug,
-                "agent_slug": context.agent_slug,
-                "task": context.normalized_text,
-                "memory_chunks": context.memory_chunks,
-            },
-        }
-        session_id = await self._transport.create_session(payload)
+        # BE-08: OpenCode 1.14.33 only accepts `title` for POST /session.
+        # All other fields (directory, cwd, path, workspace, mode, model,
+        # capabilities, restrictions, projectID, agent) are IGNORED.
+        session_id = await self._transport.create_session(
+            OpenCodeSessionCreateRequest(
+                title=context.task_title or "Plan task",
+            ).model_dump(mode="json", exclude_none=True),
+        )
 
         last_exc: Exception | None = None
         for attempt in range(self._max_retries + 1):

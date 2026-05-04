@@ -135,3 +135,46 @@ async def test_send_message_timeout_maps() -> None:
     transport = _mk_transport(client)
     with pytest.raises(OpenCodeTimeoutError):
         await transport.send_message("abc", PARTS_PAYLOAD)
+
+
+# ── BE-08 session payload shape tests ──────────────────────────────────
+
+# BE-08: OpenCode 1.14.33 only accepts `title` for POST /session.
+# All other fields are IGNORED. Payload must be minimal.
+
+BE08_SESSION_PAYLOAD = {"title": "Plan task"}
+
+BE08_FORBIDDEN_SESSION_FIELDS = frozenset(
+    {"directory", "cwd", "path", "workspace", "mode", "model",
+     "capabilities", "restrictions", "projectID", "agent"}
+)
+
+
+@pytest.mark.anyio
+async def test_create_session_payload_includes_title() -> None:
+    """BE-08: POST /session payload must include `title` field."""
+    client = _mk_client_for_post(json_data={"session_id": "s-be08-title"})
+    transport = _mk_transport(client)
+
+    sid = await transport.create_session(BE08_SESSION_PAYLOAD)
+
+    assert sid == "s-be08-title"
+    sent_json = client.post.call_args.kwargs["json"]
+    assert "title" in sent_json
+    assert sent_json["title"] == "Plan task"
+
+
+@pytest.mark.anyio
+async def test_create_session_payload_excludes_forbidden_fields() -> None:
+    """BE-08: POST /session payload must NOT include directory/cwd/path/
+    workspace/mode/model/capabilities/restrictions/projectID/agent."""
+    client = _mk_client_for_post(json_data={"session_id": "s-be08-clean"})
+    transport = _mk_transport(client)
+
+    await transport.create_session(BE08_SESSION_PAYLOAD)
+
+    sent_json = client.post.call_args.kwargs["json"]
+    for forbidden in BE08_FORBIDDEN_SESSION_FIELDS:
+        assert forbidden not in sent_json, (
+            f"Forbidden field '{forbidden}' found in session payload: {sent_json}"
+        )

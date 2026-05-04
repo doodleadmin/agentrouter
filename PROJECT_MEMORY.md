@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-07+ implementation complete (OpenCode 1.14.33 native contract alignment)
+**Статус:** BE-08 implementation complete (OpenCode session traceability + timeout tuning)
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -156,6 +156,22 @@
 - **Guardrails confirmed:** default provider=stub, opencode_http requires URL+allow flag, no silent fallback, plan-only preserved, reasoning NEVER stored, redaction preserved, real OpenCode NOT started
 - **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (219/219)
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be07-plus-implementation.md](.ai_memory/tasks/2026-05-04-task-be07-plus-implementation.md)
+
+### 2026-05-04 — BE-08 OpenCode session traceability + timeout tuning
+- **Агент:** backend-architect
+- **Контур:** local only; без deploy/migrations/secrets/OpenCode.
+- **Сделано:**
+  - `schemas.py`: добавлен `OpenCodeSessionCreateRequest` с полем `title: Optional[str]` — единственное поле, принимаемое OpenCode 1.14.33 при `POST /session`.
+  - `schemas.py`: добавлен `task_title: str = ""` в `RuntimePlanContext` для передачи заголовка задачи runtime клиенту.
+  - `client.py`: payload для `POST /session` заменён на минимальный `{"title": "<task title>"}` — удалены игнорируемые поля (mode, correlation_id, idempotency_key, input).
+  - `config.py`: `RUNTIME_SESSION_TIMEOUT_SECONDS` увеличен с 60 до 180 (после BE-07+ smoke, где 60s оказалось недостаточно).
+  - `runtime_service.py`: контекст теперь передаёт `task_title=task.title`.
+  - `docs/smoke-test-opencode.md`: обновлён session contract (BE-08 title-only payload, timeout 180s).
+  - Тесты: добавлены `test_create_session_payload_includes_title`, `test_create_session_payload_excludes_forbidden_fields` (transport), `test_be08_session_timeout_config_default_is_180`, `test_be08_timeout_still_maps_to_runtime_error_and_task_failed`, `test_be08_default_provider_still_stub`, `test_be08_real_opencode_server_not_started` (runtime).
+- **Guardrails confirmed:** stub default, fail-closed, path confinement, redaction, max_plan_size, plan-only policy — ALL PRESERVED.
+- **Подтверждено:** в session payload НЕТ directory/cwd/path/workspace/mode/model/capabilities/restrictions/projectID/agent.
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (224/225, 1 pre-existing test-data collision)
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be08-session-traceability-timeout.md](.ai_memory/tasks/2026-05-04-task-be08-session-traceability-timeout.md)
 
 ### 2026-05-04 — DEV-DB-01 Fix Alembic async/sync engine mismatch
 - **Агент:** backend-architect

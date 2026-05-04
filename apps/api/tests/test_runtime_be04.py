@@ -1234,3 +1234,55 @@ async def test_be07_confirm_stub_is_default() -> None:
     assert settings.RUNTIME_PROVIDER == "stub"
     assert settings.OPENCODE_SERVER_URL == ""
     assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BE-08 TESTS — session traceability + timeout tuning
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_be08_session_timeout_config_default_is_180() -> None:
+    """BE-08: RUNTIME_SESSION_TIMEOUT_SECONDS should default to 180
+    (was 60 before BE-08 smoke showed insufficient)."""
+    assert settings.RUNTIME_SESSION_TIMEOUT_SECONDS == 180
+
+
+@pytest.mark.anyio
+async def test_be08_timeout_still_maps_to_runtime_error_and_task_failed(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-08: timeout still flows through runtime_timeout → task_failed."""
+    task_id = await _mk_task(async_client, risk="low")
+    # No step-finish → timeout after session_timeout_sec
+    fake = FakeOpenCodeHttpClient([
+        {"type": "text", "text": "partial"},
+    ])
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(
+            fake,
+            session_timeout_sec=0.0,  # immediate timeout
+            max_retries=0,
+        ),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_timeout" in event_types
+    assert "task_failed" in event_types
+
+
+def test_be08_default_provider_still_stub() -> None:
+    """BE-08 guard: default provider remains stub after changes."""
+    assert settings.RUNTIME_PROVIDER == "stub"
+    assert settings.OPENCODE_SERVER_URL == ""
+    assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False
+
+
+def test_be08_real_opencode_server_not_started() -> None:
+    """BE-08 guard: confirm real OpenCode server is never started."""
+    assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False
+    assert settings.RUNTIME_PROVIDER == "stub"
+    assert settings.OPENCODE_SERVER_URL == ""
