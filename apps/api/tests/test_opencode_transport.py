@@ -85,6 +85,22 @@ async def test_send_message_uses_post_session_id_message_endpoint() -> None:
 
 
 @pytest.mark.anyio
+async def test_send_message_contract_aligned_payload_shape() -> None:
+    client = _mk_client_for_post(json_data={"parts": [{"kind": "final"}]})
+    transport = _mk_transport(client)
+
+    await transport.send_message(
+        "abc",
+        {
+            "message": "plan",
+        },
+    )
+
+    sent_payload = client.post.call_args.kwargs["json"]
+    assert sent_payload == {"message": "plan"}
+
+
+@pytest.mark.anyio
 async def test_send_message_non_object_response_fails_closed() -> None:
     client = _mk_client_for_post(json_data=[{"kind": "final"}])
     transport = _mk_transport(client)

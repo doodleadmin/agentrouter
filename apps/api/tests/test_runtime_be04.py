@@ -168,6 +168,20 @@ async def test_sync_message_parts_map_to_plan_final() -> None:
 
 
 @pytest.mark.anyio
+async def test_sync_message_content_parts_map_to_plan_final() -> None:
+    result = OpenCodeHttpPlanClient._map_message_response_to_events(
+        {
+            "content": [
+                {"kind": "content", "text": "## Plan\n1. Step"},
+                {"kind": "final"},
+            ]
+        }
+    )
+    assert result[0]["type"] == "plan.delta"
+    assert result[1]["type"] == "plan.final"
+
+
+@pytest.mark.anyio
 async def test_sync_message_unknown_part_fails_closed_runtime_error() -> None:
     with pytest.raises(RuntimeEventError, match="runtime_error"):
         OpenCodeHttpPlanClient._map_message_response_to_events(
@@ -179,6 +193,35 @@ async def test_sync_message_unknown_part_fails_closed_runtime_error() -> None:
 async def test_sync_message_malformed_response_fails_closed() -> None:
     with pytest.raises(RuntimeEventError, match="runtime_event_malformed"):
         OpenCodeHttpPlanClient._map_message_response_to_events({"parts": "not-a-list"})
+
+
+@pytest.mark.anyio
+async def test_sync_message_empty_response_fails_closed() -> None:
+    with pytest.raises(RuntimeEventError, match="runtime_error"):
+        OpenCodeHttpPlanClient._map_message_response_to_events({"parts": []})
+
+
+@pytest.mark.anyio
+async def test_sync_message_final_without_content_fails_closed() -> None:
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"kind": "final"},
+        ]
+    )
+    context = MagicMock()
+    context.project_slug = "proj"
+    context.repo_path = "apps/api"
+    context.memory_path = ".ai_memory/projects/proj"
+    context.agent_slug = "backend"
+    context.agent_role = "backend-architect"
+    context.raw_text = "raw"
+    context.normalized_text = "normalized"
+    context.correlation_id = "cid"
+    context.idempotency_key = "ik"
+    context.memory_chunks = []
+
+    with pytest.raises(RuntimeEventError, match="runtime_error"):
+        await OpenCodeHttpPlanClient(fake).generate_plan(context)
 
 
 @pytest.mark.anyio
@@ -249,9 +292,15 @@ async def test_secrets_redaction_runtime_request_and_events(
     test_session, async_client: AsyncClient
 ) -> None:
     task_id = await _mk_task(async_client, risk="low")
+    secret_a = "tokensecret_abc123xyz"
+    secret_b = "apikeysecret_xyz987abc"
     fake = FakeOpenCodeHttpClient(
         [
-            {"type": "plan.delta", "event_id": "1", "text": "token=abc api_key=xyz"},
+            {
+                "type": "plan.delta",
+                "event_id": "1",
+                "text": f"token={secret_a} api_key={secret_b}",
+            },
             {"type": "plan.final", "event_id": "2"},
         ]
     )
@@ -261,17 +310,17 @@ async def test_secrets_redaction_runtime_request_and_events(
     )
     task = await svc.generate_plan_for_task(UUID(task_id))
     plan_text = (task.plan_text or "").lower()
-    assert "abc" not in plan_text
-    assert "xyz" not in plan_text
+    assert secret_a.lower() not in plan_text
+    assert secret_b.lower() not in plan_text
     assert fake.last_payload is not None
     payload_text = str(fake.last_payload).lower()
-    assert "abc" not in payload_text
-    assert "xyz" not in payload_text
+    assert secret_a.lower() not in payload_text
+    assert secret_b.lower() not in payload_text
 
     events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
     body = str(events_resp.json()).lower()
-    assert "abc" not in body
-    assert "xyz" not in body
+    assert secret_a.lower() not in body
+    assert secret_b.lower() not in body
 
 
 @pytest.mark.anyio
@@ -410,6 +459,31 @@ async def test_no_silent_fallback_to_stub_for_opencode_http(
     assert settings.RUNTIME_PROVIDER == "opencode_http"
 
 
+@pytest.mark.anyio
+async def test_opencode_http_requires_url_and_allow_flag(async_client: AsyncClient) -> None:
+    settings.RUNTIME_PROVIDER = "opencode_http"
+    settings.OPENCODE_SERVER_URL = ""
+    settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP = True
+    task_without_url = await _mk_task(async_client, risk="low")
+    resp_without_url = await async_client.post(f"/runtime/tasks/{task_without_url}/plan")
+    assert resp_without_url.status_code == 200
+    assert resp_without_url.json()["status"] == "failed"
+
+    settings.RUNTIME_PROVIDER = "opencode_http"
+    settings.OPENCODE_SERVER_URL = "http://example.local"
+    settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP = False
+    task_without_allow = await _mk_task(async_client, risk="low")
+    resp_without_allow = await async_client.post(f"/runtime/tasks/{task_without_allow}/plan")
+    assert resp_without_allow.status_code == 200
+    assert resp_without_allow.json()["status"] == "failed"
+
+
+def test_real_opencode_server_not_started_by_default_config() -> None:
+    assert settings.RUNTIME_PROVIDER == "stub"
+    assert settings.OPENCODE_SERVER_URL == ""
+    assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # BE-05 NEW TESTS
 # ═══════════════════════════════════════════════════════════════════════
@@ -528,6 +602,7 @@ async def test_tool_path_confinement_allowed_inside_root(
                 "action": "read",
                 "path": "app/main.py",
             },
+            {"type": "plan.delta", "event_id": "1.1", "text": "## Plan\n1. ok"},
             {"type": "plan.final", "event_id": "2"},
         ]
     )
@@ -607,6 +682,7 @@ async def test_tool_path_confinement_skips_without_path(
                 "action": "read",
                 # no path
             },
+            {"type": "plan.delta", "event_id": "1.1", "text": "## Plan\n1. ok"},
             {"type": "plan.final", "event_id": "2"},
         ]
     )

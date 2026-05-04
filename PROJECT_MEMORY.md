@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-06 FINAL EXECUTION complete (real OpenCode 1.14.33 smoke test, Steps A–G passed)
+**Статус:** BE-07 implementation complete (OpenCode message payload contract alignment)
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -126,6 +126,17 @@
 - **Интеграционная находка:** `400` на `/session/{id}/message` — payload contract mismatch. Follow-up BE-07 для contract alignment.
 - **Ограничения:** plan-only (no code execution), process env overrides only (no `.env` edits), OpenCode stopped after test.
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be06-final-execution.md](.ai_memory/tasks/2026-05-04-task-be06-final-execution.md)
+
+### 2026-05-04 — BE-07 payload contract alignment implementation
+- **Агент:** backend-architect
+- **Сделано:**
+  - OpenCode message payload для `POST /session/{id}/message` переведён с legacy extra-fields формы на минимальный контракт `{ "message": <text> }`.
+  - Обновлён response mapping клиента: поддержаны формы `parts` и `content`; при пустом/malformed/unknown ответе применяется fail-closed поведение.
+  - Guardrails сохранены без ослабления: plan-only, `policy_blocked` для mutating `tool.call`, path confinement, redaction на верхних слоях, `max_plan_size`, timeout, no silent fallback.
+  - Устранён архитектурный блокер: из `transport.py` удалена policy-layer зависимость; transport снова transport-only.
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (204 passed)
+- **Ограничения:** реальный OpenCode server не запускался.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be07-payload-contract-alignment-implementation.md](.ai_memory/tasks/2026-05-04-task-be07-payload-contract-alignment-implementation.md)
 
 ### 2026-05-04 — BE-06 blocking security fix (bounded read timeout)
 - **Агент:** backend-architect

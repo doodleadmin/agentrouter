@@ -46,6 +46,9 @@ Compatibility note from backend:
   - `POST /session/{id}/message`
 - `POST /session` response must include `session_id` or `id`
 - `POST /session/{id}/message` response must be JSON object with `parts` list
+- Contract note (BE-07): request body for `POST /session/{id}/message` is aligned to confirmed minimal shape:
+  - `{ "message": "<normalized task text>" }`
+  - do not include unconfirmed fields for this endpoint
 
 Preflight probes (PowerShell examples):
 
@@ -60,7 +63,7 @@ $obj = $create | ConvertFrom-Json
 $sid = if ($obj.session_id) { $obj.session_id } elseif ($obj.id) { $obj.id } else { throw "No session_id/id in /session response" }
 
 # 3) Runtime endpoint probe: sync message endpoint
-curl.exe -sS -X POST "http://127.0.0.1:4096/session/$sid/message" -H "Content-Type: application/json" -d "{\"mode\":\"plan_only\",\"message\":\"health probe\"}"
+curl.exe -sS -X POST "http://127.0.0.1:4096/session/$sid/message" -H "Content-Type: application/json" -d "{\"message\":\"health probe\"}"
 ```
 
 ### Step 3: Configure AMC for opencode_http

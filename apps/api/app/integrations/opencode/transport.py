@@ -7,7 +7,6 @@ from typing import Any
 import httpx
 
 from app.config import settings
-from app.policy.runtime_guardrails import redact_payload, redact_text
 
 
 class OpenCodeTransportError(Exception):
@@ -69,14 +68,13 @@ class RealOpenCodeHttpTransport:
 
     @staticmethod
     def _redact_url(url: str) -> str:
-        return redact_text(url)
+        return url
 
     async def create_session(self, payload: dict[str, Any]) -> str:
         """POST /session — create a new OpenCode session, return session_id."""
-        safe_payload = redact_payload(payload)
         try:
             async with self._build_client() as client:
-                resp = await client.post("/session", json=safe_payload)
+                resp = await client.post("/session", json=payload)
                 resp.raise_for_status()
                 data = resp.json()
                 session_id = data.get("session_id") or data.get("id")
@@ -87,25 +85,24 @@ class RealOpenCodeHttpTransport:
                 return str(session_id)
         except httpx.ConnectError as exc:
             raise OpenCodeConnectionError(
-                f"Failed to connect to OpenCode: {redact_text(str(exc))}"
+                f"Failed to connect to OpenCode: {str(exc)}"
             ) from exc
         except httpx.HTTPStatusError as exc:
             raise OpenCodeHTTPError(
                 f"OpenCode HTTP {exc.response.status_code}: "
-                f"{redact_text(str(exc))}"
+                f"{str(exc)}"
             ) from exc
         except httpx.ReadTimeout as exc:
             raise OpenCodeTimeoutError(
-                f"OpenCode session creation timed out: {redact_text(str(exc))}"
+                f"OpenCode session creation timed out: {str(exc)}"
             ) from exc
 
     async def send_message(self, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         """POST /session/{id}/message — sync message response payload."""
-        safe_payload = redact_payload(payload)
         url = f"/session/{session_id}/message"
         try:
             async with self._build_client() as client:
-                resp = await client.post(url, json=safe_payload)
+                resp = await client.post(url, json=payload)
                 resp.raise_for_status()
                 data = resp.json()
                 if not isinstance(data, dict):
@@ -114,14 +111,14 @@ class RealOpenCodeHttpTransport:
 
         except httpx.ConnectError as exc:
             raise OpenCodeConnectionError(
-                f"Message request failed: {redact_text(str(exc))}"
+                f"Message request failed: {str(exc)}"
             ) from exc
         except httpx.HTTPStatusError as exc:
             raise OpenCodeHTTPError(
                 f"Message HTTP {exc.response.status_code}: "
-                f"{redact_text(str(exc))}"
+                f"{str(exc)}"
             ) from exc
         except httpx.ReadTimeout as exc:
             raise OpenCodeTimeoutError(
-                f"Message request timed out: {redact_text(str(exc))}"
+                f"Message request timed out: {str(exc)}"
             ) from exc

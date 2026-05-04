@@ -24,3 +24,12 @@ class RuntimePlanResult(BaseModel):
     plan_text: str
     mode: str = "plan_only"
     session_id: str | None = None
+
+
+class OpenCodeSessionMessageRequest(BaseModel):
+    """Contract-aligned payload for POST /session/{id}/message.
+
+    BE-07: keep only confirmed request field(s) for sync message endpoint.
+    """
+
+    message: str

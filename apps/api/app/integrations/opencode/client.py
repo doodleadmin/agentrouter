@@ -10,7 +10,11 @@ import time
 from typing import Any, Awaitable, Callable, Protocol
 
 from app.config import settings
-from app.integrations.opencode.schemas import RuntimePlanContext, RuntimePlanResult
+from app.integrations.opencode.schemas import (
+    OpenCodeSessionMessageRequest,
+    RuntimePlanContext,
+    RuntimePlanResult,
+)
 from app.policy.runtime_guardrails import (
     ensure_path_confined,
     is_allowed_plan_action,
@@ -151,12 +155,9 @@ class OpenCodeHttpPlanClient:
             try:
                 message_response = await self._transport.send_message(
                     session_id,
-                    {
-                        "mode": "plan_only",
-                        "message": context.normalized_text,
-                        "correlation_id": context.correlation_id,
-                        "idempotency_key": context.idempotency_key,
-                    },
+                    OpenCodeSessionMessageRequest(
+                        message=context.normalized_text
+                    ).model_dump(mode="json"),
                 )
                 for event in self._map_message_response_to_events(message_response):
                     now = time.monotonic()
@@ -229,6 +230,8 @@ class OpenCodeHttpPlanClient:
                     raise TimeoutError("runtime_timeout")
 
                 plan_text = "".join(plan_parts).strip()
+                if not plan_text:
+                    raise RuntimeEventError("runtime_error")
 
                 # --- max_plan_size enforcement ---
                 if len(plan_text.encode("utf-8")) > self._max_plan_bytes:
@@ -276,8 +279,12 @@ class OpenCodeHttpPlanClient:
         if not isinstance(response, dict):
             raise RuntimeEventError("runtime_event_malformed")
         parts = response.get("parts")
+        if parts is None:
+            parts = response.get("content")
         if not isinstance(parts, list):
             raise RuntimeEventError("runtime_event_malformed")
+        if len(parts) == 0:
+            raise RuntimeEventError("runtime_error")
 
         events: list[dict[str, Any]] = []
         for idx, part in enumerate(parts, start=1):
@@ -305,12 +312,22 @@ class OpenCodeHttpPlanClient:
                 events.append({"type": "plan.delta", "text": text, "event_id": str(idx)})
                 continue
 
+            if kind in {"content", "text", "output_text"}:
+                text = part.get("text")
+                if not isinstance(text, str):
+                    raise RuntimeEventError("runtime_event_malformed")
+                events.append({"type": "plan.delta", "text": text, "event_id": str(idx)})
+                continue
+
             if kind in {"final", "message_final", "completed"}:
                 events.append({"type": "plan.final", "event_id": str(idx)})
                 continue
 
             if kind in {"tool_call", "tool"}:
                 action = part.get("action")
+                if not isinstance(action, str):
+                    # Contract-safe fallback for content-part tool items.
+                    action = part.get("name")
                 if not isinstance(action, str):
                     raise RuntimeEventError("runtime_event_malformed")
                 event = {
