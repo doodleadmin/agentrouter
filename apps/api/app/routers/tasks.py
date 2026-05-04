@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.enums import ActorType, TaskStatus
@@ -26,15 +27,29 @@ def _event_svc(s: AsyncSession = Depends(get_async_session)) -> TaskEventService
 _TASK_404 = "Task not found"
 
 
+def _map_integrity_error(exc: IntegrityError) -> HTTPException:
+    code = getattr(getattr(exc, "orig", None), "pgcode", None)
+    if code == "23503":  # foreign_key_violation
+        return HTTPException(status_code=422, detail="Invalid project_id or agent_id reference")
+    if code == "23505":  # unique_violation
+        return HTTPException(status_code=409, detail="Task constraint conflict")
+    return HTTPException(status_code=409, detail="Task integrity constraint violation")
+
+
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 async def create_task(
     body: TaskCreate,
+    s: AsyncSession = Depends(get_async_session),
     svc: TaskService = Depends(_svc),
     esvc: TaskEventService = Depends(_event_svc),
 ) -> TaskRead:
-    task = await svc.create(body)
-    await esvc.create(task.id, "task_created", ActorType.SYSTEM)
-    return TaskRead.model_validate(task)
+    try:
+        task = await svc.create(body)
+        await esvc.create(task.id, "task_created", ActorType.SYSTEM)
+        return TaskRead.model_validate(task)
+    except IntegrityError as exc:
+        await s.rollback()
+        raise _map_integrity_error(exc) from exc
 
 
 @router.get("", response_model=list[TaskRead])

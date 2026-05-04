@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
@@ -21,15 +22,27 @@ def _svc(s: AsyncSession = Depends(get_async_session)) -> ProjectService:
 _PROJECT_404 = "Project not found"
 
 
+def _map_integrity_error(exc: IntegrityError) -> HTTPException:
+    code = getattr(getattr(exc, "orig", None), "pgcode", None)
+    if code == "23505":
+        return HTTPException(status_code=409, detail="Project constraint conflict")
+    return HTTPException(status_code=409, detail="Project integrity constraint violation")
+
+
 # ── endpoints ──────────────────────────────────────────────────────────
 
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
 async def create_project(
     body: ProjectCreate,
+    s: AsyncSession = Depends(get_async_session),
     svc: ProjectService = Depends(_svc),
 ) -> ProjectRead:
-    return ProjectRead.model_validate(await svc.create(body))
+    try:
+        return ProjectRead.model_validate(await svc.create(body))
+    except IntegrityError as exc:
+        await s.rollback()
+        raise _map_integrity_error(exc) from exc
 
 
 @router.get("", response_model=list[ProjectRead])

@@ -157,3 +157,86 @@ async def test_events_created_on_create(async_client: AsyncClient) -> None:
     events = resp.json()
     assert len(events) == 1
     assert events[0]["event_type"] == "task_created"
+
+
+@pytest.mark.anyio
+async def test_create_task_with_project_and_agent_persists(async_client: AsyncClient) -> None:
+    project = await async_client.post(
+        "/projects",
+        json={
+            "slug": "task-proj",
+            "name": "Task Proj",
+            "repo_path": "apps/api",
+            "memory_path": ".ai_memory/projects/task-proj",
+        },
+    )
+    agent = await async_client.post(
+        "/agents",
+        json={
+            "slug": "task-agent",
+            "name": "Task Agent",
+            "role": "backend-architect",
+            "system_prompt": "You are backend runtime agent",
+            "permissions": {"plan_only": True},
+        },
+    )
+    assert project.status_code == 201
+    assert agent.status_code == 201
+
+    task = await async_client.post(
+        "/tasks",
+        json={
+            "title": "task refs",
+            "raw_text": "r",
+            "normalized_text": "n",
+            "risk_level": "low",
+            "project_id": project.json()["id"],
+            "agent_id": agent.json()["id"],
+        },
+    )
+    assert task.status_code == 201
+    task_id = task.json()["id"]
+
+    fetched = await async_client.get(f"/tasks/{task_id}")
+    assert fetched.status_code == 200
+    assert fetched.json()["project_id"] == project.json()["id"]
+    assert fetched.json()["agent_id"] == agent.json()["id"]
+
+
+@pytest.mark.anyio
+async def test_create_task_invalid_fk_returns_422_or_409(async_client: AsyncClient) -> None:
+    bad = await async_client.post(
+        "/tasks",
+        json={
+            "title": "bad fk",
+            "raw_text": "r",
+            "normalized_text": "n",
+            "project_id": "00000000-0000-0000-0000-000000000111",
+            "agent_id": "00000000-0000-0000-0000-000000000222",
+        },
+    )
+    assert bad.status_code in (422, 409)
+    body = bad.text.lower()
+    assert "traceback" not in body
+    assert "select " not in body
+    assert "insert " not in body
+
+
+@pytest.mark.anyio
+async def test_failed_task_create_rolls_back(async_client: AsyncClient) -> None:
+    before = await async_client.get("/tasks")
+    before_count = len(before.json())
+
+    _ = await async_client.post(
+        "/tasks",
+        json={
+            "title": "bad fk",
+            "raw_text": "r",
+            "normalized_text": "n",
+            "project_id": "00000000-0000-0000-0000-00000000aaaa",
+            "agent_id": "00000000-0000-0000-0000-00000000bbbb",
+        },
+    )
+
+    after = await async_client.get("/tasks")
+    assert len(after.json()) == before_count

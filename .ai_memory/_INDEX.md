@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 34 |
+| **Task logs** | 35 |
 | **Шаблоны** | 5 |
 
 ---
@@ -102,6 +102,7 @@
 | [2026-05-04-task-be06-smoke-docs-fix.md](tasks/2026-05-04-task-be06-smoke-docs-fix.md) | BE-06 smoke docs fix (no .env edits) |
 | [2026-05-04-task-be06-rerun-plan-after-step-b-abort.md](tasks/2026-05-04-task-be06-rerun-plan-after-step-b-abort.md) | BE-06 rerun plan after Step-B abort |
 | [2026-05-04-task-be06-transport-compatibility-fix.md](tasks/2026-05-04-task-be06-transport-compatibility-fix.md) | BE-06 transport compatibility fix (/session + /message) |
+| [2026-05-04-task-be06-task-creation-fix.md](tasks/2026-05-04-task-be06-task-creation-fix.md) | BE-06 task creation fix (transaction boundary + FK mapping) |
 
 ---
 

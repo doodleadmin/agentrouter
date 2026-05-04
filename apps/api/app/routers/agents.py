@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
@@ -19,12 +20,24 @@ def _svc(s: AsyncSession = Depends(get_async_session)) -> AgentService:
 _AGENT_404 = "Agent not found"
 
 
+def _map_integrity_error(exc: IntegrityError) -> HTTPException:
+    code = getattr(getattr(exc, "orig", None), "pgcode", None)
+    if code == "23505":
+        return HTTPException(status_code=409, detail="Agent constraint conflict")
+    return HTTPException(status_code=409, detail="Agent integrity constraint violation")
+
+
 @router.post("", response_model=AgentRead, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     body: AgentCreate,
+    s: AsyncSession = Depends(get_async_session),
     svc: AgentService = Depends(_svc),
 ) -> AgentRead:
-    return AgentRead.model_validate(await svc.create(body))
+    try:
+        return AgentRead.model_validate(await svc.create(body))
+    except IntegrityError as exc:
+        await s.rollback()
+        raise _map_integrity_error(exc) from exc
 
 
 @router.get("", response_model=list[AgentRead])

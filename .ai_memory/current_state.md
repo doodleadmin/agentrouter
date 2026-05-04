@@ -7,7 +7,7 @@
 ## Статус проекта
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures выполнены. CRITICAL/HIGH закрыты.
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-06-task-creation-fix выполнены. CRITICAL/HIGH закрыты.
 **Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
@@ -47,6 +47,7 @@
 - BE-06 docs fix (backend-architect): обновлён `docs/smoke-test-opencode.md` — убраны инструкции изменения основного `.env`, зафиксированы только process env overrides (`RUNTIME_PROVIDER`, `OPENCODE_SERVER_URL`, `RUNTIME_ALLOW_REAL_OPENCODE_HTTP`), унифицирован `.env.opencode-smoke`, добавлен явный rollback к defaults (`stub`, empty URL, allow=false).
 - BE-06 rerun-plan update (knowledge-steward): документация и memory выровнены после Step-B abort — портовая стратегия `4096` (fallback `4097`), only `opencode serve --port <PORT> --hostname 127.0.0.1`, identity checks (`/global/health`, `/doc`, optional `/config`/`/agent`), backend compatibility preflight (`POST /session`, `POST /session/{id}/message`), explicit запреты (`opencode/server`, `@opencode/server`, `0.0.0.0`).
 - BE-06 transport compatibility fix (backend-architect + security-engineer): runtime transport переведён на актуальный sync contract `POST /session` + `POST /session/{id}/message`; mapping `parts -> plan.delta/plan.final/tool.call` с fail-closed для unknown/malformed; сохранены guardrails и policy boundaries; закрыт timeout hang risk через bounded default read timeout; итог security verdict: PASSED.
+- BE-06 task creation fix (backend-architect): устранены non-persisting writes и FK 500 — выставлена корректная transaction boundary (commit/rollback в request scope), `IntegrityError` маппится в безопасные HTTP ответы (`422` для FK `23503`, `409` для conflict/violation); подтверждён rollback после ошибки и сохранность успешных POST.
 
 ## Активные задачи
 

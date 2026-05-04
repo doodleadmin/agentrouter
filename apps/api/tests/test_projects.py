@@ -1,6 +1,7 @@
 """Tests for project schemas and router structure."""
 
 import pytest
+from httpx import AsyncClient
 from pydantic import ValidationError
 
 from app.routers.projects import router
@@ -61,3 +62,22 @@ class TestRouterStructure:
             "/projects/{project_id}",
         }
         assert expected.issubset(paths)
+
+
+@pytest.mark.anyio
+async def test_create_project_persists_for_followup_get(async_client: AsyncClient) -> None:
+    create = await async_client.post(
+        "/projects",
+        json={
+            "slug": "persist-project",
+            "name": "Persist Project",
+            "repo_path": "apps/api",
+            "memory_path": ".ai_memory/projects/persist-project",
+        },
+    )
+    assert create.status_code == 201
+
+    listed = await async_client.get("/projects")
+    assert listed.status_code == 200
+    slugs = [p["slug"] for p in listed.json()]
+    assert "persist-project" in slugs

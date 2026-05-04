@@ -1,6 +1,7 @@
 """Tests for agent schemas and router structure."""
 
 import pytest
+from httpx import AsyncClient
 from pydantic import ValidationError
 
 from app.routers.agents import router
@@ -44,3 +45,23 @@ class TestRouterStructure:
         paths = {r.path for r in router.routes}
         assert "/agents" in paths
         assert "/agents/{agent_id}" in paths
+
+
+@pytest.mark.anyio
+async def test_create_agent_persists_for_followup_get(async_client: AsyncClient) -> None:
+    create = await async_client.post(
+        "/agents",
+        json={
+            "slug": "backend-architect-smoke",
+            "name": "Backend Architect Smoke",
+            "role": "backend-architect",
+            "system_prompt": "You are backend runtime agent",
+            "permissions": {"plan_only": True},
+        },
+    )
+    assert create.status_code == 201
+
+    listed = await async_client.get("/agents")
+    assert listed.status_code == 200
+    slugs = [a["slug"] for a in listed.json()]
+    assert "backend-architect-smoke" in slugs

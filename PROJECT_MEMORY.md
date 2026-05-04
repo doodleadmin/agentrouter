@@ -99,6 +99,19 @@
 
 ## Изменения
 
+### 2026-05-04 — BE-06 task creation fix (transaction boundary + integrity mapping)
+- **Агент:** backend-architect
+- **Сделано:**
+  - `get_async_session()` теперь завершает request-транзакцию корректно: commit on success, rollback on exception, session close via context manager.
+  - `POST /projects`, `POST /agents`, `POST /tasks` оборачивают `IntegrityError` в безопасные HTTP ответы без SQL/traceback:
+    - FK violation (`23503`) для tasks -> `422 Invalid project_id or agent_id reference`
+    - unique/integrity conflicts -> `409 ... constraint conflict/violation`
+  - В create-роутах добавлен явный `rollback()` при `IntegrityError` для корректного состояния shared session в тестовом DI.
+  - Добавлены интеграционные тесты на persistence после POST, FK mapping и rollback после неуспешной записи.
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (198/198)
+- **Ограничения:** без миграций/.env/deploy/OpenCode runtime.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be06-task-creation-fix.md](.ai_memory/tasks/2026-05-04-task-be06-task-creation-fix.md)
+
 ### 2026-05-04 — BE-06 blocking security fix (bounded read timeout)
 - **Агент:** backend-architect
 - **Сделано:** в `RealOpenCodeHttpTransport` устранён риск indefinite hang для sync `POST /session/{id}/message`:
