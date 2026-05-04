@@ -5,6 +5,27 @@
 
 ---
 
+## Automated Alternative (BE-11)
+
+**Use the BE-11 PowerShell scripts instead of following the manual procedure below.**
+
+The scripts in `scripts/dev/` automate the full smoke test pipeline:
+
+| Script | Purpose |
+|--------|---------|
+| `.\scripts\dev\smoke-stub-runtime.ps1` | Full stub smoke test (create → plan → 9 verification checks). All steps automated, no OpenCode server needed. |
+| `.\scripts\dev\smoke-real-opencode-runtime.ps1` | Full real OpenCode E2E smoke test (create → plan → 13 verification checks). Requires OpenCode server healthy at `127.0.0.1:4096`. |
+| `.\scripts\dev\start-opencode.ps1` | Start OpenCode server (`opencode serve --port 4096 --hostname 127.0.0.1`). Dynamic launcher detection. |
+| `.\scripts\dev\start-api-opencode.ps1` | Start API with `opencode_http` provider, env overrides, config validation. |
+| `.\scripts\dev\start-api-stub.ps1` | Start API with `stub` provider (default). |
+| `.\scripts\dev\cleanup-runtime.ps1` | Stop OpenCode/Celery/API, auto-restart stub API, clean env. |
+
+All scripts support `-DryRun` for safe pre-flight validation. See `docs/runtime-runbook.md` for the full runbook.
+
+**The manual procedure below is kept as reference** for understanding each step and for environments where PowerShell scripts cannot be used.
+
+---
+
 ## Pre-conditions
 
 - [ ] `RUNTIME_PROVIDER=stub` confirmed (default)

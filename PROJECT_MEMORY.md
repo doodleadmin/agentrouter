@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE — 6 hardening changes (idempotency, status gate, notification isolation, retry exceptions, event ordering, timeout alignment). 237/237 API + 93/93 worker tests pass.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE — 9 PowerShell scripts (1934 lines), 4 docs updated, safety rules codified. 237/237 API + 93/93 worker tests pass.
 **Дата последнего обновления:** 2026-05-05
 **Project root:** `F:\dev\agentrouter`
 
@@ -691,6 +691,27 @@
 ### 2026-05-03 — Project Root Correction + Memory Sync
 - Вся документация перенесена в правильный project root
 - `.ai_memory/` заполнен как главный Obsidian vault
+
+### 2026-05-05 — BE-11 Runtime Runbook + Local Smoke Automation COMPLETE
+- **Агенты:** devops-automator + knowledge-steward
+- **Контур:** local only; без deploy/migrations/secrets/OpenCode.
+- **Создано 9 PowerShell скриптов в `scripts/dev/` (1934 lines total):**
+  1. `check-db.ps1` — проверка контейнера postgres, pg_isready, 9 таблиц, alembic version
+  2. `bootstrap-db.ps1` — alembic upgrade head с guard'ом (требует -Force если таблицы уже есть)
+  3. `start-api-stub.ps1` — запуск uvicorn с RUNTIME_PROVIDER=stub (127.0.0.1:8000)
+  4. `start-opencode.ps1` — динамический launcher (npm/cmd/PATH), порт 4096, 127.0.0.1 only
+  5. `start-api-opencode.ps1` — запуск API с env overrides (opencode_http, allow=true), без DATABASE_URL
+  6. `start-worker.ps1` — Celery worker с process-scoped env (redis, API timeout)
+  7. `smoke-stub-runtime.ps1` — stub provider smoke test (create → plan → verify)
+  8. `smoke-real-opencode-runtime.ps1` — real OpenCode E2E smoke test c 13 проверками
+  9. `cleanup-runtime.ps1` — остановка OpenCode/Celery/API, auto-restart stub
+- **Создана документация:** `docs/runtime-runbook.md` — полный runbook (9 шагов, зависимости, safety rules, troubleshooting)
+- **Обновлены docs:** `docs/smoke-test-opencode.md` (+автоматизированные альтернативы), `docs/security-policy.md` (+BE-11 Safety Rules: F1-F10 forbidden, A1-A13 abort criteria, P1-P15/T1-T12 checklists, S1-S8 secrets handling)
+- **Constraint validation:** All 9 scripts PSParser-tokenized OK, all support -DryRun, no .env writes, no persistent env, no 0.0.0.0 binds, no port 3001, no secrets, Invoke-RestMethod only.
+- **Safety rules codified:** forbidden ops (F1-F10), abort criteria (A1-A13), pre-smoke (P1-P15), post-smoke (T1-T12), secrets handling (S1-S8).
+- **Worker bypass note:** smoke scripts use direct POST /runtime, not Celery worker.
+- **Ограничения соблюдены:** process-scoped env only, 127.0.0.1 only, без production/staging, без deploy/migrations, no real OpenCode/smoke deployed during implementation.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be11-runtime-runbook-automation.md](.ai_memory/tasks/2026-05-04-task-be11-runtime-runbook-automation.md)
 
 ### 2026-05-03 — Инициализация проекта
 - Создана структура директорий и документация

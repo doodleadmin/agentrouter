@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 45 |
+| **Task logs** | 46 |
 | **Шаблоны** | 5 |
 
 ---
@@ -113,6 +113,7 @@
 | [2026-05-04-task-be09-phase2-real-opencode-e2e-success.md](tasks/2026-05-04-task-be09-phase2-real-opencode-e2e-success.md) | BE-09 Phase 2: Real OpenCode E2E — SUCCESS |
 | [2026-05-04-task-be10-runtime-reliability-hardening.md](tasks/2026-05-04-task-be10-runtime-reliability-hardening.md) | BE-10: Runtime Reliability Hardening (6 hardening items) |
 | [2026-05-04-task-be10-real-opencode-regression-smoke.md](tasks/2026-05-04-task-be10-real-opencode-regression-smoke.md) | BE-10: Real OpenCode Regression Smoke — PASSED |
+| [2026-05-04-task-be11-runtime-runbook-automation.md](tasks/2026-05-04-task-be11-runtime-runbook-automation.md) | BE-11: Runtime Runbook + Local Smoke Automation Scripts |
 
 ---
 

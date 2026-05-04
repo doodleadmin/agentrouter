@@ -201,3 +201,109 @@ WRK-03-hardening реализован:
 - Idempotency: `correlation_id`, `session_id`, `idempotency_key`, защита от дублирования финализации план-сессии.
 - Approval invariants: `low=>approved`, `medium/high/critical=>waiting_approval + approval_requested`, adapter не может это обойти.
 - Дополнительные event types: `runtime_session_created`, `runtime_event_received`, `policy_blocked`, `runtime_error`, `runtime_timeout`, `runtime_retry_scheduled`, `runtime_duplicate_event_ignored`, `runtime_event_malformed`.
+
+## BE-11: Runtime Runbook Safety Rules
+
+> **Reference:** Full runbook at `docs/runtime-runbook.md`. Scripts at `scripts/dev/`.
+
+### Forbidden Operations (F1-F10)
+
+The following operations are **hard-forbidden** in all BE-11 scripts and must never be performed during local runtime smoke testing:
+
+| ID | Forbidden Operation | Enforcement |
+|----|---------------------|-------------|
+| F1 | `.env` file writes (create/edit/append) | Scripts never write to `.env` |
+| F2 | Persistent environment changes (system/user-level) | `$env:VAR` process-scoped only; `Remove-Item Env:VAR` in `finally` |
+| F3 | Production/staging server access | All URLs hardcoded to `127.0.0.1` |
+| F4 | Deployment commands (docker compose up -d prod, systemctl, etc.) | No deploy commands in any script |
+| F5 | Destructive database operations (DROP, TRUNCATE, DELETE) | `bootstrap-db.ps1` only runs `alembic upgrade head` |
+| F6 | Binding to `0.0.0.0` | All listeners use `127.0.0.1` only |
+| F7 | Port 3001 usage | Port 3001 excluded from all scripts |
+| F8 | Mutating tool operations (write, execute, delete in sandbox) | Smoke tests only use plan-only flow |
+| F9 | Credential or secret logging | `start-opencode.ps1` strips `OPENCODE_SERVER_PASSWORD`/`USERNAME` from child env |
+| F10 | `DATABASE_URL` persistence | Set process-scoped in `bootstrap-db.ps1`, removed in `finally` |
+
+### Abort Criteria (A1-A13)
+
+Stop any smoke test immediately if:
+
+| ID | Abort Condition | Detection |
+|----|-----------------|-----------|
+| A1 | Git working tree dirty | `git status --porcelain` check before and after |
+| A2 | Service bound to `0.0.0.0` | `Get-NetTCPConnection` check for non-127.0.0.1 bindings |
+| A3 | `/projects` returns 500 | API verification step |
+| A4 | `.env` mutation detected | Git status shows `.env` changes |
+| A5 | Stub fingerprints found in real OpenCode plan_text | 5 fingerprint patterns checked |
+| A6 | Reasoning content leaked in plan_text | 3 reasoning patterns checked |
+| A7 | `runtime_error` event emitted | Event analysis in smoke scripts |
+| A8 | `runtime_timeout` event emitted | Event analysis in smoke scripts |
+| A9 | `policy_blocked` event emitted | Event analysis in smoke scripts |
+| A10 | `command_started` or `command_finished` event emitted | Sandbox execution check |
+| A11 | `file_changed` or sandbox event emitted | File mutation check |
+| A12 | Secret patterns in plan_text (`api_key=`, `token:`, `Bearer`, `sk-*`, `ghp_*`) | 4 regex patterns checked |
+| A13 | Event ordering violation (`runtime_session_created` after `runtime_event_received`) | Index-based ordering check |
+
+### Pre-Smoke Checklist (P1-P15)
+
+Before running any smoke test, verify:
+
+| ID | Check | Command/Script |
+|----|-------|----------------|
+| P1 | Docker daemon running | `docker info` |
+| P2 | Compose file exists | `Test-Path infra/docker/docker-compose.yml` |
+| P3 | Postgres container healthy | `.\scripts\dev\check-db.ps1` or `docker exec amc-dev-postgres pg_isready` |
+| P4 | Redis container healthy | `docker exec amc-dev-redis redis-cli ping` → PONG |
+| P5 | All 9 tables exist | `.\scripts\dev\check-db.ps1` (checks projects, agents, telegram_topics, tasks, task_events, approvals, memory_documents, memory_chunks, alembic_version) |
+| P6 | Alembic version matches expected | `.\scripts\dev\check-db.ps1` (expected: `0001_initial_all_tables`) |
+| P7 | Git working tree clean | `git status --porcelain` (must be empty) |
+| P8 | No `.env` file modifications pending | Check `git diff .env` |
+| P9 | `RUNTIME_PROVIDER=stub` (default) confirmed | Check API config or env |
+| P10 | `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false` (default) confirmed | Check API config or env |
+| P11 | `OPENCODE_SERVER_URL=""` (default) confirmed | Check API config or env |
+| P12 | `SANDBOX_RUNNER_MODE=fake` (default) confirmed | Check worker config or env |
+| P13 | No existing API on target port | `Get-NetTCPConnection -LocalPort 8000` |
+| P14 | No existing OpenCode on target port | `Get-NetTCPConnection -LocalPort 4096` |
+| P15 | `uvicorn`, `alembic`, `celery` available in Python environment | `python -c "import uvicorn; import alembic; import celery"` |
+
+### Post-Smoke Checklist (T1-T12)
+
+After running any smoke test, verify:
+
+| ID | Check | Command/Script |
+|----|-------|----------------|
+| T1 | Git still clean (no file mutations) | `git status --porcelain` |
+| T2 | No `.env` file changes | `git diff .env` |
+| T3 | API returned to stub mode | `.\scripts\dev\cleanup-runtime.ps1 -DryRun` or `curl http://127.0.0.1:8000/health` |
+| T4 | `RUNTIME_PROVIDER` env var removed | `$env:RUNTIME_PROVIDER` should be `$null` |
+| T5 | `OPENCODE_SERVER_URL` env var removed | `$env:OPENCODE_SERVER_URL` should be `$null` |
+| T6 | `RUNTIME_ALLOW_REAL_OPENCODE_HTTP` env var removed | `$env:RUNTIME_ALLOW_REAL_OPENCODE_HTTP` should be `$null` |
+| T7 | `DATABASE_URL` env var not set process-scoped | `$env:DATABASE_URL` should be `$null` |
+| T8 | OpenCode port (4096) free | `Get-NetTCPConnection -LocalPort 4096 -LocalAddress "127.0.0.1"` should be empty |
+| T9 | Smok test artifacts cleaned | API test project/agent/task from timestamps `smoke-stub-*` / `smoke-real-*` |
+| T10 | No orphaned processes on port 8000 | `Get-NetTCPConnection -LocalPort 8000` — only expected API |
+| T11 | Postgres/Redis containers still running | `docker compose -f infra/docker/docker-compose.yml ps` |
+| T12 | No secrets in smoke test output/logs | Manual review of console output |
+
+### Secrets Handling (S1-S8)
+
+| ID | Rule |
+|----|------|
+| S1 | Never write secrets to `.env` files |
+| S2 | Never set secrets as persistent environment variables |
+| S3 | `start-opencode.ps1` strips `OPENCODE_SERVER_PASSWORD` and `OPENCODE_SERVER_USERNAME` from child process env |
+| S4 | `smoke-real-opencode-runtime.ps1` checks plan_text for 4 secret patterns: `api_key`/`token`/`secret`=`value`, `sk-*`, `ghp_*`, `Bearer` tokens |
+| S5 | No credentials in script source code (verified by grep) |
+| S6 | `bootstrap-db.ps1` sets `DATABASE_URL` process-scoped only; removes in `finally` |
+| S7 | `DATABASE_URL` uses local dev credentials only (`agent_mc:agent_mc@localhost`) |
+| S8 | All `Invoke-RestMethod` calls use `http://127.0.0.1` — no credentials in URLs |
+
+### Worker Bypass Safety
+
+Smoke test scripts (`smoke-stub-runtime.ps1`, `smoke-real-opencode-runtime.ps1`) use **direct `POST /runtime` API calls**, bypassing the Celery worker.
+
+**Rationale:**
+- Validates the API → OpenCode transport chain directly
+- Celery worker is tested separately via `start-worker.ps1`
+- Scripts print a prominent notice when bypassing
+
+**Safety:** The API's own guardrails (idempotency, status gate, provider validation, plan-only policy) still apply. Worker bypass is for smoke convenience only.
