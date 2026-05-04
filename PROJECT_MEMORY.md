@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-07 implementation complete (OpenCode message payload contract alignment)
+**Статус:** BE-07+ implementation complete (OpenCode 1.14.33 native contract alignment)
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -137,6 +137,25 @@
 - **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (204 passed)
 - **Ограничения:** реальный OpenCode server не запускался.
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be07-payload-contract-alignment-implementation.md](.ai_memory/tasks/2026-05-04-task-be07-payload-contract-alignment-implementation.md)
+
+### 2026-05-04 — BE-07+ native contract alignment (OpenCode 1.14.33)
+- **Агент:** backend-architect (implementation), knowledge-steward (recording)
+- **Сделано:**
+  - `schemas.py`: `OpenCodeSessionMessageRequest` переведён с `message: str` на native `parts: list[OpenCodeSessionTextPart]` (`{"parts": [{"type": "text", "text": "..."}]}`).
+  - `client.py`: `_map_message_response_to_events` переписан под explicit OpenCode-native part-type dispatch:
+    - `text` → `plan.delta`
+    - `reasoning` → **SKIPPED** (never stored in `plan_text`/events)
+    - `step-start` → skipped
+    - `step-finish` (reason=stop) → `plan.final`
+    - `tool` → `tool.call`
+    - unknown → `runtime_event_malformed` (fail-closed)
+  - Тесты: 219 passed (12 новых BE-07+ тестов)
+- **Reviews:**
+  - Security: GO ✅ — все 8 checks PASS, no blocking issues
+  - Architecture: GO ✅ — все 5 rules PASS, no layering violations
+- **Guardrails confirmed:** default provider=stub, opencode_http requires URL+allow flag, no silent fallback, plan-only preserved, reasoning NEVER stored, redaction preserved, real OpenCode NOT started
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (219/219)
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be07-plus-implementation.md](.ai_memory/tasks/2026-05-04-task-be07-plus-implementation.md)
 
 ### 2026-05-04 — BE-06 blocking security fix (bounded read timeout)
 - **Агент:** backend-architect

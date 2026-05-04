@@ -26,10 +26,27 @@ class RuntimePlanResult(BaseModel):
     session_id: str | None = None
 
 
+# ── OpenCode 1.14.33 actual contract (proven via probe) ────────────────
+# POST /session/{id}/message
+# Request:  {"parts": [{"type": "text", "text": "prompt"}]}
+# Response: {"info": {...}, "parts": [{"type":"step-start",...},
+#             {"type":"reasoning","text":"..."}, {"type":"text","text":"## Plan..."},
+#             {"type":"step-finish","reason":"stop"}]}
+
+
+class OpenCodeSessionTextPart(BaseModel):
+    """A single text part for POST /session/{id}/message request body."""
+
+    type: str = "text"
+    text: str
+
+
 class OpenCodeSessionMessageRequest(BaseModel):
     """Contract-aligned payload for POST /session/{id}/message.
 
-    BE-07: keep only confirmed request field(s) for sync message endpoint.
+    BE-07: send only parts[type=text, text=<prompt>].
+    Do NOT include: message, mode, correlation_id, idempotency_key,
+    restrictions, capabilities, or similar unconfirmed fields.
     """
 
-    message: str
+    parts: list[OpenCodeSessionTextPart]

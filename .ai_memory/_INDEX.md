@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 37 |
+| **Task logs** | 38 |
 | **Шаблоны** | 5 |
 
 ---
@@ -105,6 +105,7 @@
 | [2026-05-04-task-be06-task-creation-fix.md](tasks/2026-05-04-task-be06-task-creation-fix.md) | BE-06 task creation fix (transaction boundary + FK mapping) |
 | [2026-05-04-task-be06-final-execution.md](tasks/2026-05-04-task-be06-final-execution.md) | BE-06 FINAL EXECUTION (real OpenCode smoke test) |
 | [2026-05-04-task-be07-payload-contract-alignment-implementation.md](tasks/2026-05-04-task-be07-payload-contract-alignment-implementation.md) | BE-07 implementation: OpenCode payload contract alignment |
+| [2026-05-04-task-be07-plus-implementation.md](tasks/2026-05-04-task-be07-plus-implementation.md) | BE-07+ implementation: OpenCode 1.14.33 native contract alignment |
 
 ---
 

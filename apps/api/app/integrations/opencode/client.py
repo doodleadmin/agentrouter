@@ -22,6 +22,9 @@ from app.policy.runtime_guardrails import (
     redact_text,
 )
 
+# BE-07: internal mapped event types (post-mapper policy guard).
+# OpenCode raw part types (text, reasoning, step-start, step-finish, tool)
+# are handled by _map_message_response_to_events and NOT listed here.
 KNOWN_SSE_EVENT_TYPES = frozenset({"plan.delta", "plan.final", "tool.call"})
 
 
@@ -153,10 +156,13 @@ class OpenCodeHttpPlanClient:
             last_event_time = session_start
 
             try:
+                # BE-07: contract-aligned parts-based payload
                 message_response = await self._transport.send_message(
                     session_id,
                     OpenCodeSessionMessageRequest(
-                        message=context.normalized_text
+                        parts=[
+                            {"type": "text", "text": context.normalized_text},
+                        ]
                     ).model_dump(mode="json"),
                 )
                 for event in self._map_message_response_to_events(message_response):
@@ -266,71 +272,93 @@ class OpenCodeHttpPlanClient:
 
     @staticmethod
     def _map_message_response_to_events(response: dict[str, Any]) -> list[dict[str, Any]]:
-        """Map OpenCode sync message response to internal event stream.
+        """Map OpenCode 1.14.33 sync message response to internal event stream.
 
-        Accepted shapes:
-        - {"parts": [{"type": "plan.delta", ...}, ...]} (already normalized)
-        - {"parts": [{"kind": "text_delta", "text": "..."}, ...]}
-        - {"parts": [{"kind": "tool_call", "action": "read", ...}, ...]}
-        - {"parts": [{"kind": "final"}]}
+        BE-07: actual OpenCode contract (proven via probe):
+        Response shape:
+        {
+          "info": { ... metadata ... },
+          "parts": [
+            {"type": "step-start", ...},
+            {"type": "reasoning", "text": "..."},
+            {"type": "text", "text": "## Plan..."},
+            {"type": "step-finish", "reason": "stop"}
+          ]
+        }
 
-        Unknown/malformed structures are fail-closed.
+        Mapping rules:
+        - response["info"]  → skip (metadata/audit only)
+        - response["parts"] → REQUIRED (not response["content"])
+        - part type "text"         → plan.delta (redacted text)
+        - part type "reasoning"    → SKIP entirely (never in plan_text / events)
+        - part type "step-start"   → skip (metadata-only, no plan content)
+        - part type "step-finish"  → plan.final (if reason == "stop")
+        - part type "tool"         → tool.call (action/path, policy guards apply)
+        - unknown part type        → runtime_event_malformed → fail-closed
+        - empty parts              → runtime_error
+        - only reasoning/step-start (no text/tool/step-finish) → runtime_error
         """
         if not isinstance(response, dict):
             raise RuntimeEventError("runtime_event_malformed")
+
+        # BE-07: parts is the REQUIRED field (not content fallback)
         parts = response.get("parts")
-        if parts is None:
-            parts = response.get("content")
         if not isinstance(parts, list):
             raise RuntimeEventError("runtime_event_malformed")
         if len(parts) == 0:
             raise RuntimeEventError("runtime_error")
 
         events: list[dict[str, Any]] = []
+
         for idx, part in enumerate(parts, start=1):
             if not isinstance(part, dict):
                 raise RuntimeEventError("runtime_event_malformed")
 
-            # Already-normalized internal event shape
             part_type = part.get("type")
-            if isinstance(part_type, str):
-                if part_type not in KNOWN_SSE_EVENT_TYPES:
-                    raise RuntimeEventError("runtime_error")
-                event = dict(part)
-                event.setdefault("event_id", str(idx))
-                events.append(event)
-                continue
-
-            kind = part.get("kind")
-            if not isinstance(kind, str):
+            if not isinstance(part_type, str):
                 raise RuntimeEventError("runtime_event_malformed")
 
-            if kind in {"text_delta", "delta", "message_delta"}:
+            # ── text → plan.delta ───────────────────────────────────
+            if part_type == "text":
                 text = part.get("text")
                 if not isinstance(text, str):
                     raise RuntimeEventError("runtime_event_malformed")
-                events.append({"type": "plan.delta", "text": text, "event_id": str(idx)})
+                events.append({
+                    "type": "plan.delta",
+                    "text": text,
+                    "event_id": str(idx),
+                })
                 continue
 
-            if kind in {"content", "text", "output_text"}:
-                text = part.get("text")
-                if not isinstance(text, str):
-                    raise RuntimeEventError("runtime_event_malformed")
-                events.append({"type": "plan.delta", "text": text, "event_id": str(idx)})
+            # ── reasoning → SKIP (never leak to plan_text / events) ─
+            if part_type == "reasoning":
+                # BE-07: reasoning text is NEVER saved anywhere.
+                # No plan.delta, no task_events payload with text content.
                 continue
 
-            if kind in {"final", "message_final", "completed"}:
-                events.append({"type": "plan.final", "event_id": str(idx)})
+            # ── step-start → skip (metadata-only) ───────────────────
+            if part_type == "step-start":
                 continue
 
-            if kind in {"tool_call", "tool"}:
+            # ── step-finish → plan.final ─────────────────────────────
+            if part_type == "step-finish":
+                reason = part.get("reason", "")
+                if reason == "stop":
+                    events.append({
+                        "type": "plan.final",
+                        "event_id": str(idx),
+                    })
+                # Non-"stop" reasons (tool, error): ignore for plan-only
+                continue
+
+            # ── tool → tool.call ─────────────────────────────────────
+            if part_type == "tool":
                 action = part.get("action")
                 if not isinstance(action, str):
-                    # Contract-safe fallback for content-part tool items.
                     action = part.get("name")
                 if not isinstance(action, str):
                     raise RuntimeEventError("runtime_event_malformed")
-                event = {
+                event: dict[str, Any] = {
                     "type": "tool.call",
                     "action": action,
                     "event_id": str(idx),
@@ -340,6 +368,16 @@ class OpenCodeHttpPlanClient:
                 events.append(event)
                 continue
 
+            # ── unknown part type → fail-closed ──────────────────────
+            raise RuntimeEventError("runtime_event_malformed")
+
+        # ── semantic checks after parsing all parts ──────────────────
+        # BE-07: if only reasoning/step-start parts were present (no text,
+        # no tool, no step-finish), fail-closed as runtime_error.
+        # Tool parts must pass through so policy guard can inspect them.
+        # The caller (generate_plan) handles empty plan_text separately.
+        if len(events) == 0:
+            # Only reasoning / step-start parts (no meaningful content)
             raise RuntimeEventError("runtime_error")
 
         return events

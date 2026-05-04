@@ -46,9 +46,17 @@ Compatibility note from backend:
   - `POST /session/{id}/message`
 - `POST /session` response must include `session_id` or `id`
 - `POST /session/{id}/message` response must be JSON object with `parts` list
-- Contract note (BE-07): request body for `POST /session/{id}/message` is aligned to confirmed minimal shape:
-  - `{ "message": "<normalized task text>" }`
-  - do not include unconfirmed fields for this endpoint
+- Contract note (BE-07): request body for `POST /session/{id}/message` is aligned to confirmed shape:
+  - `{"parts": [{"type": "text", "text": "<normalized task text>"}]}`
+  - do NOT include unconfirmed fields for this endpoint (no: message, mode, correlation_id, idempotency_key, restrictions, capabilities)
+- Response contract (BE-07): OpenCode 1.14.33 returns:
+  - `{"info": {...}, "parts": [{"type":"step-start",...}, {"type":"reasoning","text":"..."}, {"type":"text","text":"## Plan..."}, {"type":"step-finish","reason":"stop"}]}`
+  - `response["parts"]` is the required field (not `response["content"]`)
+  - `part.type == "text"` → plan.delta (text content)
+  - `part.type == "reasoning"` → SKIPPED (never saved to plan or events)
+  - `part.type == "step-start"` → metadata-only, skipped
+  - `part.type == "step-finish"` + `reason == "stop"` → plan.final
+  - `part.type == "tool"` → tool.call (mutating actions blocked by policy)
 
 Preflight probes (PowerShell examples):
 
@@ -62,8 +70,8 @@ $create = curl.exe -sS -X POST "http://127.0.0.1:4096/session" -H "Content-Type:
 $obj = $create | ConvertFrom-Json
 $sid = if ($obj.session_id) { $obj.session_id } elseif ($obj.id) { $obj.id } else { throw "No session_id/id in /session response" }
 
-# 3) Runtime endpoint probe: sync message endpoint
-curl.exe -sS -X POST "http://127.0.0.1:4096/session/$sid/message" -H "Content-Type: application/json" -d "{\"message\":\"health probe\"}"
+# 3) Runtime endpoint probe: sync message endpoint (BE-07 contract)
+curl.exe -sS -X POST "http://127.0.0.1:4096/session/$sid/message" -H "Content-Type: application/json" -d "{\"parts\":[{\"type\":\"text\",\"text\":\"health probe\"}]}"
 ```
 
 ### Step 3: Configure AMC for opencode_http

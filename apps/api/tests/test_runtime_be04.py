@@ -153,39 +153,62 @@ async def test_event_types_extended_present() -> None:
     assert required.issubset(ALLOWED_EVENT_TYPES)
 
 
+# ── mapper unit tests (OpenCode-native part types, BE-07) ────────────
+
+
 @pytest.mark.anyio
 async def test_sync_message_parts_map_to_plan_final() -> None:
+    """BE-07: OpenCode-native text + step-finish → plan.delta + plan.final."""
     result = OpenCodeHttpPlanClient._map_message_response_to_events(
         {
+            "info": {"id": "msg-1", "modelID": "test"},
             "parts": [
-                {"kind": "text_delta", "text": "## Plan\n1. Step"},
-                {"kind": "final"},
-            ]
+                {"type": "text", "text": "## Plan\n1. Step"},
+                {"type": "step-finish", "reason": "stop"},
+            ],
         }
     )
     assert result[0]["type"] == "plan.delta"
+    assert result[0]["text"] == "## Plan\n1. Step"
     assert result[1]["type"] == "plan.final"
 
 
 @pytest.mark.anyio
-async def test_sync_message_content_parts_map_to_plan_final() -> None:
+async def test_sync_message_info_field_is_ignored() -> None:
+    """BE-07: response["info"] is skipped, not used for plan content."""
     result = OpenCodeHttpPlanClient._map_message_response_to_events(
         {
-            "content": [
-                {"kind": "content", "text": "## Plan\n1. Step"},
-                {"kind": "final"},
-            ]
+            "info": {"id": "msg-1", "modelID": "gpt-4", "providerID": "openai"},
+            "parts": [
+                {"type": "text", "text": "## Plan\n1. Do X"},
+                {"type": "step-finish", "reason": "stop"},
+            ],
         }
     )
-    assert result[0]["type"] == "plan.delta"
-    assert result[1]["type"] == "plan.final"
+    assert len(result) == 2
+    assert result[0]["text"] == "## Plan\n1. Do X"
 
 
 @pytest.mark.anyio
-async def test_sync_message_unknown_part_fails_closed_runtime_error() -> None:
-    with pytest.raises(RuntimeEventError, match="runtime_error"):
+async def test_sync_message_content_fallback_removed_be07() -> None:
+    """BE-07: response["content"] is NO LONGER a fallback — only parts works."""
+    with pytest.raises(RuntimeEventError, match="runtime_event_malformed"):
         OpenCodeHttpPlanClient._map_message_response_to_events(
-            {"parts": [{"kind": "something_unknown"}]}
+            {
+                "content": [
+                    {"type": "text", "text": "## Plan\n1. Step"},
+                    {"type": "step-finish", "reason": "stop"},
+                ]
+            }
+        )
+
+
+@pytest.mark.anyio
+async def test_sync_message_unknown_part_type_fails_closed() -> None:
+    """BE-07: unknown part type → runtime_event_malformed → fail-closed."""
+    with pytest.raises(RuntimeEventError, match="runtime_event_malformed"):
+        OpenCodeHttpPlanClient._map_message_response_to_events(
+            {"parts": [{"type": "some_unknown_type"}]}
         )
 
 
@@ -196,32 +219,133 @@ async def test_sync_message_malformed_response_fails_closed() -> None:
 
 
 @pytest.mark.anyio
-async def test_sync_message_empty_response_fails_closed() -> None:
+async def test_sync_message_empty_parts_fails_runtime_error() -> None:
+    """BE-07: empty parts array → runtime_error."""
     with pytest.raises(RuntimeEventError, match="runtime_error"):
         OpenCodeHttpPlanClient._map_message_response_to_events({"parts": []})
 
 
 @pytest.mark.anyio
-async def test_sync_message_final_without_content_fails_closed() -> None:
+async def test_sync_message_only_reasoning_fails_runtime_error(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: only reasoning + step-finish (no text) → plan_text empty →
+    caller raises runtime_error (integration flow)."""
+    task_id = await _mk_task(async_client, risk="low")
     fake = FakeOpenCodeHttpClient(
         [
-            {"kind": "final"},
+            {"type": "reasoning", "text": "Let me think about this..."},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
-    context = MagicMock()
-    context.project_slug = "proj"
-    context.repo_path = "apps/api"
-    context.memory_path = ".ai_memory/projects/proj"
-    context.agent_slug = "backend"
-    context.agent_role = "backend-architect"
-    context.raw_text = "raw"
-    context.normalized_text = "normalized"
-    context.correlation_id = "cid"
-    context.idempotency_key = "ik"
-    context.memory_chunks = []
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_error" in event_types
 
-    with pytest.raises(RuntimeEventError, match="runtime_error"):
-        await OpenCodeHttpPlanClient(fake).generate_plan(context)
+
+@pytest.mark.anyio
+async def test_reasoning_never_appears_in_plan_delta() -> None:
+    """BE-07: reasoning parts produce NO plan.delta events, text is never
+    saved in mapped events."""
+    result = OpenCodeHttpPlanClient._map_message_response_to_events(
+        {
+            "parts": [
+                {"type": "step-start"},
+                {"type": "reasoning", "text": "I need to check the API schema."},
+                {"type": "reasoning", "text": "Also review auth middleware."},
+                {"type": "text", "text": "## Plan\n1. Add healthcheck"},
+                {"type": "step-finish", "reason": "stop"},
+            ]
+        }
+    )
+    # Only text part produces plan.delta, step-finish produces plan.final
+    assert len(result) == 2
+    assert result[0]["type"] == "plan.delta"
+    assert result[0]["text"] == "## Plan\n1. Add healthcheck"
+    assert result[1]["type"] == "plan.final"
+    # No reasoning text anywhere in mapped events
+    all_text = " ".join(str(e) for e in result)
+    assert "check the API schema" not in all_text
+    assert "auth middleware" not in all_text
+
+
+@pytest.mark.anyio
+async def test_step_start_is_skipped_in_events() -> None:
+    """BE-07: step-start parts produce no mapped events."""
+    result = OpenCodeHttpPlanClient._map_message_response_to_events(
+        {
+            "parts": [
+                {"type": "step-start", "step": "plan"},
+                {"type": "text", "text": "## Plan"},
+                {"type": "step-finish", "reason": "stop"},
+            ]
+        }
+    )
+    assert len(result) == 2  # text + step-finish only
+
+
+@pytest.mark.anyio
+async def test_tool_part_maps_to_tool_call() -> None:
+    """BE-07: tool part → tool.call with action/path."""
+    result = OpenCodeHttpPlanClient._map_message_response_to_events(
+        {
+            "parts": [
+                {"type": "tool", "action": "read", "path": "app/main.py"},
+                {"type": "text", "text": "## Plan\n1. Check main.py"},
+                {"type": "step-finish", "reason": "stop"},
+            ]
+        }
+    )
+    assert result[0]["type"] == "tool.call"
+    assert result[0]["action"] == "read"
+    assert result[0]["path"] == "app/main.py"
+    assert result[1]["type"] == "plan.delta"
+    assert result[2]["type"] == "plan.final"
+
+
+@pytest.mark.anyio
+async def test_sync_message_final_without_content_fails_closed(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: step-finish without text → plan_text empty → caller raises
+    runtime_error (integration test through generate_plan)."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(
+        [{"type": "step-finish", "reason": "stop"}]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_error" in event_types
+
+
+@pytest.mark.anyio
+async def test_malformed_part_not_a_dict_fails() -> None:
+    """BE-07: part that is not a dict → runtime_event_malformed."""
+    with pytest.raises(RuntimeEventError, match="runtime_event_malformed"):
+        OpenCodeHttpPlanClient._map_message_response_to_events(
+            {"parts": ["not-a-dict"]}
+        )
+
+
+@pytest.mark.anyio
+async def test_part_without_type_field_fails() -> None:
+    """BE-07: part without 'type' key → runtime_event_malformed."""
+    with pytest.raises(RuntimeEventError, match="runtime_event_malformed"):
+        OpenCodeHttpPlanClient._map_message_response_to_events(
+            {"parts": [{"text": "missing type"}]}
+        )
 
 
 @pytest.mark.anyio
@@ -231,10 +355,10 @@ async def test_fake_http_sse_success_and_dedupe(test_session, async_client: Asyn
     settings.OPENCODE_SERVER_URL = "http://example.local"
     settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP = True
     events = [
-        {"type": "plan.delta", "event_id": "1", "text": "## Plan\n1. read\n"},
-        {"type": "plan.delta", "event_id": "1", "text": "DUPLICATE"},
-        {"type": "tool.call", "event_id": "2", "action": "read"},
-        {"type": "plan.final", "event_id": "3"},
+        {"type": "text", "text": "## Plan\n1. read\n"},
+        {"type": "text", "text": "EXTRA"},  # second text part
+        {"type": "tool", "action": "read"},
+        {"type": "step-finish", "reason": "stop"},
     ]
     svc = RuntimeService(
         test_session,
@@ -242,19 +366,19 @@ async def test_fake_http_sse_success_and_dedupe(test_session, async_client: Asyn
     )
     task = await svc.generate_plan_for_task(UUID(task_id))
     assert task.status == "approved"
-    assert "DUPLICATE" not in (task.plan_text or "")
+    assert "## Plan" in (task.plan_text or "")
     events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
     event_types = [e["event_type"] for e in events_resp.json()]
     assert "runtime_event_received" in event_types
-    assert "runtime_duplicate_event_ignored" in event_types
 
 
 @pytest.mark.anyio
 async def test_policy_blocked_unknown_tool(test_session, async_client: AsyncClient) -> None:
     task_id = await _mk_task(async_client, risk="low")
     events = [
-        {"type": "tool.call", "event_id": "1", "action": "deploy"},
-        {"type": "plan.final", "event_id": "2"},
+        {"type": "tool", "action": "deploy"},
+        {"type": "text", "text": "## Plan\n1. deploy"},
+        {"type": "step-finish", "reason": "stop"},
     ]
     svc = RuntimeService(
         test_session,
@@ -268,20 +392,22 @@ async def test_policy_blocked_unknown_tool(test_session, async_client: AsyncClie
 async def test_timeout_malformed_and_runtime_error_paths(
     test_session, async_client: AsyncClient
 ) -> None:
+    # Timeout: no step-finish → never completes
     task_timeout = await _mk_task(async_client, risk="low")
     svc_timeout = RuntimeService(
         test_session,
         runtime_client=OpenCodeHttpPlanClient(
-            FakeOpenCodeHttpClient([{"type": "plan.delta", "event_id": "1", "text": "x"}])
+            FakeOpenCodeHttpClient([{"type": "text", "text": "x"}])
         ),
     )
     assert (await svc_timeout.generate_plan_for_task(UUID(task_timeout))).status == "failed"
 
+    # Unknown type in raw part → runtime_event_malformed
     task_bad = await _mk_task(async_client, risk="low")
     svc_bad = RuntimeService(
         test_session,
         runtime_client=OpenCodeHttpPlanClient(
-            FakeOpenCodeHttpClient([{"type": "weird", "event_id": "1"}])
+            FakeOpenCodeHttpClient([{"type": "weird"}])
         ),
     )
     assert (await svc_bad.generate_plan_for_task(UUID(task_bad))).status == "failed"
@@ -296,12 +422,8 @@ async def test_secrets_redaction_runtime_request_and_events(
     secret_b = "apikeysecret_xyz987abc"
     fake = FakeOpenCodeHttpClient(
         [
-            {
-                "type": "plan.delta",
-                "event_id": "1",
-                "text": f"token={secret_a} api_key={secret_b}",
-            },
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "text", "text": f"token={secret_a} api_key={secret_b}"},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -332,11 +454,10 @@ async def test_redaction_private_key_and_bearer_values_not_leaked(
     fake = FakeOpenCodeHttpClient(
         [
             {
-                "type": "plan.delta",
-                "event_id": "1",
+                "type": "text",
                 "text": f"Authorization: Bearer supertoken123 {private_key}",
             },
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -359,8 +480,8 @@ async def test_idempotent_retry_no_duplicate_final_events(
         test_session,
         runtime_client=OpenCodeHttpPlanClient(
             FakeOpenCodeHttpClient([
-                {"type": "plan.delta", "event_id": "1", "text": "## Plan"},
-                {"type": "plan.final", "event_id": "2"},
+                {"type": "text", "text": "## Plan"},
+                {"type": "step-finish", "reason": "stop"},
             ])
         ),
     )
@@ -380,7 +501,7 @@ async def test_timeout_emits_retry_scheduled_events(
     svc = RuntimeService(
         test_session,
         runtime_transport_factory=lambda: FakeOpenCodeHttpClient(
-            [{"type": "plan.delta", "event_id": "1", "text": "only partial"}]
+            [{"type": "text", "text": "only partial"}]
         ),
     )
     task = await svc.generate_plan_for_task(UUID(task_id))
@@ -402,12 +523,8 @@ async def test_opencode_http_explicit_fake_transport_via_di_works(
         test_session,
         runtime_transport_factory=lambda: FakeOpenCodeHttpClient(
             [
-                {
-                    "type": "plan.delta",
-                    "event_id": "1",
-                    "text": "## Plan\n1. test path\n",
-                },
-                {"type": "plan.final", "event_id": "2"},
+                {"type": "text", "text": "## Plan\n1. test path\n"},
+                {"type": "step-finish", "reason": "stop"},
             ]
         ),
     )
@@ -503,8 +620,8 @@ async def test_max_plan_size_truncates_and_emits_warning(
     def _build_fake():
         return FakeOpenCodeHttpClient(
             [
-                {"type": "plan.delta", "event_id": "1", "text": huge_text},
-                {"type": "plan.final", "event_id": "2"},
+                {"type": "text", "text": huge_text},
+                {"type": "step-finish", "reason": "stop"},
             ]
         )
 
@@ -545,8 +662,8 @@ async def test_max_plan_size_small_plan_not_truncated(
     small_text = "## Small plan\nJust a few lines."
     fake = FakeOpenCodeHttpClient(
         [
-            {"type": "plan.delta", "event_id": "1", "text": small_text},
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "text", "text": small_text},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -566,9 +683,9 @@ async def test_client_session_timeout_raises_failed(
 ) -> None:
     """Client-side session timeout should fail the task."""
     task_id = await _mk_task(async_client, risk="low")
-    # No plan.final → timeout after session_timeout_sec
+    # No step-finish → timeout after session_timeout_sec
     fake = FakeOpenCodeHttpClient([
-        {"type": "plan.delta", "event_id": "1", "text": "partial"},
+        {"type": "text", "text": "partial"},
     ])
     svc = RuntimeService(
         test_session,
@@ -596,14 +713,9 @@ async def test_tool_path_confinement_allowed_inside_root(
     task_id = await _mk_task(async_client, risk="low", repo_path="apps/api")
     fake = FakeOpenCodeHttpClient(
         [
-            {
-                "type": "tool.call",
-                "event_id": "1",
-                "action": "read",
-                "path": "app/main.py",
-            },
-            {"type": "plan.delta", "event_id": "1.1", "text": "## Plan\n1. ok"},
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "tool", "action": "read", "path": "app/main.py"},
+            {"type": "text", "text": "## Plan\n1. ok"},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -622,13 +734,8 @@ async def test_tool_path_confinement_blocks_escape(
     task_id = await _mk_task(async_client, risk="low", repo_path="apps/api")
     fake = FakeOpenCodeHttpClient(
         [
-            {
-                "type": "tool.call",
-                "event_id": "1",
-                "action": "read",
-                "path": "../../etc/passwd",
-            },
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "tool", "action": "read", "path": "../../etc/passwd"},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -651,13 +758,8 @@ async def test_tool_path_confinement_blocks_unc_paths(
     task_id = await _mk_task(async_client, risk="low", repo_path="apps/api")
     fake = FakeOpenCodeHttpClient(
         [
-            {
-                "type": "tool.call",
-                "event_id": "1",
-                "action": "search",
-                "path": "\\\\evil\\share\\file",
-            },
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "tool", "action": "search", "path": "\\\\evil\\share\\file"},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -676,14 +778,9 @@ async def test_tool_path_confinement_skips_without_path(
     task_id = await _mk_task(async_client, risk="low")
     fake = FakeOpenCodeHttpClient(
         [
-            {
-                "type": "tool.call",
-                "event_id": "1",
-                "action": "read",
-                # no path
-            },
-            {"type": "plan.delta", "event_id": "1.1", "text": "## Plan\n1. ok"},
-            {"type": "plan.final", "event_id": "2"},
+            {"type": "tool", "action": "read"},
+            {"type": "text", "text": "## Plan\n1. ok"},
+            {"type": "step-finish", "reason": "stop"},
         ]
     )
     svc = RuntimeService(
@@ -703,8 +800,8 @@ async def test_sse_malformed_missing_type_triggers_event_malformed(
     """Event with no 'type' field should trigger runtime_event_malformed."""
     task_id = await _mk_task(async_client, risk="low")
     fake = FakeOpenCodeHttpClient([
-        {"event_id": "1", "text": "no type field"},
-        {"type": "plan.final", "event_id": "2"},
+        {"text": "no type field"},
+        {"type": "step-finish", "reason": "stop"},
     ])
     svc = RuntimeService(
         test_session,
@@ -722,12 +819,12 @@ async def test_sse_malformed_missing_type_triggers_event_malformed(
 async def test_sse_unknown_event_type_triggers_runtime_error(
     test_session, async_client: AsyncClient
 ) -> None:
-    """Event with unknown type (not in KNOWN_SSE_EVENT_TYPES) should
-    trigger runtime_error and fail."""
+    """BE-07: unknown raw part type → runtime_event_malformed, fails task."""
     task_id = await _mk_task(async_client, risk="low")
     fake = FakeOpenCodeHttpClient([
-        {"type": "file.update", "event_id": "1"},
-        {"type": "plan.final", "event_id": "2"},
+        {"type": "file.update"},
+        {"type": "text", "text": "## Plan"},
+        {"type": "step-finish", "reason": "stop"},
     ])
     svc = RuntimeService(
         test_session,
@@ -738,7 +835,7 @@ async def test_sse_unknown_event_type_triggers_runtime_error(
 
     events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
     event_types = [e["event_type"] for e in events_resp.json()]
-    assert "runtime_error" in event_types
+    assert "runtime_event_malformed" in event_types
 
 
 # ── Redaction: transport does NOT bypass existing redaction ─────────────
@@ -754,12 +851,8 @@ async def test_redaction_still_applied_after_transport_changes(
         settings.RUNTIME_MAX_PLAN_BYTES = 500  # force truncation
         fake = FakeOpenCodeHttpClient(
             [
-                {
-                    "type": "plan.delta",
-                    "event_id": "1",
-                    "text": "secret=abc123 " * 100,
-                },
-                {"type": "plan.final", "event_id": "2"},
+                {"type": "text", "text": "secret=abc123 " * 100},
+                {"type": "step-finish", "reason": "stop"},
             ]
         )
         svc = RuntimeService(
@@ -928,12 +1021,11 @@ async def test_legacy_truncation_flag_in_delta_does_not_break_sync_flow(
         return FakeOpenCodeHttpClient(
             [
                 {
-                    "type": "plan.delta",
-                    "event_id": "1",
+                    "type": "text",
                     "text": "hello",
                     "_sse_chunk_truncated": True,
                 },
-                {"type": "plan.final", "event_id": "2"},
+                {"type": "step-finish", "reason": "stop"},
             ]
         )
 
@@ -947,3 +1039,198 @@ async def test_legacy_truncation_flag_in_delta_does_not_break_sync_flow(
     events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
     event_types = [e["event_type"] for e in events_resp.json()]
     assert "plan_generated" in event_types
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BE-07 NEW TESTS — OpenCode payload and response mapping alignment
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.anyio
+async def test_be07_reasoning_text_never_in_plan_or_events(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: reasoning parts text must NOT appear in plan_text or task_events."""
+    task_id = await _mk_task(async_client, risk="low")
+    reasoning_text = "The API needs a healthcheck endpoint because of SLO requirements."
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "step-start"},
+            {"type": "reasoning", "text": reasoning_text},
+            {"type": "text", "text": "## Plan\n1. Add /health endpoint\n2. Add tests"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "approved"
+
+    # Reasoning text must NOT be in plan_text
+    plan = (task.plan_text or "")
+    assert "healthcheck endpoint" not in plan
+    assert "SLO requirements" not in plan
+    assert "/health" in plan  # from the text part
+
+    # Reasoning text must NOT be in any task_events payload
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    events_json_str = str(events_resp.json())
+    assert "healthcheck endpoint" not in events_json_str
+    assert "SLO requirements" not in events_json_str
+
+
+@pytest.mark.anyio
+async def test_be07_full_opencode_response_flow(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: real OpenCode response shape (text + reasoning + step-start +
+    step-finish) → correct plan from text parts only."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "step-start"},
+            {"type": "reasoning", "text": "I need to analyze the task first."},
+            {"type": "text", "text": "## Plan\n1. Analyze codebase\n"},
+            {"type": "reasoning", "text": "Now I should think about tests."},
+            {"type": "text", "text": "2. Write unit tests\n3. Validate\n"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "approved"
+
+    # Plan should only contain text from text parts
+    plan = task.plan_text or ""
+    assert "1. Analyze codebase" in plan
+    assert "2. Write unit tests" in plan
+    # Reasoning text should not leak
+    assert "I need to analyze" not in plan
+    assert "think about tests" not in plan
+
+
+@pytest.mark.anyio
+async def test_be07_only_reasoning_parts_fails(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: only reasoning/step-start parts (no text) → runtime_error."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "step-start"},
+            {"type": "reasoning", "text": "Let me think about this."},
+            {"type": "reasoning", "text": "More thinking..."},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_error" in event_types
+
+
+@pytest.mark.anyio
+async def test_be07_empty_parts_fails(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: empty parts array → runtime_error."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient([])
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_error" in event_types
+
+
+@pytest.mark.anyio
+async def test_be07_malformed_parts_fails(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: malformed part (not a dict) → runtime_event_malformed."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(["not-a-dict"])
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_event_malformed" in event_types
+
+
+@pytest.mark.anyio
+async def test_be07_unknown_part_type_fails(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: unknown part type → runtime_event_malformed."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "some_unknown_type"},
+            {"type": "text", "text": "plan"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_event_malformed" in event_types
+
+
+@pytest.mark.anyio
+async def test_be07_tool_mutating_blocked_by_policy(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-07: tool part with mutating action (deploy) → policy_blocked."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "tool", "action": "deploy", "path": "/etc/config"},
+            {"type": "text", "text": "## Plan\n1. deploy"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "policy_blocked" in event_types
+
+
+@pytest.mark.anyio
+async def test_be07_confirm_stub_is_default() -> None:
+    """BE-07 guard: confirm default provider is stub, no real server started."""
+    assert settings.RUNTIME_PROVIDER == "stub"
+    assert settings.OPENCODE_SERVER_URL == ""
+    assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False

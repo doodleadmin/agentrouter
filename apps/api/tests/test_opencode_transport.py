@@ -73,40 +73,44 @@ async def test_create_session_does_not_use_legacy_sessions_endpoint() -> None:
     assert called_url != "/sessions"
 
 
+# BE-07 contract-aligned payload for POST /session/{id}/message
+PARTS_PAYLOAD = {"parts": [{"type": "text", "text": "plan"}]}
+
+
 @pytest.mark.anyio
 async def test_send_message_uses_post_session_id_message_endpoint() -> None:
-    client = _mk_client_for_post(json_data={"parts": [{"kind": "final"}]})
+    client = _mk_client_for_post(json_data={"parts": [{"type": "step-finish", "reason": "stop"}]})
     transport = _mk_transport(client)
 
-    data = await transport.send_message("abc", {"message": "plan"})
+    data = await transport.send_message("abc", PARTS_PAYLOAD)
 
-    assert data["parts"][0]["kind"] == "final"
+    assert data["parts"][0]["type"] == "step-finish"
     assert client.post.call_args[0][0] == "/session/abc/message"
 
 
 @pytest.mark.anyio
 async def test_send_message_contract_aligned_payload_shape() -> None:
-    client = _mk_client_for_post(json_data={"parts": [{"kind": "final"}]})
+    """BE-07: verify transport sends parts-based payload (not legacy message field)."""
+    client = _mk_client_for_post(json_data={"parts": [{"type": "step-finish", "reason": "stop"}]})
     transport = _mk_transport(client)
 
-    await transport.send_message(
-        "abc",
-        {
-            "message": "plan",
-        },
-    )
+    await transport.send_message("abc", PARTS_PAYLOAD)
 
     sent_payload = client.post.call_args.kwargs["json"]
-    assert sent_payload == {"message": "plan"}
+    # Must be parts-based, NOT legacy message field
+    assert sent_payload == {"parts": [{"type": "text", "text": "plan"}]}
+    assert "message" not in sent_payload
+    assert "mode" not in sent_payload
+    assert "correlation_id" not in sent_payload
 
 
 @pytest.mark.anyio
 async def test_send_message_non_object_response_fails_closed() -> None:
-    client = _mk_client_for_post(json_data=[{"kind": "final"}])
+    client = _mk_client_for_post(json_data=[{"type": "step-finish"}])
     transport = _mk_transport(client)
 
     with pytest.raises(OpenCodeTransportError, match="JSON object"):
-        await transport.send_message("abc", {"message": "plan"})
+        await transport.send_message("abc", PARTS_PAYLOAD)
 
 
 @pytest.mark.anyio
@@ -114,7 +118,7 @@ async def test_send_message_maps_http_errors() -> None:
     client = _mk_client_for_post(status_code=503, json_data={"error": "down"})
     transport = _mk_transport(client)
     with pytest.raises(OpenCodeHTTPError):
-        await transport.send_message("abc", {"message": "plan"})
+        await transport.send_message("abc", PARTS_PAYLOAD)
 
 
 @pytest.mark.anyio
@@ -122,7 +126,7 @@ async def test_send_message_connection_error_maps() -> None:
     client = _mk_client_for_post(side_effect=httpx.ConnectError("refused"))
     transport = _mk_transport(client)
     with pytest.raises(OpenCodeConnectionError):
-        await transport.send_message("abc", {"message": "plan"})
+        await transport.send_message("abc", PARTS_PAYLOAD)
 
 
 @pytest.mark.anyio
@@ -130,4 +134,4 @@ async def test_send_message_timeout_maps() -> None:
     client = _mk_client_for_post(side_effect=httpx.ReadTimeout("timeout"))
     transport = _mk_transport(client)
     with pytest.raises(OpenCodeTimeoutError):
-        await transport.send_message("abc", {"message": "plan"})
+        await transport.send_message("abc", PARTS_PAYLOAD)

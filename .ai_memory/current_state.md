@@ -7,7 +7,7 @@
 ## Статус проекта
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment выполнены. CRITICAL/HIGH закрыты.
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment выполнены. CRITICAL/HIGH закрыты.
 **Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
@@ -50,6 +50,7 @@
 - BE-06 task creation fix (backend-architect): устранены non-persisting writes и FK 500 — выставлена корректная transaction boundary (commit/rollback в request scope), `IntegrityError` маппится в безопасные HTTP ответы (`422` для FK `23503`, `409` для conflict/violation); подтверждён rollback после ошибки и сохранность успешных POST.
 - BE-06 FINAL EXECUTION (backend-architect + studio-orchestrator): Controlled smoke test с real OpenCode 1.14.33 (Steps A–G). Provider wiring, RealOpenCodeHttpTransport, session creation (`POST /session` → `201`) подтверждены. `POST /session/{id}/message` → `400 Bad Request` (payload contract mismatch) обработан fail-closed (`runtime_error` → `task_failed`). No bypass, no leaks, no file changes. Интеграционная находка: BE-07 follow-up для contract alignment.
 - BE-07 payload contract alignment (backend-architect): для `POST /session/{id}/message` принят минимальный payload `{ "message": <text> }` вместо legacy extra-fields; клиентский mapping обновлён под `parts` и `content` с fail-closed на empty/malformed/unknown. Guardrails сохранены (plan-only, policy_blocked mutating tool.call, path confinement, redaction upper layers, max_plan_size, timeout, no silent fallback). Архитектурный блокер снят: policy-layer dependency убрана из `transport.py` (transport-only). Валидация: compileall + ruff + pytest `204 passed`. Реальный OpenCode server не запускался.
+- BE-07+ native contract alignment (backend-architect): payload для `POST /session/{id}/message` переведён на OpenCode 1.14.33 native формат `{"parts": [{"type": "text", "text": "..."}]}` (schemas: `OpenCodeSessionTextPart`). Client `_map_message_response_to_events` переписан под native part-type dispatch: `text→plan.delta`, `reasoning→SKIPPED` (never stored), `step-start→skipped`, `step-finish(reason=stop)→plan.final`, `tool→tool.call`, `unknown→runtime_event_malformed` (fail-closed). Security GO (8 checks), Architecture GO (5 rules). Валидация: compileall + ruff + pytest `219 passed` (+12 новых тестов). Real OpenCode server не запускался.
 
 ## Активные задачи
 
@@ -86,6 +87,7 @@
 | BE-05 Phase 1 hardening (B-1+M-1/M-2/M-3) | ✅ Выполнена | backend-architect |
 | BE-06: Final Execution (real OpenCode smoke test) | ✅ Выполнена | backend-architect + studio-orchestrator |
 | BE-07: Payload contract alignment | ✅ Выполнена | backend-architect |
+| BE-07+: Native contract alignment (OpenCode 1.14.33) | ✅ Выполнена | backend-architect |
 
 ## Следующие шаги
 
@@ -120,5 +122,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 37 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation) |
+| Логи задач | 38 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment) |
 | Проекты | 0 |
