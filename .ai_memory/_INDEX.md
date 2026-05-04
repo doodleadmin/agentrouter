@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 35 |
+| **Task logs** | 36 |
 | **Шаблоны** | 5 |
 
 ---
@@ -103,6 +103,7 @@
 | [2026-05-04-task-be06-rerun-plan-after-step-b-abort.md](tasks/2026-05-04-task-be06-rerun-plan-after-step-b-abort.md) | BE-06 rerun plan after Step-B abort |
 | [2026-05-04-task-be06-transport-compatibility-fix.md](tasks/2026-05-04-task-be06-transport-compatibility-fix.md) | BE-06 transport compatibility fix (/session + /message) |
 | [2026-05-04-task-be06-task-creation-fix.md](tasks/2026-05-04-task-be06-task-creation-fix.md) | BE-06 task creation fix (transaction boundary + FK mapping) |
+| [2026-05-04-task-be06-final-execution.md](tasks/2026-05-04-task-be06-final-execution.md) | BE-06 FINAL EXECUTION (real OpenCode smoke test) |
 
 ---
 

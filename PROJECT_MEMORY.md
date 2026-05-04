@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-05 Phase 1 hardening complete (B-1 + M-1/M-2/M-3 findings fixed)
+**Статус:** BE-06 FINAL EXECUTION complete (real OpenCode 1.14.33 smoke test, Steps A–G passed)
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -111,6 +111,21 @@
 - **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (198/198)
 - **Ограничения:** без миграций/.env/deploy/OpenCode runtime.
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be06-task-creation-fix.md](.ai_memory/tasks/2026-05-04-task-be06-task-creation-fix.md)
+
+### 2026-05-04 — BE-06 FINAL EXECUTION (real OpenCode 1.14.33 controlled smoke test)
+- **Агенты:** backend-architect (execution), studio-orchestrator (coordination), knowledge-steward (memory)
+- **Контур:** local only; без deploy/migrations/secrets.
+- **Что сделано (Steps A–G):**
+  - **Step A (Pre-check):** ✅ git clean, API `/health`=200, `/projects`=200, `/agents`=200, port 4096 free, defaults confirmed (`stub`, empty URL, `allow=false`, `fake` sandbox).
+  - **Step B (Start OpenCode):** ✅ OpenCode 1.14.33 via npm shim on `127.0.0.1:4096` (no auth). `/global/health` → `{"healthy":true,"version":"1.14.33"}`, `/doc` → OpenAPI 3.1.1, listener localhost-only.
+  - **Step C (Runtime override):** ✅ API restarted with process-scoped env (`opencode_http`, `4096`, `allow=true`).
+  - **Step D (Trigger plan):** ✅ Task created (`089aa3ca`), session created (`ses_20dd9839affe...`) — proves provider/transport wiring. `POST /session/{id}/message` → `400 Bad Request` (payload contract mismatch with OpenCode 1.14.33). Fail-closed: `runtime_error` → `task_failed`. No bypass.
+  - **Step F (Post-smoke):** ✅ git clean, no file changes, no secret leaks.
+  - **Step G (Cleanup):** ✅ OpenCode stopped, API restarted with `stub` defaults, port 4096 free, `/health`=200.
+- **Ключевой результат:** Guardrail chain proven end-to-end: provider wiring, RealOpenCodeHttpTransport, session creation, fail-closed on error.
+- **Интеграционная находка:** `400` на `/session/{id}/message` — payload contract mismatch. Follow-up BE-07 для contract alignment.
+- **Ограничения:** plan-only (no code execution), process env overrides only (no `.env` edits), OpenCode stopped after test.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be06-final-execution.md](.ai_memory/tasks/2026-05-04-task-be06-final-execution.md)
 
 ### 2026-05-04 — BE-06 blocking security fix (bounded read timeout)
 - **Агент:** backend-architect
