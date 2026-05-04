@@ -115,6 +115,18 @@
 - **Изменённые файлы:** `apps/api/app/config.py`, `client.py`, `tasks.py`, `task.py` (schema), `runtime_service.py`, `test_runtime_be04.py`; `apps/worker/app/config.py`, `agent_plan.py`, `test_agent_plan_pipeline.py`, `test_config.py`
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be10-runtime-reliability-hardening.md](.ai_memory/tasks/2026-05-04-task-be10-runtime-reliability-hardening.md)
 
+### 2026-05-04 — BE-10 Real OpenCode Regression Smoke — PASSED
+- **Агент:** studio-orchestrator (direct execution)
+- **Контур:** local only; без deploy/migrations/secrets/кода.
+- **Сделано:** Verified BE-10 hardening with real OpenCode 1.14.33:
+  - Task `557f1e8e-3a75-45d9-983d-79d8f7eec4b4` → approved, plan=1299 chars.
+  - `session_id = ses_20b132da3ffeocFC1MtRO9vTCx` (real, not stub).
+  - **P2-5 verified:** `runtime_session_created` BEFORE `runtime_event_received` — event ordering correct.
+  - **P0-1 verified:** 1× plan_generated, no duplicate. Retry at borderline 300s, succeeded.
+  - All guardrails held: 4 stub fingerprints FALSE, 6 secret patterns FALSE, reasoning leak FALSE, 0 command/sandbox events.
+- **Cleanup:** OpenCode stopped, API → stub, git clean.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be10-real-opencode-regression-smoke.md](.ai_memory/tasks/2026-05-04-task-be10-real-opencode-regression-smoke.md)
+
 ### 2026-05-04 — BE-09 Phase 1 Worker API_TIMEOUT_SECONDS Fix (30→300)
 - **Агент:** backend-architect
 - **Контур:** local only; без deploy/migrations/secrets/OpenCode.

@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 44 |
+| **Task logs** | 45 |
 | **Шаблоны** | 5 |
 
 ---
@@ -112,6 +112,7 @@
 | [2026-05-04-task-be09-phase1-worker-timeout.md](tasks/2026-05-04-task-be09-phase1-worker-timeout.md) | BE-09 Phase 1: Worker API_TIMEOUT_SECONDS 30→300 fix |
 | [2026-05-04-task-be09-phase2-real-opencode-e2e-success.md](tasks/2026-05-04-task-be09-phase2-real-opencode-e2e-success.md) | BE-09 Phase 2: Real OpenCode E2E — SUCCESS |
 | [2026-05-04-task-be10-runtime-reliability-hardening.md](tasks/2026-05-04-task-be10-runtime-reliability-hardening.md) | BE-10: Runtime Reliability Hardening (6 hardening items) |
+| [2026-05-04-task-be10-real-opencode-regression-smoke.md](tasks/2026-05-04-task-be10-real-opencode-regression-smoke.md) | BE-10: Real OpenCode Regression Smoke — PASSED |
 
 ---
 
