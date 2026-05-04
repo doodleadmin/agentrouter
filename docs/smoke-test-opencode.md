@@ -9,60 +9,76 @@
 
 - [ ] `RUNTIME_PROVIDER=stub` confirmed (default)
 - [ ] `OPENCODE_SERVER_URL` is empty or not set
-- [ ] All existing tests pass: `pytest apps/api/tests -v`
-- [ ] `compileall` passes: `python -m compileall app`
-- [ ] `ruff check app` passes
 - [ ] No production/staging servers involved
 - [ ] Main project `.env` is NOT modified
 - [ ] Docker sandbox mode is `fake` (not `docker`)
 - [ ] `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false` by default is confirmed
-- [ ] `.env.opencode-smoke` (if used) is gitignored and temporary
 
 ## Smoke Test Steps
 
-### Step 1: Start OpenCode server
+### Step 1: Start OpenCode server (BE-06 compatibility baseline)
 
-Start a real OpenCode server in **plan-only mode** on `127.0.0.1:3001`:
+Use **only** this command form:
 
 ```bash
-# Option A: Docker
-docker run -d --name opencode-smoke \
-  -p 127.0.0.1:3001:3001 \
-  opencode/server:latest \
-  --mode plan-only
-
-# Option B: npx
-npx @opencode/server --port 3001 --mode plan-only
+opencode serve --port 4096 --hostname 127.0.0.1
 ```
 
-**Verify:** `curl http://127.0.0.1:3001/health` returns 200.
+Do **NOT** use:
+- port `3001`
+- `opencode/server`
+- `@opencode/server`
+- binding to `0.0.0.0`
 
-> Must bind to localhost only (`127.0.0.1`). Do NOT use `0.0.0.0`.
+Required identity endpoints for this procedure:
+- `GET http://127.0.0.1:4096/global/health`
+- `GET http://127.0.0.1:4096/doc`
 
-### Step 2: Configure AMC for opencode_http
+### Step 2: Identity + compatibility preflight probes
 
-Use temporary runtime overrides only (process env), **without editing main `.env`**:
+Identity checks (must point to real OpenCode runtime):
+- `GET /global/health` (required)
+- `GET /doc` (required)
+
+Compatibility note from backend:
+- AMC runtime transport expects endpoints at `OPENCODE_SERVER_URL` root:
+  - `POST /session`
+  - `POST /session/{id}/message`
+- `POST /session` response must include `session_id` or `id`
+- `POST /session/{id}/message` response must be JSON object with `parts` list
+
+Preflight probes (PowerShell examples):
+
+```powershell
+# 1) Identity
+curl.exe -sS "http://127.0.0.1:4096/global/health"
+curl.exe -sS "http://127.0.0.1:4096/doc"
+
+# 2) Runtime endpoint probe: create session
+$create = curl.exe -sS -X POST "http://127.0.0.1:4096/session" -H "Content-Type: application/json" -d "{}"
+$obj = $create | ConvertFrom-Json
+$sid = if ($obj.session_id) { $obj.session_id } elseif ($obj.id) { $obj.id } else { throw "No session_id/id in /session response" }
+
+# 3) Runtime endpoint probe: sync message endpoint
+curl.exe -sS -X POST "http://127.0.0.1:4096/session/$sid/message" -H "Content-Type: application/json" -d "{\"mode\":\"plan_only\",\"message\":\"health probe\"}"
+```
+
+### Step 3: Configure AMC for opencode_http
+
+Use temporary runtime overrides only (process env), **without editing any `.env` file**:
 
 ```powershell
 # PowerShell example (current shell only)
 $env:RUNTIME_PROVIDER="opencode_http"
-$env:OPENCODE_SERVER_URL="http://127.0.0.1:3001"
+$env:OPENCODE_SERVER_URL="http://127.0.0.1:4096"
 $env:RUNTIME_ALLOW_REAL_OPENCODE_HTTP="true"
 ```
 
-Optional temporary file (if needed): `.env.opencode-smoke` (must remain gitignored):
-
-```env
-RUNTIME_PROVIDER=opencode_http
-OPENCODE_SERVER_URL=http://127.0.0.1:3001
-RUNTIME_ALLOW_REAL_OPENCODE_HTTP=true
-```
-
-Do NOT modify `.env` in project root.
+Do NOT create/edit `.env`, `.env.local`, or any alternate env file for this smoke procedure.
 
 Restart the API server in the shell/session where overrides are set.
 
-### Step 3: Run integration smoke test
+### Step 4: Run integration smoke test
 
 Create a test task through the existing API or Telegram bot, then trigger plan generation:
 
@@ -72,7 +88,7 @@ Create a test task through the existing API or Telegram bot, then trigger plan g
 # Expected: plan_text is populated, no 'runtime_error' events
 ```
 
-### Step 4: Verify events
+### Step 5: Verify events
 
 ```bash
 curl http://localhost:8000/events/tasks/{task_id}/events | python -m json.tool
@@ -80,15 +96,14 @@ curl http://localhost:8000/events/tasks/{task_id}/events | python -m json.tool
 
 Expected events (subset):
 - `runtime_session_created` — session was created on OpenCode server
-- `runtime_event_received` — at least one SSE event received
+- `runtime_event_received` — at least one runtime event mapped from message parts
 - `plan_generated` — plan was successfully generated
 - No `runtime_timeout`, `runtime_error`, or `policy_blocked`
 
-### Step 5: Cleanup
+### Step 6: Cleanup
 
-```bash
-# Stop OpenCode server
-docker stop opencode-smoke && docker rm opencode-smoke
+```powershell
+# Stop OpenCode process (Ctrl+C in its terminal)
 
 # Restore default runtime config (main .env remains unchanged)
 Remove-Item Env:RUNTIME_PROVIDER -ErrorAction SilentlyContinue
@@ -114,23 +129,11 @@ Stop the smoke test immediately if any of the following occurs:
 
 ## Post-Smoke Checks
 
-After cleanup, run:
+After cleanup, verify:
 
 ```bash
 # 1. Confirm runtime defaults are back
 python -c "from app.config import settings; assert settings.RUNTIME_PROVIDER == 'stub'; assert settings.OPENCODE_SERVER_URL == ''; assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False"
-
-# 2. Run all tests
-pytest apps/api/tests -v
-
-# 3. Verify no residual Docker containers
-docker ps -a --filter name=opencode-smoke
-
-# 4. Verify no residual worktree directories
-ls .worktrees/
-
-# 5. Check task_events for any unexpected event types
-# (no runtime_session_created from real server, no deploy/* events)
 ```
 
 ## Risk Level

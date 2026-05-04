@@ -71,8 +71,8 @@ RUNTIME_MAX_PLAN_BYTES = 100_000                       # config.py:68
 
 **Post-start проверки:**
 - [ ] `GET http://127.0.0.1:3001/health` → HTTP 200
-- [ ] `POST http://127.0.0.1:3001/sessions` → `{"session_id": "..."}`
-- [ ] `GET http://127.0.0.1:3001/sessions/{id}/events` → SSE stream
+- [ ] `POST http://127.0.0.1:4096/session` → `{"session_id": "..."}`
+- [ ] `POST http://127.0.0.1:4096/session/{id}/message` → JSON response with `parts`
 - [ ] Сервер слушает только на localhost (не 0.0.0.0)
 
 ### 2.2 AMC API server запущен
@@ -351,3 +351,48 @@ BE-06 execution требует **отдельного approve** на:
 | Mutation risk | LOW | Plan-only path has no write/sandbox/execute |
 | Guardrail strength | HIGH | 205 tests, triple opt-in, all 10 security checks passed |
 | Rollback complexity | LOW | Env var switch, no DB changes, no deploy |
+
+---
+
+## 13. Rerun addendum (after step-B abort)
+
+Дата: 2026-05-04  
+Статус: PLAN-ONLY update (без запуска)
+
+### 13.1 Новая стратегия порта
+- Primary port: `4096`
+- Fallback port: `4097`
+- Порт `3001` больше не используется в BE-06 rerun
+
+### 13.2 Обязательная команда запуска OpenCode
+
+```bash
+opencode serve --port <PORT> --hostname 127.0.0.1
+```
+
+### 13.3 Endpoint identity checks (rerun)
+- Required: `GET http://127.0.0.1:<PORT>/global/health`
+- Required: `GET http://127.0.0.1:<PORT>/doc`
+- Optional: `GET http://127.0.0.1:<PORT>/config` или `GET http://127.0.0.1:<PORT>/agent`
+
+### 13.4 Explicit rerun prohibitions
+- ❌ Не использовать `opencode/server`
+- ❌ Не использовать `@opencode/server`
+- ❌ Не использовать bind `0.0.0.0`
+
+### 13.5 Backend transport compatibility preflight
+На корне `OPENCODE_SERVER_URL` должны быть доступны:
+- `POST /session`
+- `POST /session/{id}/message`
+
+Проверка перед интеграционным smoke:
+- [ ] `/global/health` отвечает корректно
+- [ ] `/doc` отвечает корректно
+- [ ] `POST /session` возвращает `session_id`
+- [ ] `POST /session/{id}/message` возвращает JSON с `parts`
+
+### 13.6 Cleanup invariant (без изменений)
+После завершения/abort всегда восстановить defaults:
+- `RUNTIME_PROVIDER=stub`
+- `OPENCODE_SERVER_URL=""`
+- `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false`

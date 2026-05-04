@@ -7,7 +7,7 @@ tool.call path confinement, and improved SSE robustness.
 from __future__ import annotations
 
 import time
-from typing import Any, AsyncIterator, Awaitable, Callable, Protocol
+from typing import Any, Awaitable, Callable, Protocol
 
 from app.config import settings
 from app.integrations.opencode.schemas import RuntimePlanContext, RuntimePlanResult
@@ -31,7 +31,7 @@ class RuntimeConfigurationError(Exception):
 
 class OpenCodeTransportProtocol(Protocol):
     async def create_session(self, payload: dict[str, Any]) -> str: ...
-    async def stream_events(self, session_id: str) -> AsyncIterator[dict[str, Any]]: ...
+    async def send_message(self, session_id: str, payload: dict[str, Any]) -> dict[str, Any]: ...
 
 
 class OpenCodeClientProtocol(Protocol):
@@ -75,19 +75,20 @@ class FakeOpenCodeHttpClient:
         self.last_payload = redact_payload(payload)
         return "fake-session-1"
 
-    async def stream_events(self, session_id: str) -> AsyncIterator[dict[str, Any]]:
-        for event in self._events:
-            yield event
+    async def send_message(self, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        _ = session_id
+        _ = payload
+        return {"parts": self._events}
 
 
 class OpenCodeHttpPlanClient:
-    """Plan-only OpenCode client using HTTP+SSE transport contract.
+    """Plan-only OpenCode client using HTTP sync-message transport.
 
     BE-05 additions:
     - max_plan_size hard truncation with warning event
     - client-side session/idle timeout enforcement
     - tool.call path confinement for read/search actions
-    - improved SSE event type classification (malformed vs unknown)
+    - strict fail-closed message part classification (malformed vs unknown)
     """
 
     def __init__(
@@ -148,18 +149,22 @@ class OpenCodeHttpPlanClient:
             last_event_time = session_start
 
             try:
-                async for event in self._transport.stream_events(session_id):
+                message_response = await self._transport.send_message(
+                    session_id,
+                    {
+                        "mode": "plan_only",
+                        "message": context.normalized_text,
+                        "correlation_id": context.correlation_id,
+                        "idempotency_key": context.idempotency_key,
+                    },
+                )
+                for event in self._map_message_response_to_events(message_response):
                     now = time.monotonic()
-
-                    # --- Client-side session total timeout ---
                     if now - session_start > self._session_timeout:
                         raise TimeoutError("runtime_timeout")
-
-                    # --- Client-side idle timeout ---
                     if now - last_event_time > self._idle_timeout:
                         raise TimeoutError("runtime_timeout")
                     last_event_time = now
-
                     event_id = str(event.get("event_id") or event.get("seq") or "")
                     dedupe_key = (session_id, event_id)
                     if event_id and dedupe_key in seen:
@@ -215,15 +220,6 @@ class OpenCodeHttpPlanClient:
                     if event_type == "plan.delta":
                         text = str(event.get("text", ""))
                         plan_parts.append(str(redact_payload(text)))
-                        # BE-05 M-2: emit truncation event for oversized SSE chunks
-                        if event.get("_sse_chunk_truncated"):
-                            await self._emit(
-                                "runtime_event_truncated",
-                                {
-                                    "session_id": session_id,
-                                    "reason": "sse_non_json_chunk_exceeded_64kb_limit",
-                                },
-                            )
                         continue
 
                     if event_type == "plan.final":
@@ -264,3 +260,69 @@ class OpenCodeHttpPlanClient:
         if last_exc:
             raise last_exc
         raise TimeoutError("runtime_timeout")
+
+    @staticmethod
+    def _map_message_response_to_events(response: dict[str, Any]) -> list[dict[str, Any]]:
+        """Map OpenCode sync message response to internal event stream.
+
+        Accepted shapes:
+        - {"parts": [{"type": "plan.delta", ...}, ...]} (already normalized)
+        - {"parts": [{"kind": "text_delta", "text": "..."}, ...]}
+        - {"parts": [{"kind": "tool_call", "action": "read", ...}, ...]}
+        - {"parts": [{"kind": "final"}]}
+
+        Unknown/malformed structures are fail-closed.
+        """
+        if not isinstance(response, dict):
+            raise RuntimeEventError("runtime_event_malformed")
+        parts = response.get("parts")
+        if not isinstance(parts, list):
+            raise RuntimeEventError("runtime_event_malformed")
+
+        events: list[dict[str, Any]] = []
+        for idx, part in enumerate(parts, start=1):
+            if not isinstance(part, dict):
+                raise RuntimeEventError("runtime_event_malformed")
+
+            # Already-normalized internal event shape
+            part_type = part.get("type")
+            if isinstance(part_type, str):
+                if part_type not in KNOWN_SSE_EVENT_TYPES:
+                    raise RuntimeEventError("runtime_error")
+                event = dict(part)
+                event.setdefault("event_id", str(idx))
+                events.append(event)
+                continue
+
+            kind = part.get("kind")
+            if not isinstance(kind, str):
+                raise RuntimeEventError("runtime_event_malformed")
+
+            if kind in {"text_delta", "delta", "message_delta"}:
+                text = part.get("text")
+                if not isinstance(text, str):
+                    raise RuntimeEventError("runtime_event_malformed")
+                events.append({"type": "plan.delta", "text": text, "event_id": str(idx)})
+                continue
+
+            if kind in {"final", "message_final", "completed"}:
+                events.append({"type": "plan.final", "event_id": str(idx)})
+                continue
+
+            if kind in {"tool_call", "tool"}:
+                action = part.get("action")
+                if not isinstance(action, str):
+                    raise RuntimeEventError("runtime_event_malformed")
+                event = {
+                    "type": "tool.call",
+                    "action": action,
+                    "event_id": str(idx),
+                }
+                if "path" in part:
+                    event["path"] = part.get("path")
+                events.append(event)
+                continue
+
+            raise RuntimeEventError("runtime_error")
+
+        return events

@@ -13,6 +13,7 @@ from app.config import settings
 from app.integrations.opencode.client import (
     FakeOpenCodeHttpClient,
     OpenCodeHttpPlanClient,
+    RuntimeEventError,
     StubOpenCodeClient,
 )
 from app.integrations.opencode.factory import build_runtime_client
@@ -150,6 +151,34 @@ async def test_event_types_extended_present() -> None:
         "runtime_event_truncated",
     }
     assert required.issubset(ALLOWED_EVENT_TYPES)
+
+
+@pytest.mark.anyio
+async def test_sync_message_parts_map_to_plan_final() -> None:
+    result = OpenCodeHttpPlanClient._map_message_response_to_events(
+        {
+            "parts": [
+                {"kind": "text_delta", "text": "## Plan\n1. Step"},
+                {"kind": "final"},
+            ]
+        }
+    )
+    assert result[0]["type"] == "plan.delta"
+    assert result[1]["type"] == "plan.final"
+
+
+@pytest.mark.anyio
+async def test_sync_message_unknown_part_fails_closed_runtime_error() -> None:
+    with pytest.raises(RuntimeEventError, match="runtime_error"):
+        OpenCodeHttpPlanClient._map_message_response_to_events(
+            {"parts": [{"kind": "something_unknown"}]}
+        )
+
+
+@pytest.mark.anyio
+async def test_sync_message_malformed_response_fails_closed() -> None:
+    with pytest.raises(RuntimeEventError, match="runtime_event_malformed"):
+        OpenCodeHttpPlanClient._map_message_response_to_events({"parts": "not-a-list"})
 
 
 @pytest.mark.anyio
@@ -809,11 +838,10 @@ async def test_real_opencode_server_not_started() -> None:
 
 
 @pytest.mark.anyio
-async def test_sse_non_json_chunk_truncation_emits_event(
+async def test_legacy_truncation_flag_in_delta_does_not_break_sync_flow(
     test_session, async_client: AsyncClient
 ) -> None:
-    """M-2/M-3: SSE non-JSON chunk with _sse_chunk_truncated flag triggers
-    runtime_event_truncated event in the client layer."""
+    """Legacy `_sse_chunk_truncated` field is tolerated in sync message flow."""
     task_id = await _mk_task(async_client, risk="low")
 
     settings.RUNTIME_PROVIDER = "opencode_http"
@@ -842,4 +870,4 @@ async def test_sse_non_json_chunk_truncation_emits_event(
 
     events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
     event_types = [e["event_type"] for e in events_resp.json()]
-    assert "runtime_event_truncated" in event_types
+    assert "plan_generated" in event_types

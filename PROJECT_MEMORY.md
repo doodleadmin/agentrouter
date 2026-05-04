@@ -99,6 +99,48 @@
 
 ## Изменения
 
+### 2026-05-04 — BE-06 blocking security fix (bounded read timeout)
+- **Агент:** backend-architect
+- **Сделано:** в `RealOpenCodeHttpTransport` устранён риск indefinite hang для sync `POST /session/{id}/message`:
+  - default `read_timeout` теперь fail-closed и bounded: при `read_timeout=None` используется `RUNTIME_SESSION_TIMEOUT_SECONDS`
+  - маппинг `httpx.ReadTimeout -> OpenCodeTimeoutError` сохранён без изменений
+  - добавлен unit-тест на bounded default read timeout
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (193/193)
+- **Ограничения:** реальный OpenCode server не запускался.
+
+### 2026-05-04 — BE-06 transport compatibility fix (sync /session flow)
+- **Агент:** backend-architect
+- **Сделано:** обновлён runtime transport contract с legacy `/sessions` + SSE на BE-06 совместимость:
+  - `create_session`: `POST /session`
+  - plan flow (MVP): `POST /session/{id}/message` (sync)
+  - добавлен strict mapping `parts -> plan.delta/plan.final/tool.call` с fail-closed обработкой malformed/unknown payloads
+  - сохранены guardrails: stub-by-default, allow-flag gate для `opencode_http`, no silent fallback, policy_blocked для mutating tool actions, path confinement, redaction, memory minimization, idempotency, timeout limits
+- **Тесты:** `compileall` ✅, `ruff` ✅, `pytest` ✅ (192/192)
+- **Ограничения:** реальный OpenCode server не запускался.
+
+### 2026-05-04 — BE-06 final compatibility docs alignment (launch procedure)
+- **Агент:** devops-automator
+- **Сделано:** обновлён `docs/smoke-test-opencode.md` под финальное направление совместимости BE-06:
+  - зафиксирована единственная команда запуска: `opencode serve --port 4096 --hostname 127.0.0.1`
+  - удалены `3001`, `opencode/server`, `@opencode/server`, `0.0.0.0`
+  - identity/spec checks: `GET /global/health`, `GET /doc`
+  - убраны любые `.env`-сценарии; оставлены только process env overrides
+  - уточнены compatibility probes по фактически используемым backend endpoint-ам: `POST /session`, `POST /session/{id}/message`
+- **Ограничения:** код не менялся, серверы/тесты не запускались.
+
+### 2026-05-04 — BE-06 transport compatibility fix (runtime)
+- **Агент:** backend-architect
+- **Сделано:** runtime transport переведён с legacy `/sessions`+SSE на актуальный sync flow:
+  - `POST /session` (create session)
+  - `POST /session/{id}/message` (plan-only message)
+  - mapping `parts -> plan.delta/plan.final/tool.call` с fail-closed обработкой unknown/malformed частей
+  - сохранены guardrails: default stub, allow-flag gate, no silent fallback, policy_blocked, confinement/redaction/memory limits/idempotency
+  - закрыт blocking security риск indefinite hang через bounded default read timeout
+- **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (193/193)
+- **Security verdict:** PASSED (GO)
+- **Ограничения:** реальный OpenCode server не запускался.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be06-transport-compatibility-fix.md](.ai_memory/tasks/2026-05-04-task-be06-transport-compatibility-fix.md)
+
 ### 2026-05-04 — BE-06 docs fix (smoke-test-opencode)
 - **Агент:** backend-architect
 - **Сделано:** обновлён `docs/smoke-test-opencode.md` для BE-06 controlled smoke test:
@@ -109,6 +151,18 @@
   - добавлен явный rollback к runtime defaults (`stub`, empty URL, allow=false)
 - **Ограничения:** OpenCode server не запускался, код не менялся, deploy/migrations/.env/secrets не трогались.
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be06-smoke-docs-fix.md](.ai_memory/tasks/2026-05-04-task-be06-smoke-docs-fix.md)
+
+### 2026-05-04 — BE-06 rerun-plan docs alignment
+- **Агент:** knowledge-steward
+- **Сделано:** документация и память выровнены под rerun reality после Step-B abort:
+  - портовая стратегия обновлена: primary `4096`, fallback `4097` (порт `3001` исключён)
+  - зафиксирована единственная команда запуска: `opencode serve --port <PORT> --hostname 127.0.0.1`
+  - identity checks: `/global/health`, `/doc`, optional `/config`/`/agent`
+  - явные запреты: `opencode/server`, `@opencode/server`, `0.0.0.0`
+  - добавлен backend compatibility preflight: `POST /session`, `POST /session/{id}/message`
+  - cleanup defaults подтверждены: `stub`, empty URL, `allow=false`
+- **Ограничения:** код/.env не менялись, серверы/тесты не запускались.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be06-rerun-plan-after-step-b-abort.md](.ai_memory/tasks/2026-05-04-task-be06-rerun-plan-after-step-b-abort.md)
 
 ### 2026-05-04 — DevOps OpenCode smoke test plan (plan-only, без выполнения)
 - **Агент:** devops-automator

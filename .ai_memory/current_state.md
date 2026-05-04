@@ -45,6 +45,8 @@
 - BE-05 Phase 1 hardening (backend-architect): закрыты B-1 (test adaptation), M-1 (_truncate_plan session_id), M-2 (SSE non-JSON chunk 64KB limit), M-3 (RUNTIME_ALLOW_REAL_OPENCODE_HTTP safety gate, default=False). 205/205 tests passed. Default=stub подтверждён.
 - BE-06 preflight plan (studio-orchestrator): подготовлен controlled smoke test plan-only checklist для real OpenCode HTTP adapter (localhost:3001), включая временные env overrides через environment variables (без изменения .env), safe low-risk prompt, abort criteria, post-smoke validation. Ничего не запускалось.
 - BE-06 docs fix (backend-architect): обновлён `docs/smoke-test-opencode.md` — убраны инструкции изменения основного `.env`, зафиксированы только process env overrides (`RUNTIME_PROVIDER`, `OPENCODE_SERVER_URL`, `RUNTIME_ALLOW_REAL_OPENCODE_HTTP`), унифицирован `.env.opencode-smoke`, добавлен явный rollback к defaults (`stub`, empty URL, allow=false).
+- BE-06 rerun-plan update (knowledge-steward): документация и memory выровнены после Step-B abort — портовая стратегия `4096` (fallback `4097`), only `opencode serve --port <PORT> --hostname 127.0.0.1`, identity checks (`/global/health`, `/doc`, optional `/config`/`/agent`), backend compatibility preflight (`POST /session`, `POST /session/{id}/message`), explicit запреты (`opencode/server`, `@opencode/server`, `0.0.0.0`).
+- BE-06 transport compatibility fix (backend-architect + security-engineer): runtime transport переведён на актуальный sync contract `POST /session` + `POST /session/{id}/message`; mapping `parts -> plan.delta/plan.final/tool.call` с fail-closed для unknown/malformed; сохранены guardrails и policy boundaries; закрыт timeout hang risk через bounded default read timeout; итог security verdict: PASSED.
 
 ## Активные задачи
 
@@ -113,5 +115,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 32 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix) |
+| Логи задач | 34 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix) |
 | Проекты | 0 |

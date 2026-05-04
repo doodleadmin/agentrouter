@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 32 |
+| **Task logs** | 34 |
 | **Шаблоны** | 5 |
 
 ---
@@ -100,6 +100,8 @@
 | [2026-05-04-task-be05-hardening-b1-m1-m2-m3.md](tasks/2026-05-04-task-be05-hardening-b1-m1-m2-m3.md) | BE-05 hardening (B-1 + M-1/M-2/M-3) |
 | [2026-05-04-task-be06-controlled-smoke-test-plan.md](tasks/2026-05-04-task-be06-controlled-smoke-test-plan.md) | BE-06 controlled OpenCode smoke test plan/preflight |
 | [2026-05-04-task-be06-smoke-docs-fix.md](tasks/2026-05-04-task-be06-smoke-docs-fix.md) | BE-06 smoke docs fix (no .env edits) |
+| [2026-05-04-task-be06-rerun-plan-after-step-b-abort.md](tasks/2026-05-04-task-be06-rerun-plan-after-step-b-abort.md) | BE-06 rerun plan after Step-B abort |
+| [2026-05-04-task-be06-transport-compatibility-fix.md](tasks/2026-05-04-task-be06-transport-compatibility-fix.md) | BE-06 transport compatibility fix (/session + /message) |
 
 ---
 
