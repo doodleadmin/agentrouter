@@ -73,6 +73,39 @@ def test_generate_plan_dispatches_notification_on_success() -> None:
     assert call_kwargs[1]["kwargs"]["thread_id"] == 5
 
 
+def test_generate_plan_uses_api_timeout_from_settings() -> None:
+    """BE-09: httpx.Client must be created with the configured API_TIMEOUT_SECONDS."""
+    from app.config import settings
+
+    mock_plan_resp = MagicMock()
+    mock_plan_resp.status_code = 200
+    mock_plan_resp.raise_for_status = MagicMock()
+    mock_plan_resp.json.return_value = {"status": "approved", "plan_text": "## Plan"}
+
+    mock_task_resp = MagicMock()
+    mock_task_resp.status_code = 200
+    mock_task_resp.raise_for_status = MagicMock()
+    mock_task_resp.json.return_value = {
+        "telegram_chat_id": None,
+        "telegram_thread_id": None,
+    }
+
+    mock_client = MagicMock()
+    mock_client.__enter__ = MagicMock(return_value=mock_client)
+    mock_client.__exit__ = MagicMock(return_value=False)
+    mock_client.post.return_value = mock_plan_resp
+    mock_client.get.return_value = mock_task_resp
+
+    with (
+        patch("app.tasks.agent_plan.httpx.Client", return_value=mock_client) as mock_httpx_client,
+        patch("app.tasks.agent_plan.celery_app") as mock_app,
+    ):
+        mock_app.send_task = MagicMock()
+        generate_plan("fake-task-id")
+
+    mock_httpx_client.assert_called_once_with(timeout=settings.API_TIMEOUT_SECONDS)
+
+
 def test_generate_plan_no_notification_without_chat_id() -> None:
     """When task has no chat_id, notification should be skipped."""
 

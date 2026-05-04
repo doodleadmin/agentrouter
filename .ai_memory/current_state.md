@@ -1,13 +1,13 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-04 | Автор: studio-orchestrator
+Обновлено: 2026-05-04 | Автор: knowledge-steward
 
 ---
 
 ## Статус проекта
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success выполнены. CRITICAL/HIGH закрыты.
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success, BE-09-phase1-worker-timeout выполнены. CRITICAL/HIGH закрыты.
 **Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
@@ -54,6 +54,7 @@
 - BE-07+ native contract alignment (backend-architect): payload для `POST /session/{id}/message` переведён на OpenCode 1.14.33 native формат `{"parts": [{"type": "text", "text": "..."}]}` (schemas: `OpenCodeSessionTextPart`). Client `_map_message_response_to_events` переписан под native part-type dispatch: `text→plan.delta`, `reasoning→SKIPPED` (never stored), `step-start→skipped`, `step-finish(reason=stop)→plan.final`, `tool→tool.call`, `unknown→runtime_event_malformed` (fail-closed). Security GO (8 checks), Architecture GO (5 rules). Валидация: compileall + ruff + pytest `219 passed` (+12 новых тестов). Real OpenCode server не запускался.
 - BE-08 session traceability + timeout tuning (backend-architect): `POST /session` payload теперь `{"title": "<task title>"}` — единственное поле, принимаемое OpenCode 1.14.33. Добавлен `OpenCodeSessionCreateRequest` schema, поле `task_title` в `RuntimePlanContext`. Удалены игнорируемые поля (mode/correlation_id/idempotency_key/input). `RUNTIME_SESSION_TIMEOUT_SECONDS` увеличен 60→180. Session contract обновлён в docs. Guardrails сохранены (stub default, fail-closed, path confinement, redaction, max_plan_size, plan-only). Test: 225 collected, 224 passed, 1 pre-existing data-collision. Real OpenCode не запускался.
 - BE-08 REAL OpenCode smoke SUCCESS (backend-architect + studio-orchestrator): First successful end-to-end plan_generated from real OpenCode 1.14.33. session_id=`ses_20bbf3443ffe9jGPUiUrGNkS7G`, plan_text=875 chars (real analysis, no stub fingerprints). Single retry at ~180s (borderline timeout) then success. All guardrails held: no file mutation, no command execution, no sandbox events, no secret leakage, localhost-only. Follow-up recommended: increase timeout 180→300s. OpenCode stopped, API returned to stub mode, git clean.
+- BE-09 Phase 1 (backend-architect): Worker `API_TIMEOUT_SECONDS` увеличен 30→300 (>= RUNTIME_SESSION_TIMEOUT_SECONDS=180 + buffer для 80-170s real OpenCode plans). 2 новых теста. 91/91 worker tests pass. API guardrails не трогались (stub default, allow=false, OpenCode не запускался).
 
 ## Активные задачи
 
@@ -93,6 +94,7 @@
 | BE-07+: Native contract alignment (OpenCode 1.14.33) | ✅ Выполнена | backend-architect |
 | BE-08: Session traceability + timeout tuning | ✅ Выполнена | backend-architect |
 | BE-08-real: OpenCode smoke SUCCESS (first real plan_generated) | ✅ Выполнена | backend-architect + studio-orchestrator |
+| BE-09 Phase 1: Worker API timeout fix (30→300) | ✅ Выполнена | backend-architect |
 | DEV-DB-01: Fix Alembic async/sync engine mismatch | ✅ Выполнена | backend-architect |
 
 ## Следующие шаги
@@ -128,5 +130,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 41 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment, be08-session-traceability-timeout, be08-real-opencode-smoke-success, dev-db-01-alembic-async-fix) |
+| Логи задач | 42 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment, be08-session-traceability-timeout, be08-real-opencode-smoke-success, dev-db-01-alembic-async-fix, be09-phase1-worker-timeout) |
 | Проекты | 0 |

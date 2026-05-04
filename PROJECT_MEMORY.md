@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-08 real OpenCode smoke SUCCESS — first end-to-end plan_generated from live OpenCode 1.14.33
+**Статус:** BE-08 real OpenCode smoke SUCCESS — first end-to-end plan_generated from live OpenCode 1.14.33 → BE-09 Phase 1 worker timeout fix (API_TIMEOUT_SECONDS 30→300)
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -98,6 +98,18 @@
 3. Полный план: [docs/mvp-backlog.md](docs/mvp-backlog.md)
 
 ## Изменения
+
+### 2026-05-04 — BE-09 Phase 1 Worker API_TIMEOUT_SECONDS Fix (30→300)
+- **Агент:** backend-architect
+- **Контур:** local only; без deploy/migrations/secrets/OpenCode.
+- **Сделано:**
+  - `apps/worker/app/config.py`: `API_TIMEOUT_SECONDS` увеличен с 30.0 до 300.0 — должен быть >= `RUNTIME_SESSION_TIMEOUT_SECONDS=180` + буфер для 80–170s real OpenCode планов.
+  - `apps/worker/tests/test_config.py`: добавлен `test_api_timeout_default_is_300`.
+  - `apps/worker/tests/test_agent_plan_pipeline.py`: добавлен `test_generate_plan_uses_api_timeout_from_settings`.
+- **Причина:** BE-08 выявил, что 180s session timeout — borderline для real OpenCode; worker со своим 30s таймаутом обрывал запрос до того, как API успевал дождаться ответа OpenCode.
+- **Guardrails intact:** API config не менялся, `RUNTIME_PROVIDER=stub`, `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false`, `OPENCODE_SERVER_URL=""`. No real OpenCode started.
+- **Проверки:** worker `pytest tests -v` ✅ (91/91), api `pytest tests -v` ✅ (224/225, 1 pre-existing flake). Security GO 8/8, Reality-check GO 8/8.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be09-phase1-worker-timeout.md](.ai_memory/tasks/2026-05-04-task-be09-phase1-worker-timeout.md)
 
 ### 2026-05-04 — BE-06 task creation fix (transaction boundary + integrity mapping)
 - **Агент:** backend-architect
