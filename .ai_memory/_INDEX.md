@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 40 |
+| **Task logs** | 41 |
 | **Шаблоны** | 5 |
 
 ---
@@ -108,6 +108,7 @@
 | [2026-05-04-task-be07-plus-implementation.md](tasks/2026-05-04-task-be07-plus-implementation.md) | BE-07+ implementation: OpenCode 1.14.33 native contract alignment |
 | [2026-05-04-task-dev-db-01-alembic-async-fix.md](tasks/2026-05-04-task-dev-db-01.md) | DEV-DB-01: Fix Alembic async/sync engine mismatch |
 | [2026-05-04-task-be08-session-traceability-timeout.md](tasks/2026-05-04-task-be08-session-traceability-timeout.md) | BE-08: OpenCode session traceability + timeout tuning |
+| [2026-05-04-task-be08-real-opencode-smoke-success.md](tasks/2026-05-04-task-be08-real-opencode-smoke-success.md) | BE-08-real: OpenCode smoke SUCCESS (first real plan_generated) |
 
 ---
 

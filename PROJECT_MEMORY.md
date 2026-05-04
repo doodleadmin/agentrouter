@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-08 implementation complete (OpenCode session traceability + timeout tuning)
+**Статус:** BE-08 real OpenCode smoke SUCCESS — first end-to-end plan_generated from live OpenCode 1.14.33
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -172,6 +172,27 @@
 - **Подтверждено:** в session payload НЕТ directory/cwd/path/workspace/mode/model/capabilities/restrictions/projectID/agent.
 - **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (224/225, 1 pre-existing test-data collision)
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be08-session-traceability-timeout.md](.ai_memory/tasks/2026-05-04-task-be08-session-traceability-timeout.md)
+
+### 2026-05-04 — BE-08 Real OpenCode Smoke — SUCCESS (first live plan_generated!)
+- **Агенты:** backend-architect (execution), studio-orchestrator (memory recording)
+- **Контур:** local only; без deploy/migrations/secrets; real OpenCode 1.14.33 на 127.0.0.1:4096.
+- **Итог:** First successful end-to-end `plan_generated` from a **live OpenCode** server (not stub, not fake).
+- **Smoke execution data:**
+  - task_id: `46482979-bd51-4b28-b4d3-d5230ae2117f`
+  - session_id: `ses_20bbf3443ffe9jGPUiUrGNkS7G`
+  - plan_text: 875 chars (real analysis — healthcheck endpoint, tests, Docker HEALTHCHECK, probes)
+  - **No stub fingerprints** detected
+  - **No reasoning leak** (BE-07+ reasoning filtering verified)
+  - **No file/command/sandbox events** (plan-only held)
+  - status → `approved`
+- **Event timeline:** task_created → runtime_retry_scheduled (first attempt timed out at ~180s) → runtime_event_received ×2 → runtime_session_created → plan_generated → approved.
+- **Architecture note:** Event ordering (retry BEFORE session_created) is correct — client emits retry during generate_plan(), service emits session_created after successful plan completion.
+- **Finding (medium, non-blocking):** 180s timeout is borderline (retry triggered). **Recommend:** increase `RUNTIME_SESSION_TIMEOUT_SECONDS` from 180→300s in follow-up.
+- **Prerequisites:** BE-07+ (native `parts` format), BE-08 (title field, 180s timeout), DEV-DB-01 (async Alembic fix).
+- **Safety verified:** No file mutation, no command execution, no sandbox events, no secret leakage, localhost-only, git clean.
+- **Cleanup:** OpenCode stopped, API returned to stub mode, no persistent env changes.
+- **Key takeaway:** AMC → OpenCode integration pipeline proven end-to-end with all guardrails holding.
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be08-real-opencode-smoke-success.md](.ai_memory/tasks/2026-05-04-task-be08-real-opencode-smoke-success.md)
 
 ### 2026-05-04 — DEV-DB-01 Fix Alembic async/sync engine mismatch
 - **Агент:** backend-architect
