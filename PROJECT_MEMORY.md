@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-08 real OpenCode smoke SUCCESS — first end-to-end plan_generated from live OpenCode 1.14.33 → BE-09 Phase 1 worker timeout fix (API_TIMEOUT_SECONDS 30→300)
+**Статус:** BE-09 Phase 2 real OpenCode E2E SUCCESS — worker→API→OpenCode→plan_generated full chain proven with real OpenCode 1.14.33
 **Дата последнего обновления:** 2026-05-04
 **Project root:** `F:\dev\agentrouter`
 
@@ -110,6 +110,19 @@
 - **Guardrails intact:** API config не менялся, `RUNTIME_PROVIDER=stub`, `RUNTIME_ALLOW_REAL_OPENCODE_HTTP=false`, `OPENCODE_SERVER_URL=""`. No real OpenCode started.
 - **Проверки:** worker `pytest tests -v` ✅ (91/91), api `pytest tests -v` ✅ (224/225, 1 pre-existing flake). Security GO 8/8, Reality-check GO 8/8.
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be09-phase1-worker-timeout.md](.ai_memory/tasks/2026-05-04-task-be09-phase1-worker-timeout.md)
+
+### 2026-05-04 — BE-09 Phase 2: Real OpenCode E2E — SUCCESS
+- **Агент:** studio-orchestrator (coordinated: devops-automator, backend-architect, security-engineer)
+- **Контур:** local only; без deploy/migrations/secrets/кода.
+- **Сделано:** First successful E2E pipeline with real OpenCode 1.14.33:
+  - Task `ddc0d397-17a3-4511-ae9a-39a571d57abb` → trigger-plan → Celery worker → API → `RealOpenCodeHttpTransport` → OpenCode `/session` + `/session/{id}/message` → `plan_generated` (866 chars) → status `approved`.
+  - `session_id = ses_20b75bd21ffekkZ4XA2rr4a5Sc` (real, not stub).
+  - Worker `API_TIMEOUT_SECONDS=300` (Phase 1 fix) enabled 70s plan completion.
+  - Events: `task_created` → `plan_triggered` → `runtime_retry_scheduled` (attempt=1, borderline timing) → `runtime_event_received` ×2 → `runtime_session_created` → `plan_generated`.
+- **Guardrails intact:** All 4 stub fingerprints absent, reasoning/secret/file-mutation leaks absent, no policy_blocked/runtime_error, approval correct for low-risk.
+- **Finding:** `runtime_retry_scheduled` at 180s boundary — recommend increasing `RUNTIME_SESSION_TIMEOUT_SECONDS` to 240-300s (BE-10 hardening).
+- **Security review:** PASSED (10/10 checks).
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be09-phase2-real-opencode-e2e-success.md](.ai_memory/tasks/2026-05-04-task-be09-phase2-real-opencode-e2e-success.md)
 
 ### 2026-05-04 — BE-06 task creation fix (transaction boundary + integrity mapping)
 - **Агент:** backend-architect

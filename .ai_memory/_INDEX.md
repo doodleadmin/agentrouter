@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 42 |
+| **Task logs** | 43 |
 | **Шаблоны** | 5 |
 
 ---
@@ -110,6 +110,7 @@
 | [2026-05-04-task-be08-session-traceability-timeout.md](tasks/2026-05-04-task-be08-session-traceability-timeout.md) | BE-08: OpenCode session traceability + timeout tuning |
 | [2026-05-04-task-be08-real-opencode-smoke-success.md](tasks/2026-05-04-task-be08-real-opencode-smoke-success.md) | BE-08-real: OpenCode smoke SUCCESS (first real plan_generated) |
 | [2026-05-04-task-be09-phase1-worker-timeout.md](tasks/2026-05-04-task-be09-phase1-worker-timeout.md) | BE-09 Phase 1: Worker API_TIMEOUT_SECONDS 30→300 fix |
+| [2026-05-04-task-be09-phase2-real-opencode-e2e-success.md](tasks/2026-05-04-task-be09-phase2-real-opencode-e2e-success.md) | BE-09 Phase 2: Real OpenCode E2E — SUCCESS |
 
 ---
 
