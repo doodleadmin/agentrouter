@@ -143,6 +143,13 @@ async def trigger_plan(
     if task is None:
         raise HTTPException(status_code=404, detail=_TASK_404)
 
+    # P0-2: Only CREATED tasks may be enqueued for planning.
+    if task.status != TaskStatus.CREATED.value:
+        raise HTTPException(
+            status_code=409,
+            detail="Task already triggered or not in created state",
+        )
+
     if task.project_id is None or task.agent_id is None:
         raise HTTPException(
             status_code=422,

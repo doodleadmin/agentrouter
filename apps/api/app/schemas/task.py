@@ -14,7 +14,7 @@ from app.schemas import BaseModel
 # ── valid status transitions ────────────────────────────────────────────
 
 ALLOWED_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
-    TaskStatus.CREATED: {TaskStatus.ROUTED, TaskStatus.CANCELLED},
+    TaskStatus.CREATED: {TaskStatus.ROUTED, TaskStatus.PLANNING, TaskStatus.CANCELLED},
     TaskStatus.ROUTED: {TaskStatus.PLANNING, TaskStatus.CANCELLED},
     TaskStatus.PLANNING: {TaskStatus.WAITING_APPROVAL, TaskStatus.APPROVED, TaskStatus.FAILED, TaskStatus.CANCELLED},
     TaskStatus.WAITING_APPROVAL: {TaskStatus.APPROVED, TaskStatus.CANCELLED},

@@ -144,3 +144,56 @@ def test_generate_plan_no_notification_without_chat_id() -> None:
     assert result["status"] == "ok"
     assert result["notification_sent"] is False
     mock_send_task.assert_not_called()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BE-10 TESTS — Runtime Reliability Hardening
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_be10_notification_failure_does_not_fail_plan() -> None:
+    """P1-3: Plan generation must succeed even when notification dispatch fails.
+
+    If send_task raises an Exception, the worker should:
+    - Log a warning
+    - Set notification_sent=False
+    - Return status="ok" (plan already generated on backend)
+    - Never re-generate plan due to notification failure
+    """
+    mock_plan_resp = MagicMock()
+    mock_plan_resp.status_code = 200
+    mock_plan_resp.raise_for_status = MagicMock()
+    mock_plan_resp.json.return_value = {
+        "status": "approved",
+        "plan_text": "## Plan\n1. Do stuff",
+    }
+
+    mock_task_resp = MagicMock()
+    mock_task_resp.status_code = 200
+    mock_task_resp.raise_for_status = MagicMock()
+    mock_task_resp.json.return_value = {
+        "telegram_chat_id": 100,
+        "telegram_thread_id": 5,
+    }
+
+    mock_client = MagicMock()
+    mock_client.__enter__ = MagicMock(return_value=mock_client)
+    mock_client.__exit__ = MagicMock(return_value=False)
+    mock_client.post.return_value = mock_plan_resp
+    mock_client.get.return_value = mock_task_resp
+
+    # send_task will raise an Exception
+    mock_send_task = MagicMock(side_effect=RuntimeError("Broker unreachable"))
+
+    with (
+        patch("app.tasks.agent_plan.httpx.Client", return_value=mock_client),
+        patch("app.tasks.agent_plan.celery_app") as mock_app,
+    ):
+        mock_app.send_task = mock_send_task
+
+        result = generate_plan("fake-task-id")
+
+    # Plan generation succeeded; notification failure is isolated
+    assert result["status"] == "ok"
+    assert result["notification_sent"] is False
+    mock_send_task.assert_called_once()  # we tried to send

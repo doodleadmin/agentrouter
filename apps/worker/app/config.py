@@ -25,9 +25,10 @@ class Settings(BaseSettings):
 
     # Backend API (for tasks that need to call orchestrator)
     API_BASE_URL: str = "http://localhost:8000"
-    # Must be >= API RUNTIME_SESSION_TIMEOUT_SECONDS (180) + buffer for real
-    # OpenCode plans (80–170 s actual). 300 s provides safe headroom.
-    API_TIMEOUT_SECONDS: float = 300.0
+    # BE-10 P2-6: Must be >= API RUNTIME_SESSION_TIMEOUT_SECONDS (300) + buffer
+    # for HTTP overhead, retries, and real OpenCode plans (80–170 s actual).
+    # 420 s provides safe headroom for one full session timeout plus response.
+    API_TIMEOUT_SECONDS: float = 420.0
 
     # Telegram Bot (for notifications sent from worker)
     TELEGRAM_BOT_TOKEN: str = ""

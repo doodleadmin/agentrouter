@@ -6,8 +6,8 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-09 Phase 2 real OpenCode E2E SUCCESS — worker→API→OpenCode→plan_generated full chain proven with real OpenCode 1.14.33
-**Дата последнего обновления:** 2026-05-04
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE — 6 hardening changes (idempotency, status gate, notification isolation, retry exceptions, event ordering, timeout alignment). 237/237 API + 93/93 worker tests pass.
+**Дата последнего обновления:** 2026-05-05
 **Project root:** `F:\dev\agentrouter`
 
 ## Что сделано
@@ -98,6 +98,22 @@
 3. Полный план: [docs/mvp-backlog.md](docs/mvp-backlog.md)
 
 ## Изменения
+
+### 2026-05-04 — BE-10 Runtime Reliability Hardening COMPLETE
+- **Агент:** backend-architect
+- **Контур:** local only; без deploy/migrations/secrets/OpenCode.
+- **Сделано (6 hardening items, P0-P2):**
+  - **P0-1:** Idempotency guard в `RuntimeService` — guard BEFORE transition, блокирует re-entry для PLANNING/APPROVED/WAITING_APPROVAL/COMPLETED.
+  - **P0-2:** Status gate в `trigger-plan` — только CREATED tasks принимаются, 409 для всех остальных статусов.
+  - **P1-3:** Notification isolation в worker — `generate_plan` и dispatch уведомлений в отдельных try блоках.
+  - **P1-4:** Retry exception handling в `OpenCodeHttpPlanClient` — ловит `OpenCodeTimeoutError`/`OpenCodeConnectionError`.
+  - **P2-5:** Event ordering — `runtime_session_created` эмитится ДО retry loop (внутри `generate_plan` после `POST /session`).
+  - **P2-6:** Timeout alignment — `RUNTIME_SESSION_TIMEOUT_SECONDS` 180→300, `API_TIMEOUT_SECONDS` 300→420.
+- **Reviews:** Security 6/6 PASS, Architecture 5/5 PASS, Reality-check 6/6 PASS.
+- **Тесты:** API 237/237 passed (71 in test_runtime_be04.py, 9 new BE-10), Worker 93/93 passed (3 new BE-10).
+- **Guardrails intact:** provider=stub, allow=false, real OpenCode не запускался, `.env`/secrets не трогались.
+- **Изменённые файлы:** `apps/api/app/config.py`, `client.py`, `tasks.py`, `task.py` (schema), `runtime_service.py`, `test_runtime_be04.py`; `apps/worker/app/config.py`, `agent_plan.py`, `test_agent_plan_pipeline.py`, `test_config.py`
+- Task summary: [.ai_memory/tasks/2026-05-04-task-be10-runtime-reliability-hardening.md](.ai_memory/tasks/2026-05-04-task-be10-runtime-reliability-hardening.md)
 
 ### 2026-05-04 — BE-09 Phase 1 Worker API_TIMEOUT_SECONDS Fix (30→300)
 - **Агент:** backend-architect

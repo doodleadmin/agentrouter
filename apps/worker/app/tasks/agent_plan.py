@@ -93,20 +93,31 @@ def generate_plan(task_id: str) -> dict:
             thread_id,
         )
 
-        # Step 3: Dispatch notification if we have a chat_id
+        # P1-3: Step 3 — Dispatch notification (fire-and-forget, isolated).
+        # Plan generation succeeded first; notification failure must not
+        # cause plan regeneration or task failure.
+        notification_sent = False
         if chat_id:
-            notification_msg = _format_plan_message(task_id, task_status, plan_text)
-            celery_app.send_task(
-                "tasks.send_notification",
-                kwargs={
-                    "notification_type": "plan_ready",
-                    "chat_id": chat_id,
-                    "thread_id": thread_id,
-                    "message": notification_msg,
-                },
-                queue="notifications",
-            )
-            logger.info("agent_plan: notification dispatched for task=%s", task_id)
+            try:
+                notification_msg = _format_plan_message(task_id, task_status, plan_text)
+                celery_app.send_task(
+                    "tasks.send_notification",
+                    kwargs={
+                        "notification_type": "plan_ready",
+                        "chat_id": chat_id,
+                        "thread_id": thread_id,
+                        "message": notification_msg,
+                    },
+                    queue="notifications",
+                )
+                notification_sent = True
+                logger.info("agent_plan: notification dispatched for task=%s", task_id)
+            except Exception as exc:
+                logger.warning(
+                    "agent_plan: notification dispatch failed for task=%s: %s",
+                    task_id,
+                    exc,
+                )
         else:
             logger.warning("agent_plan: no chat_id for task=%s — skipping notification", task_id)
 
@@ -114,7 +125,7 @@ def generate_plan(task_id: str) -> dict:
             "status": "ok",
             "task_id": task_id,
             "task_status": task_status,
-            "notification_sent": chat_id is not None,
+            "notification_sent": notification_sent,
         }
 
     except httpx.HTTPError as exc:

@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -14,9 +13,7 @@ from app.integrations.opencode.client import (
     FakeOpenCodeHttpClient,
     OpenCodeHttpPlanClient,
     RuntimeEventError,
-    StubOpenCodeClient,
 )
-from app.integrations.opencode.factory import build_runtime_client
 from app.schemas.task_event import ALLOWED_EVENT_TYPES
 from app.services.runtime_service import RuntimeService
 
@@ -950,7 +947,6 @@ async def test_opencode_http_with_allow_unreachable_server_runtime_error(
     task_id = await _mk_task(async_client, risk="low")
 
     # Mock the transport's internal HTTP client to simulate connection failure
-    from unittest.mock import AsyncMock, MagicMock
 
     import httpx
 
@@ -1241,10 +1237,10 @@ async def test_be07_confirm_stub_is_default() -> None:
 # ═══════════════════════════════════════════════════════════════════════
 
 
-def test_be08_session_timeout_config_default_is_180() -> None:
-    """BE-08: RUNTIME_SESSION_TIMEOUT_SECONDS should default to 180
-    (was 60 before BE-08 smoke showed insufficient)."""
-    assert settings.RUNTIME_SESSION_TIMEOUT_SECONDS == 180
+def test_be08_session_timeout_config_default_is_300() -> None:
+    """BE-08/BE-10: RUNTIME_SESSION_TIMEOUT_SECONDS should default to 300
+    (was 60 → BE-08 180 → BE-10 300 for real OpenCode headroom)."""
+    assert settings.RUNTIME_SESSION_TIMEOUT_SECONDS == 300
 
 
 @pytest.mark.anyio
@@ -1286,3 +1282,299 @@ def test_be08_real_opencode_server_not_started() -> None:
     assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False
     assert settings.RUNTIME_PROVIDER == "stub"
     assert settings.OPENCODE_SERVER_URL == ""
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BE-10 TESTS — Runtime Reliability Hardening
+# ═══════════════════════════════════════════════════════════════════════
+
+
+# ── P0-1 / P0-2: Idempotency and no duplicate plan events ──────────────
+
+@pytest.mark.anyio
+async def test_be10_no_duplicate_plan_generated_on_repeated_call(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P0-1: Repeated POST /runtime/{id}/plan should only emit plan_generated once."""
+    task_id = await _mk_task(async_client, risk="low")
+
+    # First call — should succeed (stub auto-approves)
+    resp1 = await async_client.post(f"/runtime/tasks/{task_id}/plan")
+    assert resp1.status_code == 200
+    assert resp1.json()["status"] == "approved"
+
+    # Second call — idempotent return, no duplicate work
+    resp2 = await async_client.post(f"/runtime/tasks/{task_id}/plan")
+    assert resp2.status_code == 200
+    assert resp2.json()["status"] == "approved"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert event_types.count("plan_generated") == 1
+
+
+@pytest.mark.anyio
+async def test_be10_no_duplicate_approval_requested(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P0-1: Medium-risk task called twice should only request approval once."""
+    task_id = await _mk_task(async_client, risk="medium")
+
+    resp1 = await async_client.post(f"/runtime/tasks/{task_id}/plan")
+    assert resp1.status_code == 200
+    assert resp1.json()["status"] == "waiting_approval"
+
+    resp2 = await async_client.post(f"/runtime/tasks/{task_id}/plan")
+    assert resp2.status_code == 200
+    assert resp2.json()["status"] == "waiting_approval"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert event_types.count("approval_requested") == 1
+    assert event_types.count("plan_generated") == 1
+
+
+@pytest.mark.anyio
+async def test_be10_planning_status_guards_concurrent_reentry(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P0-1: Task in PLANNING status should return idempotently without duplicate work."""
+    from app.db.enums import TaskStatus
+    from app.schemas.task import TaskStatusUpdate
+    from app.services.task_service import TaskService
+
+    task_id = await _mk_task(async_client, risk="low")
+    tsvc = TaskService(test_session)
+
+    # First, transition task to PLANNING manually (simulate in-flight)
+    await tsvc.update_status(UUID(task_id), TaskStatusUpdate(status=TaskStatus.PLANNING))
+
+    # Call plan endpoint — should see PLANNING, return existing task
+    resp = await async_client.post(f"/runtime/tasks/{task_id}/plan")
+    assert resp.status_code == 200
+    # Should not have plan_generated — returned early from idempotency guard
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "plan_generated" not in event_types
+
+
+@pytest.mark.anyio
+async def test_be10_trigger_plan_only_accepts_created(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P0-2: trigger-plan endpoint should reject non-CREATED tasks with 409."""
+    task_id = await _mk_task(async_client, risk="low")
+
+    # First trigger-plan succeeds (CREATED → ROUTED)
+    resp1 = await async_client.post(f"/tasks/{task_id}/trigger-plan")
+    assert resp1.status_code == 202
+
+    # Second trigger-plan should reject (status is now ROUTED, not CREATED)
+    resp2 = await async_client.post(f"/tasks/{task_id}/trigger-plan")
+    assert resp2.status_code == 409
+    assert "already triggered" in resp2.json()["detail"].lower()
+
+
+# ── P2-5: Event ordering — session_created before events ───────────────
+
+@pytest.mark.anyio
+async def test_be10_session_created_before_events(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P2-5: runtime_session_created must appear before runtime_event_received in audit."""
+    task_id = await _mk_task(async_client, risk="low")
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "text", "text": "## Plan\n1. Step"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=0),
+    )
+    await svc.generate_plan_for_task(UUID(task_id))
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    events = events_resp.json()
+    [e["event_type"] for e in events]
+
+    # session_created must appear before any runtime_event_received
+    session_idx = next((i for i, e in enumerate(events) if e["event_type"] == "runtime_session_created"), None)
+    event_received_idxs = [i for i, e in enumerate(events) if e["event_type"] == "runtime_event_received"]
+
+    assert session_idx is not None, "runtime_session_created event missing"
+    if event_received_idxs:
+        assert session_idx < event_received_idxs[0], (
+            f"runtime_session_created (idx={session_idx}) must be before "
+            f"first runtime_event_received (idx={event_received_idxs[0]})"
+        )
+
+
+# ── P1-4: Retry exception handling ─────────────────────────────────────
+
+@pytest.mark.anyio
+async def test_be10_retry_scheduled_includes_attempt(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P1-4: runtime_retry_scheduled event payload must include attempt as int."""
+    task_id = await _mk_task(async_client, risk="low")
+    # No step-finish → timeout → retry scheduled
+    fake = FakeOpenCodeHttpClient([{"type": "text", "text": "partial"}])
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake, max_retries=2),
+    )
+    await svc.generate_plan_for_task(UUID(task_id))
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    events = events_resp.json()
+    retry_events = [e for e in events if e["event_type"] == "runtime_retry_scheduled"]
+
+    assert len(retry_events) >= 1, "Expected at least one runtime_retry_scheduled"
+    for evt in retry_events:
+        payload = evt.get("payload") or {}
+        assert "attempt" in payload, f"Missing 'attempt' in retry payload: {payload}"
+        assert isinstance(payload["attempt"], int), f"attempt should be int, got {type(payload['attempt'])}"
+
+
+@pytest.mark.anyio
+async def test_be10_transport_timeout_is_retried(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P1-4: Transport raising OpenCodeTimeoutError should trigger retry."""
+
+    from app.integrations.opencode.transport import OpenCodeTimeoutError
+
+    task_id = await _mk_task(async_client, risk="low")
+
+    # Transport: create_session succeeds, send_message times out
+    mock_transport = MagicMock()
+    mock_transport.create_session = AsyncMock(return_value="fake-session-retry")
+    mock_transport.send_message = AsyncMock(side_effect=OpenCodeTimeoutError("timed out"))
+
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(mock_transport, max_retries=2),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert "runtime_retry_scheduled" in event_types
+    # Should have attempted retry (attempted retry_count times then fail)
+    retry_events = [e for e in events_resp.json() if e["event_type"] == "runtime_retry_scheduled"]
+    # With max_retries=2, attempts 1 and 2 → 2 retry events
+    assert len(retry_events) >= 1
+
+
+@pytest.mark.anyio
+async def test_be10_non_retryable_400_fails_without_retry(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P1-4: Permanent HTTP 400 errors must NOT trigger retry (fail fast)."""
+
+    from httpx import Response
+
+    from app.integrations.opencode.transport import OpenCodeHTTPError
+
+    task_id = await _mk_task(async_client, risk="low")
+
+    # Simulate 400 response
+    Response(status_code=400, json={"error": "bad request"})
+    mock_transport = MagicMock()
+    mock_transport.create_session = AsyncMock(return_value="fake-session-400")
+    mock_transport.send_message = AsyncMock(
+        side_effect=OpenCodeHTTPError("400 Bad Request")
+    )
+
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(mock_transport, max_retries=2),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    # Must NOT have retry events for permanent errors
+    assert "runtime_retry_scheduled" not in event_types
+
+
+@pytest.mark.anyio
+async def test_be10_successful_plan_not_overwritten(
+    test_session, async_client: AsyncClient
+) -> None:
+    """P0-1: Successful plan must survive a subsequent call with failing transport."""
+    task_id = await _mk_task(async_client, risk="low")
+    success_text = "## Plan\n1. Valid analysis\n2. Tests added"
+
+    # First call: succeeds with valid plan
+    fake1 = FakeOpenCodeHttpClient(
+        [
+            {"type": "text", "text": success_text},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc1 = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake1),
+    )
+    task = await svc1.generate_plan_for_task(UUID(task_id))
+    assert task.status == "approved"
+    assert "Valid analysis" in (task.plan_text or "")
+
+    # Second call: idempotent guard returns task immediately
+    # No transport is called because status is APPROVED
+    task2 = await svc1.generate_plan_for_task(UUID(task_id))
+    assert task2.status == "approved"
+    assert "Valid analysis" in (task2.plan_text or "")
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    assert event_types.count("plan_generated") == 1
+
+
+# ── P2-6: Timeout alignment ────────────────────────────────────────────
+
+def test_be10_session_timeout_default_is_300() -> None:
+    """P2-6: RUNTIME_SESSION_TIMEOUT_SECONDS should default to 300 (was 180)."""
+    assert settings.RUNTIME_SESSION_TIMEOUT_SECONDS == 300
+
+
+# ── Guards: default provider and no reasoning stored ───────────────────
+
+@pytest.mark.anyio
+async def test_be10_default_provider_stub() -> None:
+    """BE-10 guard: confirm default provider is stub."""
+    assert settings.RUNTIME_PROVIDER == "stub"
+    assert settings.OPENCODE_SERVER_URL == ""
+    assert settings.RUNTIME_ALLOW_REAL_OPENCODE_HTTP is False
+
+
+@pytest.mark.anyio
+async def test_be10_no_reasoning_stored(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-10: reasoning parts must NOT appear in plan_text or events, even in BE-10 changes."""
+    task_id = await _mk_task(async_client, risk="low")
+    reasoning_secret = "The API needs JWT validation middleware first."
+    fake = FakeOpenCodeHttpClient(
+        [
+            {"type": "step-start"},
+            {"type": "reasoning", "text": reasoning_secret},
+            {"type": "text", "text": "## Plan\n1. Add /health"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    )
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(fake),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "approved"
+    assert reasoning_secret not in (task.plan_text or "")
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    events_str = str(events_resp.json())
+    assert reasoning_secret not in events_str

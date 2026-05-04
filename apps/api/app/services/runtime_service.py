@@ -5,13 +5,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.enums import ActorType, RiskLevel, TaskStatus
 from app.integrations.opencode.client import (
     OpenCodeClientProtocol,
+    OpenCodeHttpPlanClient,
     RuntimeEventError,
 )
 from app.integrations.opencode.factory import build_runtime_client
@@ -57,6 +57,15 @@ class RuntimeService:
 
     def _resolve_runtime_client(self, task_id: UUID) -> OpenCodeClientProtocol:
         if self._runtime_client is not None:
+            # Wire _on_event callback for DI-provided clients so that events
+            # emitted inside generate_plan() (runtime_session_created, retry, etc.)
+            # are persisted to the task event log.
+            if isinstance(self._runtime_client, OpenCodeHttpPlanClient) and self._runtime_client._on_event is None:
+
+                async def _callback(event_type: str, payload: dict) -> None:
+                    await self._emit_runtime_event(task_id, event_type, payload)
+
+                self._runtime_client._on_event = _callback
             return self._runtime_client
 
         async def _callback(event_type: str, payload: dict) -> None:
@@ -98,24 +107,40 @@ class RuntimeService:
         corr_id = f"task:{task_id}:plan"
         idem_key = f"plan:{task_id}:v1"
         payload = task.payload or {}
-        runtime_meta = payload.get("runtime_plan", {})
-        if runtime_meta.get("idempotency_key") == idem_key and task.plan_text and task.status in {
+
+        # P0-1: Status-based idempotency guard BEFORE PLANNING transition.
+        # Block re-entry for in-flight (PLANNING) and terminal success states.
+        # FAILED and CANCELLED are retryable (they represent terminal failures).
+        if task.status in {
+            TaskStatus.PLANNING.value,
             TaskStatus.APPROVED.value,
             TaskStatus.WAITING_APPROVAL.value,
+            TaskStatus.COMPLETED.value,
         }:
             return task
 
-        # planning phase marker (explicit per BE-03 requirements)
-        planning_stmt = (
-            update(Task)
-            .where(Task.id == task_id)
-            .values(status=TaskStatus.PLANNING.value)
-            .returning(Task)
-        )
-        planning_result = await self._session.execute(planning_stmt)
-        task = planning_result.scalar_one_or_none()
-        if task is None:
-            raise KeyError("Task not found")
+        # Transition to PLANNING via validated TaskService method (not raw SQL).
+        # This enforces allowed transitions (ROUTED→PLANNING) and prevents
+        # double-entry race conditions.
+        try:
+            task = await self._tasks.update_status(
+                task_id,
+                TaskStatusUpdate(status=TaskStatus.PLANNING),
+            )
+        except ValueError:
+            # Illegal transition — a concurrent call may have already entered PLANNING.
+            # Re-read and return idempotently if the task is now in a guarded state.
+            task = await self._tasks.get(task_id)
+            if task is None:
+                raise KeyError("Task not found")
+            if task.status in {
+                TaskStatus.PLANNING.value,
+                TaskStatus.APPROVED.value,
+                TaskStatus.WAITING_APPROVAL.value,
+                TaskStatus.COMPLETED.value,
+            }:
+                return task
+            raise
 
         try:
             runtime_client = self._resolve_runtime_client(task_id)
@@ -210,14 +235,9 @@ class RuntimeService:
             await self._events.create(task_id=task_id, event_type="task_failed", actor_type=ActorType.SYSTEM)
             return task
 
-        await self._events.create(
-            task_id=task_id,
-            event_type="runtime_session_created",
-            actor_type=ActorType.SYSTEM,
-            payload=redact_payload({"session_id": result.session_id, "correlation_id": corr_id}),
-        )
-
         # Persist plan text
+        # NOTE: runtime_session_created is now emitted inside generate_plan()
+        # (via _on_event callback) BEFORE the retry loop — see P2-5.
         task = await self._tasks.update(
             task_id,
             TaskUpdate(

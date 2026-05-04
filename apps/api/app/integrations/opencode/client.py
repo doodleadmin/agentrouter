@@ -16,6 +16,10 @@ from app.integrations.opencode.schemas import (
     RuntimePlanContext,
     RuntimePlanResult,
 )
+from app.integrations.opencode.transport import (
+    OpenCodeConnectionError,
+    OpenCodeTimeoutError,
+)
 from app.policy.runtime_guardrails import (
     ensure_path_confined,
     is_allowed_plan_action,
@@ -144,6 +148,14 @@ class OpenCodeHttpPlanClient:
             ).model_dump(mode="json", exclude_none=True),
         )
 
+        # P2-5: Emit runtime_session_created immediately after session creation,
+        # BEFORE the retry loop. This ensures correct audit ordering:
+        # runtime_session_created appears BEFORE runtime_event_received events.
+        await self._emit(
+            "runtime_session_created",
+            {"session_id": session_id, "correlation_id": context.correlation_id},
+        )
+
         last_exc: Exception | None = None
         for attempt in range(self._max_retries + 1):
             plan_parts: list[str] = []
@@ -253,7 +265,7 @@ class OpenCodeHttpPlanClient:
                     session_id=session_id,
                 )
 
-            except TimeoutError as exc:
+            except (TimeoutError, OpenCodeTimeoutError, OpenCodeConnectionError) as exc:
                 last_exc = exc
                 if attempt < self._max_retries:
                     await self._emit(
