@@ -157,6 +157,17 @@
 - **Проверки:** `python -m compileall app` ✅, `ruff check app` ✅, `pytest tests -v` ✅ (219/219)
 - Task summary: [.ai_memory/tasks/2026-05-04-task-be07-plus-implementation.md](.ai_memory/tasks/2026-05-04-task-be07-plus-implementation.md)
 
+### 2026-05-04 — DEV-DB-01 Fix Alembic async/sync engine mismatch
+- **Агент:** backend-architect
+- **Сделано:** в `apps/api/alembic/env.py` исправлен sync/async engine mismatch:
+  - `engine_from_config()` (sync) заменён на `create_async_engine()` + `asyncio.run()` (async)
+  - Добавлен `_do_run_migrations(connection)` — sync callback для `connection.run_sync()`
+  - Добавлен `_validate_migration_safety()` — блокирует миграции против prod/staging/RDS БД
+  - `run_migrations_offline()` теперь тоже вызывает `_validate_migration_safety()`
+- **Проверки:** `compileall` ✅, `alembic upgrade head --sql` ✅ (8 таблиц, без DROP/TRUNCATE), `pytest tests -v` ✅ (219/219)
+- **Ограничения:** онлайн-миграция НЕ запускалась (только `--sql`), БД НЕ менялась, `.env`/`alembic.ini`/`pyproject.toml`/`docker-compose.yml` не трогались
+- Task summary: [.ai_memory/tasks/2026-05-04-task-dev-db-01.md](.ai_memory/tasks/2026-05-04-task-dev-db-01.md)
+
 ### 2026-05-04 — BE-06 blocking security fix (bounded read timeout)
 - **Агент:** backend-architect
 - **Сделано:** в `RealOpenCodeHttpTransport` устранён риск indefinite hang для sync `POST /session/{id}/message`:
