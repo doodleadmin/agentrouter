@@ -25,11 +25,19 @@ class FakeMessage:
         self.text = text
         self.chat = SimpleNamespace(id=chat_id)
         self.message_thread_id = thread_id
-        self.from_user = SimpleNamespace(id=77, username=username)
+        self.from_user = SimpleNamespace(id=77, username=username, is_bot=False)
         self.answers = []
 
     async def answer(self, text: str, message_thread_id: int | None = None):
         self.answers.append((text, message_thread_id))
+
+
+class FakeBotMessage(FakeMessage):
+    """Simulates a message sent by the bot itself (worker notification)."""
+
+    def __init__(self, text: str = "Plan ready: task abc123"):
+        super().__init__(text)
+        self.from_user = SimpleNamespace(id=123456789, username="test_bot", is_bot=True)
 
 
 def test_make_title_truncates() -> None:
@@ -105,3 +113,53 @@ async def test_text_message_bound_topic_plan_trigger_fails_gracefully(monkeypatc
     assert len(msg.answers) == 1
     assert "Task создан" in msg.answers[0][0]
     assert "не удалось запустить" in msg.answers[0][0]
+
+
+# ── TG-04: bot message filtering ────────────────────────────────────────
+
+
+async def test_bot_messages_are_ignored_no_task_created(monkeypatch) -> None:
+    """Worker notifications (from_user.is_bot=True) must not trigger task creation."""
+    msg = FakeBotMessage("Plan ready: task abc123")
+    fake_client = FakeApiClient()
+
+    async def _resolve(*args, **kwargs):
+        return TopicContext(
+            is_bound=True,
+            kind="project",
+            project_id="00000000-0000-0000-0000-000000000001",
+            agent_id="00000000-0000-0000-0000-000000000002",
+            title="Project: demo",
+        )
+
+    monkeypatch.setattr(messages, "resolve_topic_context", _resolve)
+    monkeypatch.setattr(messages, "get_api_client", lambda: fake_client)
+
+    await messages.text_message_handler(msg)
+
+    # Must not create a task (no API call, no answer)
+    assert fake_client.created_payload is None
+    assert len(msg.answers) == 0
+
+
+async def test_bot_message_slash_command_not_affected(monkeypatch) -> None:
+    """Slash commands (/status, /approve etc.) are handled by dedicated
+    command routers, not messages.py.  The is_bot guard here only affects
+    the free-text path.  Slash commands from bots are already skipped by
+    the `text.startswith("/")` check — but the is_bot guard catches bot
+    messages first.  This test verifies they don't reach the topic context
+    resolver or API client."""
+    msg = FakeBotMessage("/status task-0001")
+    fake_client = FakeApiClient()
+
+    async def _resolve(*args, **kwargs):
+        raise AssertionError("should not be called")
+
+    monkeypatch.setattr(messages, "resolve_topic_context", _resolve)
+    monkeypatch.setattr(messages, "get_api_client", lambda: fake_client)
+
+    await messages.text_message_handler(msg)
+
+    # Bot messages are discarded before even checking commands.
+    assert fake_client.created_payload is None
+    assert len(msg.answers) == 0

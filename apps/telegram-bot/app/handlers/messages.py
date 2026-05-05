@@ -21,6 +21,13 @@ def _make_title(text: str) -> str:
 
 @router.message()
 async def text_message_handler(message: Message) -> None:
+    # TG-04: Prevent worker notification feedback loop.
+    # Bot messages (including worker-sent notifications) must not trigger
+    # task creation or any API calls.  from_user is always present for
+    # non-channel messages in private / group chats.
+    if message.from_user and message.from_user.is_bot:
+        return
+
     text = (message.text or "").strip()
     if not text:
         return

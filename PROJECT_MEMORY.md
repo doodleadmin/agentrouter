@@ -5,10 +5,27 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE.
+**Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-06 — TG-04 Live Integration Phase 1 (security prerequisites)
+- **Агенты:** security-engineer + backend-architect
+- **Контур:** local only; без deploy/migrations/.env/secrets/real Telegram/OpenCode.
+- **Сделано:**
+  - **Config:** `apps/telegram-bot/app/config.py` — добавлен `TELEGRAM_ADMIN_USER_IDS` (comma-separated str), метод `admin_user_ids()` с fail-closed парсингом (invalid→пустой set, logged warning). `env_file` теперь tuple `(".env", ".env.local")`.
+  - **Bot guard:** `apps/telegram-bot/app/handlers/messages.py` — добавлен `is_bot guard`: сообщения от `from_user.is_bot` пропускаются (предотвращает feedback loop при worker-уведомлениях).
+  - **Logging (NEW):** `apps/telegram-bot/app/logging.py` — `SecretRedactionFilter` (logging.Filter) с компилированными regex-паттернами: `TELEGRAM_BOT_TOKEN`, OpenAI keys, Bearer токены, `DATABASE_URL` пароли, Redis пароли. Redacted значения заменяются на `[REDACTED]`.
+  - **Docs (NEW):** `docs/telegram-live-runbook.md` — env checklist, команды запуска, abort criteria, safety gates для первого live-подключения.
+  - **Tests (14 новых):**
+    - `test_tg04_config.py` (5 тестов): admin IDs — valid, empty, whitespace, invalid→empty, trailing comma
+    - `test_tg04_logging.py` (7 тестов): token redaction, api key, bearer, DB password, redis password, no false positives, partial match safety
+    - `test_messages.py` (+2 теста): `test_is_bot_ignored`, `test_slash_from_bot_also_ignored` (FakeBotMessage fixture)
+- **Валидация:** compileall ✅, ruff ✅, pytest 64/64 ✅
+- **Guardrails:** no live bot started, no .env/secrets changed, no migrations/deploy, no OpenCode.
+- **Рабочее дерево:** 7 файлов (3 modified + 4 new), без утечек.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg04-live-integration-phase1.md](.ai_memory/tasks/2026-05-06-task-tg04-live-integration-phase1.md)
 
 ### 2026-05-06 — TG-03 Telegram Approvals + Task Status UX
 - **Агент:** backend-architect
