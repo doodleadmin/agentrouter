@@ -56,7 +56,7 @@ $SECRET_PATTERNS = @(
     '(?i)Bearer\s+[A-Za-z0-9\-_\.]{20,}'
 )
 
-# ── helpers ─────────────────────────────────────────────────────────────
+# -- helpers -------------------------------------------------------------
 
 function Exit-Fail {
     param([string] $Message)
@@ -83,7 +83,32 @@ function Invoke-Api {
     return Invoke-RestMethod @params
 }
 
-# ── preconditions ───────────────────────────────────────────────────────
+# -- dry-run -------------------------------------------------------------
+if ($DryRun) {
+    Write-Host ""
+    Write-Host "========== Smoke Real OpenCode Runtime DryRun =========="
+    Write-Host "[DRYRUN] would: verify API in opencode_http mode"
+    Write-Host "[DRYRUN] would: verify OpenCode healthy at $OPENCODE_BASE"
+    Write-Host "[DRYRUN] would: verify git clean"
+    Write-Host "[DRYRUN] would: PRINT: Worker bypass: direct POST /runtime used"
+    Write-Host "[DRYRUN] would: create project   slug=$PROJECT_SLUG"
+    Write-Host "[DRYRUN] would: create agent     slug=$AGENT_SLUG"
+    Write-Host "[DRYRUN] would: create task      risk_level=low"
+    Write-Host "[DRYRUN] would: POST /runtime/tasks/{id}/plan (timeout ${TimeoutSeconds}s)"
+    Write-Host "[DRYRUN] would: verify session_id != stub-session and starts with 'ses_'"
+    Write-Host "[DRYRUN] would: verify no stub fingerprints in plan_text"
+    Write-Host "[DRYRUN] would: verify runtime_session_created BEFORE runtime_event_received"
+    Write-Host "[DRYRUN] would: verify plan_generated=1"
+    Write-Host "[DRYRUN] would: verify no runtime_error/runtime_timeout/policy_blocked"
+    Write-Host "[DRYRUN] would: verify no command/file/sandbox events"
+    Write-Host "[DRYRUN] would: verify no reasoning/secret leak"
+    Write-Host "[DRYRUN] would: verify git unchanged vs baseline"
+    Write-Host "========================================================="
+    Write-Host ""
+    exit 0
+}
+
+# -- preconditions -------------------------------------------------------
 
 # 1. OpenCode healthy
 try {
@@ -104,42 +129,14 @@ try {
     Exit-Fail "API not reachable at $API_BASE/health. Run start-api-opencode.ps1 first."
 }
 
-# 3. Git clean
-$gitStatus = git status --porcelain 2>&1
+# 3. Git baseline snapshot (no mutation during smoke)
+$gitStatusBefore = git status --porcelain 2>&1
 if ($LASTEXITCODE -ne 0) {
     Exit-Fail "Git status failed."
 }
-if ($gitStatus) {
-    Exit-Fail "Git working tree is dirty. Please commit or stash changes before running smoke test."
-}
-Write-Host "[INFO] Git status: clean"
+Write-Host "[INFO] Git status baseline captured (changes allowed before run)."
 
-# ── dry-run ─────────────────────────────────────────────────────────────
-if ($DryRun) {
-    Write-Host ""
-    Write-Host "========== Smoke Real OpenCode Runtime DryRun =========="
-    Write-Host "[DRYRUN] would: verify API in opencode_http mode"
-    Write-Host "[DRYRUN] would: verify OpenCode healthy at $OPENCODE_BASE"
-    Write-Host "[DRYRUN] would: verify git clean"
-    Write-Host "[DRYRUN] would: create project   slug=$PROJECT_SLUG"
-    Write-Host "[DRYRUN] would: create agent     slug=$AGENT_SLUG"
-    Write-Host "[DRYRUN] would: create task      risk_level=low"
-    Write-Host "[DRYRUN] would: POST /runtime/tasks/{id}/plan (timeout ${TimeoutSeconds}s)"
-    Write-Host "[DRYRUN] would: PRINT: Worker bypass: direct POST /runtime used."
-    Write-Host "[DRYRUN] would: verify status=approved"
-    Write-Host "[DRYRUN] would: verify session_id starts with 'ses_'"
-    Write-Host "[DRYRUN] would: verify no stub fingerprints in plan_text"
-    Write-Host "[DRYRUN] would: verify runtime_session_created BEFORE runtime_event_received"
-    Write-Host "[DRYRUN] would: verify plan_generated=1, no errors"
-    Write-Host "[DRYRUN] would: verify no command/file/sandbox events"
-    Write-Host "[DRYRUN] would: verify no reasoning/secret leak"
-    Write-Host "[DRYRUN] would: verify git still clean"
-    Write-Host "========================================================="
-    Write-Host ""
-    exit 0
-}
-
-# ── create project ──────────────────────────────────────────────────────
+# -- create project ------------------------------------------------------
 Write-Host "[INFO] Creating project '$PROJECT_SLUG' ..."
 try {
     $project = Invoke-Api -Method Post -Uri "$API_BASE/projects" -Body @{
@@ -162,7 +159,7 @@ try {
     Exit-Fail "Failed to create project: $errMsg"
 }
 
-# ── create agent ────────────────────────────────────────────────────────
+# -- create agent --------------------------------------------------------
 Write-Host "[INFO] Creating agent '$AGENT_SLUG' ..."
 try {
     $agent = Invoke-Api -Method Post -Uri "$API_BASE/agents" -Body @{
@@ -185,7 +182,7 @@ try {
     Exit-Fail "Failed to create agent: $errMsg"
 }
 
-# ── create task ─────────────────────────────────────────────────────────
+# -- create task ---------------------------------------------------------
 Write-Host "[INFO] Creating task..."
 try {
     $task = Invoke-Api -Method Post -Uri "$API_BASE/tasks" -Body @{
@@ -208,10 +205,10 @@ try {
     Exit-Fail "Failed to create task: $errMsg"
 }
 
-# ── route task through status transitions ────────────────────────────────
+# -- route task through status transitions --------------------------------
 Write-Host "[INFO] Preparing task for planning..."
 try {
-    # created → routed → planning (runtime_service handles the rest)
+    # created -> routed -> planning (runtime_service handles the rest)
     $routedTask = Invoke-Api -Method Patch -Uri "$API_BASE/tasks/$taskId/status" -Body @{
         status = "routed"
     } -TimeoutSec 30
@@ -220,28 +217,66 @@ try {
     Write-Host "[WARN] Could not set routed status: $_"
 }
 
-# ── call plan endpoint ──────────────────────────────────────────────────
+# -- call plan endpoint --------------------------------------------------
 Write-Host ""
 Write-Host "**************************************************"
 Write-Host "* Worker bypass: direct POST /runtime used.      *"
 Write-Host "**************************************************"
 Write-Host ""
 
-Write-Host "[INFO] Calling POST /runtime/tasks/$taskId/plan (timeout ${TimeoutSeconds}s)..."
+$runtimeTimeoutSec = [Math]::Max($TimeoutSeconds, 420)
+Write-Host "[STEP] Calling runtime plan endpoint. This may take up to 300s."
 $planRequestStart = Get-Date
+$planRequestStartIso = $planRequestStart.ToString("o")
+Write-Host "[INFO] Plan call started at: $planRequestStartIso"
+
+$progressTimer = New-Object System.Timers.Timer
+$progressTimer.Interval = 15000
+$progressTimer.AutoReset = $true
+$progressSub = Register-ObjectEvent -InputObject $progressTimer -EventName Elapsed -Action {
+    $now = Get-Date
+    $elapsed = [math]::Round(($now - $using:planRequestStart).TotalSeconds, 1)
+    Write-Host "[WAIT] runtime plan request in progress... elapsed=${elapsed}s"
+}
+$progressTimer.Start()
+
 try {
-    $planResult = Invoke-Api -Method Post -Uri "$API_BASE/runtime/tasks/$taskId/plan" -TimeoutSec $TimeoutSeconds
+    $planResult = Invoke-RestMethod -Uri "$API_BASE/runtime/tasks/$taskId/plan" -Method Post -ContentType "application/json" -TimeoutSec $runtimeTimeoutSec -ErrorAction Stop
     $planDuration = ((Get-Date) - $planRequestStart).TotalSeconds
+    Write-Host "[DONE] Runtime plan endpoint returned."
 } catch {
-    $errMsg = $_.Exception.Message
-    if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $errMsg = $reader.ReadToEnd()
+    $errType = $_.Exception.GetType().FullName
+    Write-Host "[ERROR] Runtime plan POST exception type: $errType"
+    Write-Host "[INFO] Attempting task state fetch after POST failure..."
+    try {
+        $taskAfterError = Invoke-Api -Method Get -Uri "$API_BASE/tasks/$taskId" -TimeoutSec 30
+        $taskStatusAfterError = $taskAfterError.status
+        $planTextState = if ($null -eq $taskAfterError.plan_text) { "null" } else { "not null" }
+        Write-Host "[INFO] Task status after error: $taskStatusAfterError"
+        Write-Host "[INFO] plan_text: $planTextState"
+    } catch {
+        Write-Host "[WARN] Failed to fetch task after POST failure: $($_.Exception.Message)"
     }
-    Exit-Fail "Plan generation failed after ${TimeoutSeconds}s: $errMsg"
+    exit 1
+} finally {
+    if ($progressTimer) {
+        $progressTimer.Stop()
+    }
+    if ($progressSub) {
+        Unregister-Event -SubscriptionId $progressSub.Id -ErrorAction SilentlyContinue
+        Remove-Job -Id $progressSub.Id -Force -ErrorAction SilentlyContinue
+    }
+    if ($progressTimer) {
+        $progressTimer.Dispose()
+    }
 }
 
-# ── fetch updated task ──────────────────────────────────────────────────
+$planRequestEnd = Get-Date
+$planRequestEndIso = $planRequestEnd.ToString("o")
+Write-Host "[INFO] Plan call finished at: $planRequestEndIso"
+Write-Host "[INFO] Plan call elapsed seconds: $([math]::Round($planDuration,1))"
+
+# -- fetch updated task --------------------------------------------------
 Write-Host "[INFO] Fetching updated task..."
 try {
     $updatedTask = Invoke-Api -Method Get -Uri "$API_BASE/tasks/$taskId" -TimeoutSec 30
@@ -249,7 +284,7 @@ try {
     Exit-Fail "Failed to fetch updated task."
 }
 
-# ── fetch task events ───────────────────────────────────────────────────
+# -- fetch task events ---------------------------------------------------
 Write-Host "[INFO] Fetching task events..."
 try {
     $events = Invoke-Api -Method Get -Uri "$API_BASE/task-events?task_id=$taskId" -TimeoutSec 30
@@ -267,7 +302,7 @@ try {
     $eventList = @()
 }
 
-# ── verifications ───────────────────────────────────────────────────────
+# -- verifications -------------------------------------------------------
 
 # 1. Status is approved
 $statusApproved = ($updatedTask.status -eq "approved")
@@ -283,7 +318,7 @@ if ($runtimePlan) {
 $sessionIdValid = ($sessionId -ne "" -and $sessionId -ne "stub-session" -and $sessionId -match "^ses_")
 
 # 3. Check plan_text for stub fingerprints
-$planText = $updatedTask.plan_text ?? ""
+$planText = if ($updatedTask.plan_text) { $updatedTask.plan_text } else { "" }
 $stubFingerprintsFound = @()
 foreach ($fp in $STUB_FINGERPRINTS) {
     if ($planText -match [regex]::Escape($fp)) {
@@ -327,7 +362,7 @@ foreach ($evt in $eventList) {
 }
 
 # 6. Check for reasoning leak (no reasoning content in plan_text)
-#    The codebase already filters reasoning — just verify no obvious reasoning markers
+#    The codebase already filters reasoning - just verify no obvious reasoning markers
 $reasoningLeak = ($planText -match '\[REASONING\]|\[Internal\]|<thinking>' -or $planText -match '(?i)let me think|let me reason|my reasoning|I should note')
 
 # 7. Check for secret leaks in plan_text
@@ -339,17 +374,18 @@ foreach ($pattern in $SECRET_PATTERNS) {
     }
 }
 
-# 8. Git still clean
+# 8. Git unchanged vs baseline
 $gitStatusAfter = git status --porcelain 2>&1
-$gitStillClean = (-not $gitStatusAfter)
+$gitUnchanged = ($gitStatusAfter -join "`n") -eq ($gitStatusBefore -join "`n")
 
-# ── plan text length ────────────────────────────────────────────────────
+# -- plan text length ----------------------------------------------------
 $planLength = $planText.Length
 
-# ── report ──────────────────────────────────────────────────────────────
+# -- report --------------------------------------------------------------
 Write-Host ""
 Write-Host "========== Smoke Real OpenCode Runtime Report =========="
 Write-Host "  Task ID            : $taskId"
+Write-Host "  Worker bypass      : direct POST /runtime used."
 Write-Host "  Session ID         : $sessionId"
 Write-Host "  Plan length        : $planLength chars"
 Write-Host "  Duration           : $([math]::Round($planDuration, 1))s"
@@ -364,24 +400,28 @@ Write-Host "  plan_generated=1             : $(if ($planGeneratedCount -eq 1) { 
 Write-Host "  no runtime_error             : $(if ($runtimeErrorCount -eq 0) { '[PASS]' } else { "[FAIL] ($runtimeErrorCount)" })"
 Write-Host "  no runtime_timeout           : $(if ($runtimeTimeoutCount -eq 0) { '[PASS]' } else { "[FAIL] ($runtimeTimeoutCount)" })"
 Write-Host "  no policy_blocked            : $(if ($policyBlockedCount -eq 0) { '[PASS]' } else { "[FAIL] ($policyBlockedCount)" })"
-Write-Host "  no command/file events       : $(if ($commandStartedCount -eq 0 -and $fileChangedCount -eq 0) { '[PASS]' } else { '[FAIL]' })"
+Write-Host "  no command/file events       : $(if ($commandStartedCount -eq 0 -and $commandFinishedCount -eq 0 -and $fileChangedCount -eq 0) { '[PASS]' } else { '[FAIL]' })"
 Write-Host "  no sandbox events            : $(if ($sandboxEventCount -eq 0) { '[PASS]' } else { '[FAIL]' })"
 Write-Host "  no reasoning leak            : $(if (-not $reasoningLeak) { '[PASS]' } else { '[FAIL]' })"
 Write-Host "  no secret leak               : $(if (-not $secretLeak) { '[PASS]' } else { '[FAIL]' })"
-Write-Host "  git still clean              : $(if ($gitStillClean) { '[PASS]' } else { '[FAIL]' })"
+Write-Host "  git unchanged vs baseline    : $(if ($gitUnchanged) { '[PASS]' } else { '[FAIL]' })"
 Write-Host "========================================================="
 Write-Host ""
 
-# ── show plan preview ───────────────────────────────────────────────────
-if ($planText) {
+# -- show plan preview ---------------------------------------------------
+# Preview is only allowed when leak checks passed.
+if ($planText -and -not $secretLeak -and -not $reasoningLeak) {
     $planPreview = $planText.Substring(0, [Math]::Min(300, $planText.Length))
     Write-Host "--- Plan Preview (first 300 chars) ---"
     Write-Host $planPreview
     Write-Host "--- End Preview ---"
     Write-Host ""
+} elseif ($planText) {
+    Write-Host "[INFO] Plan preview suppressed due to reasoning/secret leak check failure."
+    Write-Host ""
 }
 
-# ── overall result ──────────────────────────────────────────────────────
+# -- overall result ------------------------------------------------------
 $allPassed = ($statusApproved -and
               $sessionIdValid -and
               $noStubFingerprints -and
@@ -391,11 +431,12 @@ $allPassed = ($statusApproved -and
               $runtimeTimeoutCount -eq 0 -and
               $policyBlockedCount -eq 0 -and
               $commandStartedCount -eq 0 -and
+              $commandFinishedCount -eq 0 -and
               $fileChangedCount -eq 0 -and
               $sandboxEventCount -eq 0 -and
               (-not $reasoningLeak) -and
               (-not $secretLeak) -and
-              $gitStillClean)
+              $gitUnchanged)
 
 if ($allPassed) {
     Write-Host "[PASS] All smoke checks passed for real OpenCode runtime."

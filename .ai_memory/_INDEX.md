@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 46 |
+| **Task logs** | 48 |
 | **Шаблоны** | 5 |
 
 ---
@@ -114,6 +114,8 @@
 | [2026-05-04-task-be10-runtime-reliability-hardening.md](tasks/2026-05-04-task-be10-runtime-reliability-hardening.md) | BE-10: Runtime Reliability Hardening (6 hardening items) |
 | [2026-05-04-task-be10-real-opencode-regression-smoke.md](tasks/2026-05-04-task-be10-real-opencode-regression-smoke.md) | BE-10: Real OpenCode Regression Smoke — PASSED |
 | [2026-05-04-task-be11-runtime-runbook-automation.md](tasks/2026-05-04-task-be11-runtime-runbook-automation.md) | BE-11: Runtime Runbook + Local Smoke Automation Scripts |
+| [2026-05-05-task-be12-opencode-read-timeout-alignment.md](tasks/2026-05-05-task-be12-opencode-read-timeout-alignment.md) | BE-12: OpenCode Read-Timeout Alignment |
+| [2026-05-05-task-be11-scripts-final-repair.md](tasks/2026-05-05-task-be11-scripts-final-repair.md) | BE-11: Scripts Final Repair (parse/dry-run PASS) |
 
 ---
 

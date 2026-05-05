@@ -7,7 +7,7 @@
 ## Статус проекта
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success, BE-09-phase1-worker-timeout, BE-09-phase2-real-opencode-e2e-success, BE-10-runtime-reliability-hardening, BE-10-real-opencode-regression-smoke, BE-11-runtime-runbook-automation, BE-12-opencode-read-timeout-alignment выполнены. CRITICAL/HIGH закрыты.
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success, BE-09-phase1-worker-timeout, BE-09-phase2-real-opencode-e2e-success, BE-10-runtime-reliability-hardening, BE-10-real-opencode-regression-smoke, BE-11-runtime-runbook-automation, BE-11-scripts-final-repair, BE-12-opencode-read-timeout-alignment выполнены. CRITICAL/HIGH закрыты.
 **Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
@@ -99,6 +99,7 @@
 | DEV-DB-01: Fix Alembic async/sync engine mismatch | ✅ Выполнена | backend-architect |
 | BE-11: Runtime Runbook + Local Smoke Automation | ✅ Выполнена | devops-automator + knowledge-steward |
 | BE-12: OpenCode Read-Timeout Alignment | ✅ Выполнена | backend-architect |
+| BE-11: Scripts Final Repair (parse/dry-run PASS) | ✅ Выполнена | studio-orchestrator |
 
 - **BE-12 OpenCode read-timeout alignment (backend-architect):** `send_message()` локальный `httpx.AsyncClient` с `read=None` (SDK-aligned). `create_session()` bounded. Error mapping сохранён. Guardrails нетронуты. 16/16 transport tests pass (+5 BE-12). 251/252 full suite pass. Real OpenCode не запускался.
 
@@ -135,5 +136,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 47 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment, be08-session-traceability-timeout, be08-real-opencode-smoke-success, dev-db-01-alembic-async-fix, be09-phase1-worker-timeout, be09-phase2-real-opencode-e2e-success, be10-runtime-reliability-hardening, be10-real-opencode-regression-smoke, be11-runtime-runbook-automation, be12-opencode-read-timeout-alignment) |
+| Логи задач | 48 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment, be08-session-traceability-timeout, be08-real-opencode-smoke-success, dev-db-01-alembic-async-fix, be09-phase1-worker-timeout, be09-phase2-real-opencode-e2e-success, be10-runtime-reliability-hardening, be10-real-opencode-regression-smoke, be11-runtime-runbook-automation, be12-opencode-read-timeout-alignment, be11-scripts-final-repair) |
 | Проекты | 0 |

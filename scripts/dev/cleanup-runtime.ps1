@@ -3,10 +3,11 @@
     BE-11 Runtime Runbook: Clean up runtime processes and restart API in stub mode.
 
 .DESCRIPTION
-    Stops OpenCode server, Celery worker, and API on target ports. Waits for
-    ports to free. Cleans process-scoped RUNTIME env vars. Optionally restarts
-    API in stub mode (auto-restart is default; use -SkipApiRestart to prevent).
-    Never stops postgres/redis containers unless explicitly requested.
+    Stops OpenCode server on OpenCode port and API process only when it is AMC
+    uvicorn/python running with opencode_http runtime env. Waits for ports to
+    free. Cleans process-scoped runtime env vars. Optionally restarts API in
+    stub mode (auto-restart is default; use -SkipApiRestart to prevent).
+    Never touches DB, docker compose down, .env, or persistent env.
 
 .PARAMETER Port
     API port (default 8000).
@@ -15,7 +16,7 @@
     OpenCode port (default 4096).
 
 .PARAMETER KeepDb
-    Keep database (default — db is never dropped).
+    Keep database (default - db is never dropped).
 
 .PARAMETER SkipApiRestart
     Skip auto-restart of API in stub mode.
@@ -46,7 +47,7 @@ $AGENTS_URL = "http://127.0.0.1:${Port}/agents"
 $API_DIR = "apps\api"
 $PORT_WAIT_TIMEOUT_SEC = 10
 
-# ── helpers ─────────────────────────────────────────────────────────────
+# -- helpers -------------------------------------------------------------
 
 function Exit-Fail {
     param([string] $Message)
@@ -74,11 +75,48 @@ function Stop-ProcessOnPort {
                     Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
                     Start-Sleep -Milliseconds 1000
                 } else {
-                    Write-Host "[WARN] Port $TargetPort occupied by '$procName' (PID $p) — not matching '$ProcessNamePattern', skipping."
+                    Write-Host "[WARN] Port $TargetPort occupied by '$procName' (PID $p) - not matching '$ProcessNamePattern', skipping."
                 }
             }
         } catch {
             Write-Host "[WARN] Could not stop process PID $p : $_"
+        }
+    }
+}
+
+function Stop-ApiOpencodeHttpProcess {
+    param([int] $TargetPort)
+
+    $connections = Get-NetTCPConnection -LocalPort $TargetPort -LocalAddress "127.0.0.1" -ErrorAction SilentlyContinue
+    if (-not $connections) {
+        Write-Host "[INFO] No API listener on 127.0.0.1:$TargetPort"
+        return
+    }
+
+    $pids = $connections.OwningProcess | Select-Object -Unique
+    foreach ($p in $pids) {
+        try {
+            $proc = Get-Process -Id $p -ErrorAction SilentlyContinue
+            if (-not $proc) { continue }
+            if ($proc.ProcessName -notmatch "^(python|uvicorn)$") {
+                Write-Host "[WARN] PID $p on port $TargetPort is '$($proc.ProcessName)' (not python/uvicorn), skipping."
+                continue
+            }
+
+            $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $p").CommandLine
+            $runtimeProvider = (Get-Item "Env:RUNTIME_PROVIDER" -ErrorAction SilentlyContinue).Value
+            $isAmcApi = ($cmdLine -match "app\.main:app")
+            $isOpencodeHttp = ($runtimeProvider -eq "opencode_http")
+
+            if ($isAmcApi -and $isOpencodeHttp) {
+                Write-Host "[INFO] Stopping AMC API opencode_http process '$($proc.ProcessName)' (PID $p)..."
+                Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 1000
+            } else {
+                Write-Host "[WARN] PID $p is not confirmed AMC API opencode_http (cmd/env mismatch), skipping."
+            }
+        } catch {
+            Write-Host "[WARN] Could not inspect/stop API PID $p : $_"
         }
     }
 }
@@ -109,13 +147,12 @@ function Remove-RuntimeEnvVars {
     Write-Host "[INFO] Removed RUNTIME-* process-scoped env vars."
 }
 
-# ── dry-run ─────────────────────────────────────────────────────────────
+# -- dry-run -------------------------------------------------------------
 if ($DryRun) {
     Write-Host ""
     Write-Host "========== Cleanup Runtime DryRun =========="
     Write-Host "[DRYRUN] would: stop OpenCode on port $OpenCodePort (verify opencode before kill)"
-    Write-Host "[DRYRUN] would: stop Celery worker (find by process name or port)"
-    Write-Host "[DRYRUN] would: stop API on port $Port"
+    Write-Host "[DRYRUN] would: stop API opencode_http process on port $Port (safe match only)"
     Write-Host "[DRYRUN] would: wait for ports to free (timeout ${PORT_WAIT_TIMEOUT_SEC}s)"
     Write-Host "[DRYRUN] would: remove process-scoped RUNTIME_* env vars"
     if (-not $SkipApiRestart) {
@@ -125,62 +162,32 @@ if ($DryRun) {
     Write-Host "[DRYRUN] would: verify port $OpenCodePort free"
     Write-Host "[DRYRUN] would: verify git clean"
     Write-Host "[DRYRUN] would: NOT stop postgres/redis containers"
+    Write-Host "[DRYRUN] would: NOT run docker compose down / NOT touch DB"
     Write-Host "============================================="
     Write-Host ""
     exit 0
 }
 
-# ── 1. Stop OpenCode ────────────────────────────────────────────────────
+# -- 1. Stop OpenCode ----------------------------------------------------
 Write-Host "[INFO] Step 1: Stopping OpenCode on port $OpenCodePort ..."
 Stop-ProcessOnPort -TargetPort $OpenCodePort -ProcessNamePattern "^(opencode|node|cmd)$"
 
-# ── 2. Stop Celery worker ───────────────────────────────────────────────
-Write-Host "[INFO] Step 2: Stopping Celery worker..."
-# Celery worker processes are typically named 'python' or 'celery'
-$celeryProcs = Get-Process -Name "python*" -ErrorAction SilentlyContinue | Where-Object {
-    try {
-        $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)").CommandLine
-        return ($cmdLine -match "celery" -or $cmdLine -match "celery_app")
-    } catch { $false }
-}
-if ($celeryProcs) {
-    foreach ($cp in $celeryProcs) {
-        Write-Host "[INFO] Stopping Celery worker process (PID $($cp.Id))..."
-        Stop-Process -Id $cp.Id -Force -ErrorAction SilentlyContinue
-    }
-    Start-Sleep -Milliseconds 1500
-} else {
-    Write-Host "[INFO] No Celery worker processes found."
-}
+# -- 2. Stop API opencode_http process only -------------------------------
+Write-Host "[INFO] Step 2: Stopping API opencode_http process on port $Port ..."
+Stop-ApiOpencodeHttpProcess -TargetPort $Port
 
-# Also check for any processes consuming from Redis queues
-$redisConsumers = Get-Process -Name "python*" -ErrorAction SilentlyContinue | Where-Object {
-    try {
-        $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)").CommandLine
-        return ($cmdLine -match "worker" -and $cmdLine -match "celery")
-    } catch { $false }
-}
-foreach ($rc in $redisConsumers) {
-    Write-Host "[INFO] Stopping additional worker (PID $($rc.Id))..."
-    Stop-Process -Id $rc.Id -Force -ErrorAction SilentlyContinue
-}
-
-# ── 3. Stop API ─────────────────────────────────────────────────────────
-Write-Host "[INFO] Step 3: Stopping API on port $Port ..."
-Stop-ProcessOnPort -TargetPort $Port -ProcessNamePattern "^(python|uvicorn)$"
-
-# ── 4. Wait for ports to free ────────────────────────────────────────────
-Write-Host "[INFO] Step 4: Waiting for ports to free..."
+# -- 3. Wait for ports to free --------------------------------------------
+Write-Host "[INFO] Step 3: Waiting for ports to free..."
 $apiPortFree = Wait-PortFree -TargetPort $Port -TimeoutSec $PORT_WAIT_TIMEOUT_SEC
 $ocPortFree = Wait-PortFree -TargetPort $OpenCodePort -TimeoutSec $PORT_WAIT_TIMEOUT_SEC
 
-# ── 5. Clean process-scoped env ─────────────────────────────────────────
-Write-Host "[INFO] Step 5: Cleaning process-scoped env..."
+# -- 4. Clean process-scoped env -----------------------------------------
+Write-Host "[INFO] Step 4: Cleaning process-scoped env..."
 Remove-RuntimeEnvVars
 
-# ── 6. Auto-restart API in stub mode ─────────────────────────────────────
+# -- 5. Auto-restart API in stub mode -------------------------------------
 if (-not $SkipApiRestart) {
-    Write-Host "[INFO] Step 6: Auto-restarting API in stub mode..."
+    Write-Host "[INFO] Step 5: Auto-restarting API in stub mode..."
 
     if (-not $apiPortFree) {
         Write-Host "[WARN] Port $Port not free. Attempting force cleanup..."
@@ -237,19 +244,19 @@ if (-not $SkipApiRestart) {
     $apiPid = "N/A"
 }
 
-# ── 7. Verify port 4096 free, git clean ─────────────────────────────────
-Write-Host "[INFO] Step 7: Final verification..."
+# -- 6. Verify port 4096 free, git clean ---------------------------------
+Write-Host "[INFO] Step 6: Final verification..."
 $ocPortFinalCheck = Get-NetTCPConnection -LocalPort $OpenCodePort -LocalAddress "127.0.0.1" -ErrorAction SilentlyContinue
 $ocPortFreeFinal = (-not $ocPortFinalCheck)
 
 $gitStatus = git status --porcelain 2>&1
 $gitClean = (-not $gitStatus)
 
-# ── report ──────────────────────────────────────────────────────────────
+# -- report --------------------------------------------------------------
 Write-Host ""
 Write-Host "========== Cleanup Runtime Report =========="
 Write-Host "  OpenCode stopped        : $(if ($ocPortFreeFinal) { '[OK]' } else { '[FAIL] port still in use' })"
-Write-Host "  Celery worker stopped   : [OK] (attempted)"
+Write-Host "  API opencode_http stop  : [OK] (attempted safely)"
 Write-Host "  API stopped on $Port    : $(if ($apiPortFree) { '[OK]' } else { '[WARN]' })"
 Write-Host "  Runtime env cleaned     : [OK]"
 if (-not $SkipApiRestart) {
