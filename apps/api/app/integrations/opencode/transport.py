@@ -98,10 +98,23 @@ class RealOpenCodeHttpTransport:
             ) from exc
 
     async def send_message(self, session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        """POST /session/{id}/message — sync message response payload."""
+        """POST /session/{id}/message — sync message response payload.
+
+        Read timeout is disabled (read=None) to match OpenCode SDK behaviour
+        (req.timeout=false). Client-side session/idle timeout in
+        OpenCodeHttpPlanClient provides the safety net.
+        """
         url = f"/session/{session_id}/message"
+        timeout_no_read = httpx.Timeout(
+            connect=self._connect_timeout,
+            read=None,
+            write=self._write_timeout,
+            pool=self._connect_timeout,
+        )
         try:
-            async with self._build_client() as client:
+            async with httpx.AsyncClient(
+                base_url=self._base_url, timeout=timeout_no_read
+            ) as client:
                 resp = await client.post(url, json=payload)
                 resp.raise_for_status()
                 data = resp.json()
@@ -118,7 +131,7 @@ class RealOpenCodeHttpTransport:
                 f"Message HTTP {exc.response.status_code}: "
                 f"{str(exc)}"
             ) from exc
-        except httpx.ReadTimeout as exc:
+        except (httpx.ReadTimeout, httpx.ReadError) as exc:
             raise OpenCodeTimeoutError(
-                f"Message request timed out: {str(exc)}"
+                f"Message request failed (read error/timeout): {str(exc)}"
             ) from exc

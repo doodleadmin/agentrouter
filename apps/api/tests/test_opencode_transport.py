@@ -1,8 +1,13 @@
-"""BE-06 unit tests for RealOpenCodeHttpTransport (mocked httpx)."""
+"""BE-06 / BE-12 unit tests for RealOpenCodeHttpTransport (mocked httpx).
+
+BE-12 (2026-05-05): send_message read-timeout alignment with OpenCode SDK.
+send_message now uses local httpx.AsyncClient with read=None instead of
+the bounded _build_client(). Tests updated to patch httpx.AsyncClient.
+"""
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -24,9 +29,19 @@ def test_default_read_timeout_is_bounded_and_not_none() -> None:
 
 
 def _mk_transport(mock_client: MagicMock) -> RealOpenCodeHttpTransport:
+    """Create transport with mocked _build_client (for create_session tests)."""
     transport = RealOpenCodeHttpTransport(base_url="http://opencode.local")
     transport._build_client = MagicMock(return_value=mock_client)
     return transport
+
+
+def _mk_transport_for_message() -> RealOpenCodeHttpTransport:
+    """Create transport WITHOUT mocking _build_client (for send_message tests).
+
+    send_message() creates its own httpx.AsyncClient (read=None), so
+    patch("httpx.AsyncClient") must be used in individual tests.
+    """
+    return RealOpenCodeHttpTransport(base_url="http://opencode.local")
 
 
 def _mk_client_for_post(*, json_data=None, status_code=200, side_effect=None) -> MagicMock:
@@ -73,14 +88,20 @@ async def test_create_session_does_not_use_legacy_sessions_endpoint() -> None:
     assert called_url != "/sessions"
 
 
-# BE-07 contract-aligned payload for POST /session/{id}/message
+# BE-07 / BE-12 contract-aligned payload for POST /session/{id}/message
 PARTS_PAYLOAD = {"parts": [{"type": "text", "text": "plan"}]}
 
 
 @pytest.mark.anyio
-async def test_send_message_uses_post_session_id_message_endpoint() -> None:
-    client = _mk_client_for_post(json_data={"parts": [{"type": "step-finish", "reason": "stop"}]})
-    transport = _mk_transport(client)
+@patch("httpx.AsyncClient")
+async def test_send_message_uses_post_session_id_message_endpoint(
+    mock_async_client_cls: MagicMock,
+) -> None:
+    client = _mk_client_for_post(
+        json_data={"parts": [{"type": "step-finish", "reason": "stop"}]}
+    )
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
 
     data = await transport.send_message("abc", PARTS_PAYLOAD)
 
@@ -89,10 +110,16 @@ async def test_send_message_uses_post_session_id_message_endpoint() -> None:
 
 
 @pytest.mark.anyio
-async def test_send_message_contract_aligned_payload_shape() -> None:
+@patch("httpx.AsyncClient")
+async def test_send_message_contract_aligned_payload_shape(
+    mock_async_client_cls: MagicMock,
+) -> None:
     """BE-07: verify transport sends parts-based payload (not legacy message field)."""
-    client = _mk_client_for_post(json_data={"parts": [{"type": "step-finish", "reason": "stop"}]})
-    transport = _mk_transport(client)
+    client = _mk_client_for_post(
+        json_data={"parts": [{"type": "step-finish", "reason": "stop"}]}
+    )
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
 
     await transport.send_message("abc", PARTS_PAYLOAD)
 
@@ -105,36 +132,188 @@ async def test_send_message_contract_aligned_payload_shape() -> None:
 
 
 @pytest.mark.anyio
-async def test_send_message_non_object_response_fails_closed() -> None:
+@patch("httpx.AsyncClient")
+async def test_send_message_non_object_response_fails_closed(
+    mock_async_client_cls: MagicMock,
+) -> None:
     client = _mk_client_for_post(json_data=[{"type": "step-finish"}])
-    transport = _mk_transport(client)
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
 
     with pytest.raises(OpenCodeTransportError, match="JSON object"):
         await transport.send_message("abc", PARTS_PAYLOAD)
 
 
 @pytest.mark.anyio
-async def test_send_message_maps_http_errors() -> None:
+@patch("httpx.AsyncClient")
+async def test_send_message_maps_http_errors(
+    mock_async_client_cls: MagicMock,
+) -> None:
     client = _mk_client_for_post(status_code=503, json_data={"error": "down"})
-    transport = _mk_transport(client)
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
     with pytest.raises(OpenCodeHTTPError):
         await transport.send_message("abc", PARTS_PAYLOAD)
 
 
 @pytest.mark.anyio
-async def test_send_message_connection_error_maps() -> None:
+@patch("httpx.AsyncClient")
+async def test_send_message_connection_error_maps(
+    mock_async_client_cls: MagicMock,
+) -> None:
     client = _mk_client_for_post(side_effect=httpx.ConnectError("refused"))
-    transport = _mk_transport(client)
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
     with pytest.raises(OpenCodeConnectionError):
         await transport.send_message("abc", PARTS_PAYLOAD)
 
 
 @pytest.mark.anyio
-async def test_send_message_timeout_maps() -> None:
+@patch("httpx.AsyncClient")
+async def test_send_message_timeout_maps(
+    mock_async_client_cls: MagicMock,
+) -> None:
     client = _mk_client_for_post(side_effect=httpx.ReadTimeout("timeout"))
-    transport = _mk_transport(client)
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
     with pytest.raises(OpenCodeTimeoutError):
         await transport.send_message("abc", PARTS_PAYLOAD)
+
+
+@pytest.mark.anyio
+@patch("httpx.AsyncClient")
+async def test_send_message_read_error_maps(
+    mock_async_client_cls: MagicMock,
+) -> None:
+    """BE-12 P2: httpx.ReadError (connection closed mid-response) must
+    map to OpenCodeTimeoutError for proper retry/handling.
+
+    When the OpenCode server closes the connection during long inference,
+    httpx raises ReadError (NOT ReadTimeout). This must not escape as an
+    unhandled exception — it must be caught and mapped to OpenCodeTimeoutError
+    so the retry loop in OpenCodeHttpPlanClient can handle it.
+    """
+    client = _mk_client_for_post(side_effect=httpx.ReadError("connection closed"))
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
+    with pytest.raises(OpenCodeTimeoutError):
+        await transport.send_message("abc", PARTS_PAYLOAD)
+
+
+# ── BE-12 send_message read-timeout alignment tests ──────────────────
+
+
+@pytest.mark.anyio
+@patch("httpx.AsyncClient")
+async def test_be12_send_message_uses_read_none_timeout(
+    mock_async_client_cls: MagicMock,
+) -> None:
+    """BE-12: send_message creates httpx.AsyncClient with read=None timeout.
+
+    The OpenCode SDK sets req.timeout=false for POST /session/{id}/message
+    because model inference can exceed a fixed read timeout. AMC must align:
+    read=None, client-side session/idle timeout provides the safety net.
+    """
+    client = _mk_client_for_post(
+        json_data={"parts": [{"type": "text", "text": "ok"}, {"type": "step-finish", "reason": "stop"}]}
+    )
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
+
+    await transport.send_message("test-id", PARTS_PAYLOAD)
+
+    # Verify httpx.AsyncClient was called with timeout having read=None
+    mock_async_client_cls.assert_called_once()
+    call_kwargs = mock_async_client_cls.call_args.kwargs
+    assert "timeout" in call_kwargs, "AsyncClient must receive timeout param"
+    timeout_obj = call_kwargs["timeout"]
+    assert isinstance(timeout_obj, httpx.Timeout)
+    assert timeout_obj.read is None, (
+        f"read timeout must be None (unbounded) for OpenCode SDK alignment, "
+        f"got {timeout_obj.read!r}"
+    )
+    assert timeout_obj.connect is not None, "connect timeout must remain bounded"
+    assert timeout_obj.write is not None, "write timeout must remain bounded"
+
+
+@pytest.mark.anyio
+@patch("httpx.AsyncClient")
+async def test_be12_send_message_uses_correct_endpoint(
+    mock_async_client_cls: MagicMock,
+) -> None:
+    """BE-12: send_message uses POST /session/{id}/message (correct SDK endpoint)."""
+    client = _mk_client_for_post(
+        json_data={"parts": [{"type": "step-finish", "reason": "stop"}]}
+    )
+    mock_async_client_cls.return_value = client
+    transport = _mk_transport_for_message()
+
+    await transport.send_message("test-id-789", PARTS_PAYLOAD)
+
+    called_url = client.post.call_args[0][0]
+    assert called_url == "/session/test-id-789/message"
+    assert "/prompt" not in called_url, (
+        "Must use /session/{id}/message, not /prompt or any other endpoint"
+    )
+
+
+@pytest.mark.anyio
+@patch("httpx.AsyncClient")
+async def test_be12_send_message_base_url_preserved(
+    mock_async_client_cls: MagicMock,
+) -> None:
+    """BE-12: send_message passes correct base_url to AsyncClient."""
+    client = _mk_client_for_post(
+        json_data={"parts": [{"type": "text", "text": "ok"}, {"type": "step-finish", "reason": "stop"}]}
+    )
+    mock_async_client_cls.return_value = client
+    transport = RealOpenCodeHttpTransport(base_url="http://opencode.local:4096")
+
+    await transport.send_message("test-id", PARTS_PAYLOAD)
+
+    call_kwargs = mock_async_client_cls.call_args.kwargs
+    assert call_kwargs["base_url"] == "http://opencode.local:4096"
+
+
+def test_be12_create_session_still_uses_bounded_read_timeout() -> None:
+    """BE-12: create_session must remain bounded (normal read_timeout).
+
+    Only send_message gets read=None. create_session uses _build_client()
+    which has the configured session_timeout as read_timeout.
+    """
+    transport = RealOpenCodeHttpTransport(base_url="http://opencode.local")
+    # Verify _read_timeout is still bounded for create_session path
+    assert transport._read_timeout is not None
+    assert transport._read_timeout == float(settings.RUNTIME_SESSION_TIMEOUT_SECONDS)
+
+
+def test_be12_build_client_not_affected() -> None:
+    """BE-12: _build_client() is NOT changed — remains bounded for create_session."""
+    transport = RealOpenCodeHttpTransport(base_url="http://opencode.local")
+    timeout = transport._build_timeout()
+    assert timeout.read is not None, (
+        "_build_timeout must remain bounded; only send_message overrides locally"
+    )
+    assert timeout.read == float(settings.RUNTIME_SESSION_TIMEOUT_SECONDS)
+
+
+def test_be12_build_timeout_all_fields_bounded() -> None:
+    """BE-12 P3: verify _build_timeout() returns httpx.Timeout with all
+    bounds intact (connect, read, write, pool are not None).
+
+    Only send_message() overrides read=None for SDK alignment.
+    The default _build_timeout() (used by create_session via _build_client())
+    must keep every timeout field bounded to prevent hanging API workers.
+    """
+    transport = RealOpenCodeHttpTransport(base_url="http://opencode.local")
+    timeout = transport._build_timeout()
+    assert isinstance(timeout, httpx.Timeout), (
+        f"_build_timeout must return httpx.Timeout, got {type(timeout)}"
+    )
+    assert timeout.connect is not None, "connect timeout must be bounded"
+    assert timeout.read is not None, "read timeout must be bounded (send_message overrides locally)"
+    assert timeout.write is not None, "write timeout must be bounded"
+    assert timeout.pool is not None, "pool timeout must be bounded"
 
 
 # ── BE-08 session payload shape tests ──────────────────────────────────

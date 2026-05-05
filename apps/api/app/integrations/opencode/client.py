@@ -6,6 +6,7 @@ tool.call path confinement, and improved SSE robustness.
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Any, Awaitable, Callable, Protocol
 
@@ -166,13 +167,20 @@ class OpenCodeHttpPlanClient:
 
             try:
                 # BE-07: contract-aligned parts-based payload
-                message_response = await self._transport.send_message(
-                    session_id,
-                    OpenCodeSessionMessageRequest(
-                        parts=[
-                            {"type": "text", "text": context.normalized_text},
-                        ]
-                    ).model_dump(mode="json"),
+                # BE-12 P1: asyncio.wait_for wraps send_message with
+                # _session_timeout so a hanging OpenCode server does not
+                # permanently block the API worker.  asyncio.TimeoutError is a
+                # subclass of TimeoutError → already caught by the retry loop.
+                message_response = await asyncio.wait_for(
+                    self._transport.send_message(
+                        session_id,
+                        OpenCodeSessionMessageRequest(
+                            parts=[
+                                {"type": "text", "text": context.normalized_text},
+                            ]
+                        ).model_dump(mode="json"),
+                    ),
+                    timeout=self._session_timeout,
                 )
                 for event in self._map_message_response_to_events(message_response):
                     now = time.monotonic()

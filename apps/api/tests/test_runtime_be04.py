@@ -1578,3 +1578,90 @@ async def test_be10_no_reasoning_stored(
     events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
     events_str = str(events_resp.json())
     assert reasoning_secret not in events_str
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BE-12 P3 NEW TESTS — asyncio.wait_for enforcement in send_message flow
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.anyio
+async def test_be12_send_message_wait_for_timeout_enforcement(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-12 P3: verify that asyncio.wait_for with _session_timeout is
+    enforced in generate_plan flow.
+
+    Mock transport.send_message to hang indefinitely (never-resolving future).
+    The client's generate_plan must use asyncio.wait_for to bound the call
+    with _session_timeout, raising TimeoutError. Without this protection,
+    a hanging OpenCode server would permanently block the API worker.
+    """
+    from app.integrations.opencode.transport import OpenCodeTimeoutError
+
+    task_id = await _mk_task(async_client, risk="low")
+
+    # Transport that never resolves send_message (simulates hung server)
+    mock_transport = MagicMock()
+    mock_transport.create_session = AsyncMock(return_value="fake-session-hung")
+
+    # Create a future that never resolves (simulates infinite hang)
+    import asyncio as asyncio_mod
+
+    hung_future: asyncio_mod.Future[dict[str, Any]] = asyncio_mod.Future()
+    mock_transport.send_message = MagicMock(return_value=hung_future)
+
+    # Use a short session_timeout so the test doesn't hang
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(
+            mock_transport,
+            max_retries=0,
+            session_timeout_sec=0.05,  # 50ms timeout
+        ),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "failed"
+
+    events_resp = await async_client.get(f"/events/tasks/{task_id}/events")
+    event_types = [e["event_type"] for e in events_resp.json()]
+    # TimeoutError from asyncio.wait_for → runtime_timeout
+    assert "runtime_timeout" in event_types, (
+        f"Expected runtime_timeout in events, got {event_types}"
+    )
+
+
+@pytest.mark.anyio
+async def test_be12_send_message_wait_for_not_hung_by_slow_transport(
+    test_session, async_client: AsyncClient
+) -> None:
+    """BE-12 P3: verify that asyncio.wait_for does NOT cancel a transport
+    that completes within the timeout window.
+
+    A transport that returns a valid response within the session timeout
+    must succeed normally — not be falsely timed out.
+    """
+    task_id = await _mk_task(async_client, risk="low")
+    mock_transport = MagicMock()
+    mock_transport.create_session = AsyncMock(return_value="fake-session-normal")
+
+    valid_response = {
+        "parts": [
+            {"type": "text", "text": "## Plan\n1. Do something"},
+            {"type": "step-finish", "reason": "stop"},
+        ]
+    }
+    mock_transport.send_message = AsyncMock(return_value=valid_response)
+
+    # Long enough timeout that the mock's immediate response completes
+    svc = RuntimeService(
+        test_session,
+        runtime_client=OpenCodeHttpPlanClient(
+            mock_transport,
+            max_retries=0,
+            session_timeout_sec=5.0,  # 5s — mock responds instantly
+        ),
+    )
+    task = await svc.generate_plan_for_task(UUID(task_id))
+    assert task.status == "approved"
+    assert "Do something" in (task.plan_text or "")
