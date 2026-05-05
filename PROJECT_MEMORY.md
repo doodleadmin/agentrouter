@@ -6,9 +6,36 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE — 9 PowerShell scripts (1934 lines), 4 docs updated, safety rules codified. 237/237 API + 93/93 worker tests pass.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE.
 **Дата последнего обновления:** 2026-05-05
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-05 — BE-12 OpenCode read-timeout alignment
+- **Агент:** backend-architect
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Сделано:**
+  - `RealOpenCodeHttpTransport.send_message()` теперь использует локальный `httpx.AsyncClient` с `read=None` (unbounded read timeout), в соответствии с OpenCode SDK (`req.timeout=false`).
+  - `create_session()` остаётся bounded (использует `_build_client()` с нормальным `read_timeout`).
+  - `_build_client()` и `_build_timeout()` не тронуты — local override только в `send_message()`.
+  - Client-side session/idle timeout в `OpenCodeHttpPlanClient` остаётся safety net.
+  - Error mapping (`httpx.ConnectError`, `httpx.HTTPStatusError`, `httpx.ReadTimeout`) сохранён без изменений.
+  - Все guardrails нетронуты: provider=stub, allow=false, plan-only, redaction, path confinement, max_plan_size.
+- **Тесты:** 16/16 transport tests pass, 5 новых BE-12 тестов (read=None verification, correct endpoint, base_url preserved, create_session bounded, _build_client unaffected). Full suite: 251/252 pass (1 pre-existing flake).
+- **Проверки:** compileall ✅, ruff ✅, pytest ✅
+- Task summary: [.ai_memory/tasks/2026-05-05-task-be12-opencode-read-timeout-alignment.md](.ai_memory/tasks/2026-05-05-task-be12-opencode-read-timeout-alignment.md)
+
+### 2026-05-05 — BE-11D smoke script timeout/progress focused fix
+- **Агент:** devops-automator
+- **Контур:** local only; без deploy/migrations/.env/secrets/RuntimeService/API-кода.
+- **Сделано (`scripts/dev/smoke-real-opencode-runtime.ps1`):**
+  - Перед POST добавлен exact step message: `[STEP] Calling runtime plan endpoint. This may take up to 300s.`
+  - Для POST `/runtime/tasks/{id}/plan` установлен минимум timeout `max(user, 420)` с использованием `Invoke-RestMethod -TimeoutSec`.
+  - Добавлены отметки времени start/end и периодический прогресс-лог каждые 15s во время ожидания.
+  - После успешного возврата добавлен exact message: `[DONE] Runtime plan endpoint returned.`
+  - На ошибке POST: печать типа исключения + GET `/tasks/{task_id}` + вывод `status` и `plan_text` null/not null + `exit 1`.
+  - В финальном отчёте сохранено явное сообщение: `Worker bypass: direct POST /runtime used.`
+- **Валидации:** PSParser ✅, DryRun ✅ (процессы не стартует).
+- **Real smoke:** запуск выполнен с `-TimeoutSeconds 480`; POST завершился `System.Net.WebException`, task status после ошибки `routed`, `plan_text=null`.
 
 ## Что сделано
 
@@ -98,6 +125,16 @@
 3. Полный план: [docs/mvp-backlog.md](docs/mvp-backlog.md)
 
 ## Изменения
+
+### 2026-05-05 — BE-11C scripts parser/encoding hardening
+- **Агент:** devops-automator
+- **Контур:** local only; без deploy/migrations/.env/secrets/API-кода/worker-кода.
+- **Сделано:**
+  - `scripts/dev/cleanup-runtime.ps1`: убрана остановка Celery/worker, добавлен безопасный stop только OpenCode 4096 и AMC API `opencode_http`, сохранён optional restart API stub mode, подтверждение 4096 free.
+  - `scripts/dev/start-api-opencode.ps1`: DryRun перенесён до preflight; preflight теперь проверяет OpenCode `/global/health` и `/doc`; сохранены только process-scoped env overrides.
+  - `scripts/dev/smoke-real-opencode-runtime.ps1`: DryRun перенесён до preflight; явно зафиксирован worker bypass; ужесточена проверка “no command/file/sandbox events” (включая `command_finished=0`).
+  - `scripts/dev/start-opencode.ps1`: убран BOM артефакт в начале файла.
+  - Все 4 скрипта перезаписаны как UTF-8 without BOM.
 
 ### 2026-05-04 — BE-10 Runtime Reliability Hardening COMPLETE
 - **Агент:** backend-architect
