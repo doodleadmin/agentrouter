@@ -53,3 +53,5 @@ opencode-agents-*.zip
 **/.worktrees/
 **/.obsidian/
 /tmp/
+
+logs/
