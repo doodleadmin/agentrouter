@@ -107,7 +107,7 @@ if ($DryRun) {
     Write-Host "[DRYRUN] would: verify git clean"
     Write-Host "[DRYRUN] would: create project   slug=$PROJECT_SLUG"
     Write-Host "[DRYRUN] would: create agent     slug=$AGENT_SLUG"
-    Write-Host "[DRYRUN] would: create task      risk_level=low"
+    Write-Host "[DRYRUN] would: create task      risk_level=low (status=created → runtime transitions to planning)"
     Write-Host "[DRYRUN] would: POST /runtime/tasks/{id}/plan (timeout 120s)"
     Write-Host "[DRYRUN] would: PRINT prominently: Worker bypass: direct POST /runtime used."
     Write-Host "[DRYRUN] would: verify status=approved"
@@ -189,20 +189,10 @@ try {
     Exit-Fail "Failed to create task: $errMsg"
 }
 
-# ── set task to routed so runtime can accept it ─────────────────────────
-Write-Host "[INFO] Routing task to planning..."
-try {
-    $routedTask = Invoke-Api -Method Patch -Uri "$API_BASE/tasks/$taskId/status" -Body @{
-        status = "routed"
-    } -TimeoutSec 30
-    $routedTask = Invoke-Api -Method Patch -Uri "$API_BASE/tasks/$taskId/status" -Body @{
-        status = "planning"
-    } -TimeoutSec 30
-    Write-Host "[INFO] Task status set to: $($routedTask.status)"
-} catch {
-    # May already be in valid state; proceed
-    Write-Host "[INFO] Task status transition: attempting plan directly"
-}
+# ── NOTE: RuntimeService handles status transition (created/routed→planning) itself. ──
+# ── DO NOT manually set status=planning before POST /runtime — ──
+# ── BE-10 P0-1 idempotency guard will block PLANNING-state re-entry. ──
+Write-Host "[INFO] Task status is: $($task.status) — RuntimeService will transition to planning."
 
 # ── call plan endpoint ──────────────────────────────────────────────────
 Write-Host ""
@@ -236,7 +226,7 @@ try {
 # ── fetch task events ───────────────────────────────────────────────────
 Write-Host "[INFO] Fetching task events..."
 try {
-    $events = Invoke-Api -Method Get -Uri "$API_BASE/task-events?task_id=$taskId" -TimeoutSec 30
+    $events = Invoke-Api -Method Get -Uri "$API_BASE/events/tasks/$taskId/events" -TimeoutSec 30
     if ($events -is [array]) {
         $eventList = $events
     } elseif ($events.PSObject.Properties.Name -contains "items") {
