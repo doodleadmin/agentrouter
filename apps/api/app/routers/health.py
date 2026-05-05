@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Response
 
+from app.config import settings
+
 router = APIRouter(tags=["health"])
 
 
@@ -22,6 +24,6 @@ async def health_check(response: Response) -> dict:
     return {
         "status": "ok",
         "service": "agent-mission-control-api",
-        "version": "0.1.0",
+        "version": settings.APP_VERSION,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

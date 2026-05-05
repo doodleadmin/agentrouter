@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "Agent Mission Control API"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
+    COMMIT_SHA: str = "unknown"  # injected at build time
+    BUILD_TIME: str = "unknown"  # injected at build time
 
     # Server
     HOST: str = "0.0.0.0"

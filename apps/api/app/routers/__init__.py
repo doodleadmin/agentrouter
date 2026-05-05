@@ -9,6 +9,7 @@ from app.routers.runtime import router as runtime_router
 from app.routers.task_events import router as task_events_router
 from app.routers.tasks import router as tasks_router
 from app.routers.telegram_topics import router as telegram_topics_router
+from app.routers.version import router as version_router
 
 __all__ = [
     "health_router",
@@ -20,4 +21,5 @@ __all__ = [
     "task_events_router",
     "runtime_router",
     "memory_router",
+    "version_router",
 ]

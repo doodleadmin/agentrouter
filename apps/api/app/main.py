@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
         task_events_router,
         tasks_router,
         telegram_topics_router,
+        version_router,
     )
 
     app.include_router(health_router)
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(task_events_router)
     app.include_router(runtime_router)
     app.include_router(memory_router)
+    app.include_router(version_router)
 
     return app
 
