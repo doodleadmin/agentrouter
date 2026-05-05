@@ -60,26 +60,17 @@ function Resolve-OpenCodeLauncher {
 
 function Kill-StaleOnPort {
     param([int] $TargetPort)
-    # Find processes listening on target port (127.0.0.1)
     $connections = Get-NetTCPConnection -LocalPort $TargetPort -LocalAddress "127.0.0.1" -ErrorAction SilentlyContinue
     if ($connections) {
-        $pids = $connections.OwningProcess | Select-Object -Unique
-        foreach ($p in $pids) {
-            try {
-                $proc = Get-Process -Id $p -ErrorAction SilentlyContinue
-                if ($proc) {
-                    $procName = $proc.ProcessName
-                    # Only kill if opencode or node
-                    if ($procName -match "^(opencode|node)$") {
-                        Write-Host "[INFO] Killing stale process '$procName' (PID $p) on port $TargetPort ..."
-                        Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
-                        Start-Sleep -Milliseconds 500
-                    } else {
-                        Write-Host "[WARN] Port $TargetPort occupied by '$procName' (PID $p) — not killing (not opencode/node)."
-                    }
-                }
-            } catch {
-                Write-Host "[WARN] Could not kill process PID $p : $_"
+        $uniquePids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+        foreach ($p in $uniquePids) {
+            $proc = Get-Process -Id $p -ErrorAction SilentlyContinue
+            if ($proc -and $proc.ProcessName -match "^(opencode|node)$") {
+                Write-Host "[INFO] Killing stale process '$($proc.ProcessName)' (PID $p) on port $TargetPort"
+                Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 500
+            } elseif ($proc) {
+                Write-Host "[WARN] Port $TargetPort occupied by '$($proc.ProcessName)' (PID $p) - not opencode/node, skipping"
             }
         }
     }
@@ -140,8 +131,8 @@ if ($opencodePath -match "\.cmd$") {
         -NoNewWindow
 }
 
-$pid = $openCodeProcess.Id
-Write-Host "[INFO] OpenCode process started. PID: $pid"
+$ocPid = $openCodeProcess.Id
+Write-Host "[INFO] OpenCode process started. PID: $ocPid"
 Write-Host "[INFO] Listen address: 127.0.0.1:$Port"
 
 # ── verify endpoints ────────────────────────────────────────────────────
@@ -184,7 +175,7 @@ foreach ($b in $bindings) {
 # ── report ──────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "========== Start OpenCode Report =========="
-Write-Host "  PID            : $pid"
+Write-Host "  PID            : $ocPid"
 Write-Host "  Listen         : 127.0.0.1:$Port"
 Write-Host "  Launcher       : $opencodePath"
 Write-Host "  /global/health : $(if ($healthOk) { '200 OK' } else { 'FAIL' })"
