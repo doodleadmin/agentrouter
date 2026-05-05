@@ -60,7 +60,7 @@ async def approve_approval(
     except KeyError:
         raise HTTPException(status_code=404, detail=_APPROVAL_404)
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=409, detail=str(exc))
     return ApprovalRead.model_validate(obj)
 
 
@@ -75,5 +75,5 @@ async def reject_approval(
     except KeyError:
         raise HTTPException(status_code=404, detail=_APPROVAL_404)
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=409, detail=str(exc))
     return ApprovalRead.model_validate(obj)

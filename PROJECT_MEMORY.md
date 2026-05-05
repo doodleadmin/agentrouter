@@ -6,9 +6,21 @@
 ## Текущий статус
 
 **Фаза:** Phase 0 — Подготовка инфраструктуры
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE.
-**Дата последнего обновления:** 2026-05-05
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE.
+**Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-06 — TG-03 Telegram Approvals + Task Status UX
+- **Агент:** backend-architect
+- **Контур:** local only; без deploy/migrations/.env/secrets/real Telegram.
+- **Сделано:**
+  - **API:** 409 вместо 422 для already-decided approve/reject; GET /tasks/{id}/plan; POST /tasks/{id}/callback-answer с HMAC-подписанной валидацией callback_data; CALLBACK_SECRET + CALLBACK_MAX_AGE_SECONDS в config.
+  - **Bot:** /status, /plan, /approve, /reject команды; inline keyboard builders (build_task_keyboard, build_approval_keyboard, build_plan_keyboard) с подписанными callback_data; callback handler с API-side валидацией для approve/reject/show_plan/refresh; API client расширен (8 новых методов).
+  - **Formatters:** format_task_card, format_approval_card, format_plan_excerpt, format_error_message с HTML escaping.
+  - **Тесты:** 35/35 bot tests pass (formatters, handlers, callbacks); 11 API tests pass (plan endpoint, callback-answer, approval idempotency); 1 pre-existing flake.
+- **Изменённые файлы:** 22 файла (API routers/schemas/config, bot handlers/keyboards/services, tests).
+- **Проверки:** compileall ✅, ruff ✅, pytest (bot 35/35, API 37/38) ✅
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg03-telegram-approvals-ux.md](.ai_memory/tasks/2026-05-06-task-tg03-telegram-approvals-ux.md)
 
 ### 2026-05-05 — BE-12 OpenCode read-timeout alignment
 - **Агент:** backend-architect

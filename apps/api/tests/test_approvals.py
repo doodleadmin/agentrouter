@@ -76,9 +76,9 @@ async def test_double_approve_rejected(async_client: AsyncClient, existing_task_
     approval_id = create.json()["id"]
     # first approve
     await async_client.post(f"/approvals/{approval_id}/approve")
-    # second approve should fail
+    # second approve should fail with 409 (already decided)
     resp = await async_client.post(f"/approvals/{approval_id}/approve")
-    assert resp.status_code == 422
+    assert resp.status_code == 409
 
 
 @pytest.mark.anyio
@@ -90,7 +90,7 @@ async def test_double_reject_rejected(async_client: AsyncClient, existing_task_i
     approval_id = create.json()["id"]
     await async_client.post(f"/approvals/{approval_id}/reject")
     resp = await async_client.post(f"/approvals/{approval_id}/reject")
-    assert resp.status_code == 422
+    assert resp.status_code == 409
 
 
 @pytest.mark.anyio

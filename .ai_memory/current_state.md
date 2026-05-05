@@ -100,8 +100,10 @@
 | BE-11: Runtime Runbook + Local Smoke Automation | ✅ Выполнена | devops-automator + knowledge-steward |
 | BE-12: OpenCode Read-Timeout Alignment | ✅ Выполнена | backend-architect |
 | BE-11: Scripts Final Repair (parse/dry-run PASS) | ✅ Выполнена | studio-orchestrator |
+| TG-03: Telegram Approvals + Task Status UX | ✅ Выполнена | backend-architect |
 
 - **BE-12 OpenCode read-timeout alignment (backend-architect):** `send_message()` локальный `httpx.AsyncClient` с `read=None` (SDK-aligned). `create_session()` bounded. Error mapping сохранён. Guardrails нетронуты. 16/16 transport tests pass (+5 BE-12). 251/252 full suite pass. Real OpenCode не запускался.
+- **TG-03 Telegram Approvals + Task Status UX (backend-architect):** 7 phases complete. API: 409 for already-decided (was 422), GET /tasks/{id}/plan, POST /tasks/{id}/callback-answer with HMAC-signed callback validation. Bot: /status, /plan, /approve, /reject commands + inline keyboards (approve/reject/show-plan/refresh) + callback handler with API-side validation. API client extended (8 new methods). Formatters (task cards, approval cards, plan excerpts). Tests: 35/35 bot tests + 11 API tests pass (1 pre-existing flake).
 
 ## Следующие шаги
 
@@ -136,5 +138,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| Логи задач | 48 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment, be08-session-traceability-timeout, be08-real-opencode-smoke-success, dev-db-01-alembic-async-fix, be09-phase1-worker-timeout, be09-phase2-real-opencode-e2e-success, be10-runtime-reliability-hardening, be10-real-opencode-regression-smoke, be11-runtime-runbook-automation, be12-opencode-read-timeout-alignment, be11-scripts-final-repair) |
+| Логи задач | 49 (fnd-01-02, fnd-03, fnd-03-fix, dop-01, dop-01-check, be-01, be-02, tg-01, tg-02, be-03, wrk-01, wrk-02, mem-01, mem-02, mem-03, dop-02, security-review-before-wrk03, wrk-03, wrk-03-hardening, wrk-03-fake-e2e, wrk-04, wrk-04-polish, wrk-04-manual-local-test, wrk-04-real-docker-smoke-test, wrk-04-manual-test-hardening, be04-runtime-guardrails, be04-review-blockers-fix, be04-transport-hardening, be05-transport-gap-closures, be05-hardening-b1-m1-m2-m3, be06-controlled-smoke-test-plan, be06-smoke-docs-fix, be06-rerun-plan-after-step-b-abort, be06-transport-compatibility-fix, be06-task-creation-fix, be06-final-execution, be07-payload-contract-alignment-implementation, be07-plus-native-contract-alignment, be08-session-traceability-timeout, be08-real-opencode-smoke-success, dev-db-01-alembic-async-fix, be09-phase1-worker-timeout, be09-phase2-real-opencode-e2e-success, be10-runtime-reliability-hardening, be10-real-opencode-regression-smoke, be11-runtime-runbook-automation, be12-opencode-read-timeout-alignment, be11-scripts-final-repair, tg03-telegram-approvals-ux) |
 | Проекты | 0 |

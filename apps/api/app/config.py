@@ -73,5 +73,9 @@ class Settings(BaseSettings):
     RUNTIME_MAX_RETRIES: int = 2
     RUNTIME_MAX_PLAN_BYTES: int = 100_000  # 100 KB hard cap for plan text
 
+    # Callback validation (TG-03)
+    CALLBACK_SECRET: str = ""  # HMAC signing secret for callback_data integrity
+    CALLBACK_MAX_AGE_SECONDS: int = 300  # max age for callback actions
+
 
 settings = Settings()

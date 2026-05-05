@@ -122,6 +122,71 @@ class ApiClient:
         response.raise_for_status()
         return response.json()
 
+    # ── TG-03: Approval + task UX methods ──────────────────────────────
+
+    async def get_task(self, task_id: str) -> dict[str, Any]:
+        """Get a single task by id."""
+        response = await self._client.get(f"/tasks/{task_id}")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_task_plan(self, task_id: str) -> dict[str, Any]:
+        """Get plan text for a task."""
+        response = await self._client.get(f"/tasks/{task_id}/plan")
+        response.raise_for_status()
+        return response.json()
+
+    async def list_task_events(self, task_id: str) -> list[dict[str, Any]]:
+        """List audit events for a task."""
+        response = await self._client.get(f"/events/tasks/{task_id}/events")
+        response.raise_for_status()
+        return response.json()
+
+    async def list_approvals_by_task(self, task_id: str) -> list[dict[str, Any]]:
+        """List approvals for a task."""
+        response = await self._client.get(f"/approvals/tasks/{task_id}/approvals")
+        response.raise_for_status()
+        return response.json()
+
+    async def approve_approval(
+        self, approval_id: str, body: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Approve an approval request."""
+        response = await self._client.post(
+            f"/approvals/{approval_id}/approve",
+            json=body or {},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def reject_approval(
+        self, approval_id: str, body: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Reject an approval request."""
+        response = await self._client.post(
+            f"/approvals/{approval_id}/reject",
+            json=body or {},
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def callback_answer(self, task_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        """Validate a callback action and get task+approval state snapshot."""
+        response = await self._client.post(
+            f"/tasks/{task_id}/callback-answer",
+            json=body,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def find_task_by_external_id(self, external_id: str) -> dict[str, Any] | None:
+        """Find a task by its external_id by scanning recent tasks."""
+        tasks = await self.list_tasks(limit=100)
+        for task in tasks:
+            if task.get("external_id") == external_id:
+                return task
+        return None
+
 
 _api_client: ApiClient | None = None
 

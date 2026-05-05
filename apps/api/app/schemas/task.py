@@ -74,6 +74,39 @@ class TaskStatusUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class TaskPlanRead(BaseModel):
+    """Dedicated endpoint response for /tasks/{id}/plan."""
+
+    task_id: UUID
+    plan_text: str | None
+    plan_version: int = 1
+    status: str
+
+
+class CallbackAnswerIn(BaseModel):
+    """Request body for /tasks/{id}/callback-answer validation."""
+
+    callback_data: str = Field(min_length=1, max_length=1024)
+    telegram_chat_id: int | None = None
+    telegram_thread_id: int | None = None
+    telegram_user_id: int | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class CallbackAnswerRead(BaseModel):
+    """Response for /tasks/{id}/callback-answer with task + approval snapshot."""
+
+    task_id: UUID
+    task_status: str
+    task_external_id: str
+    approval_id: UUID | None = None
+    approval_status: str | None = None
+    action_valid: bool
+    action: str
+    error: str | None = None
+
+
 class TaskRead(BaseModel):
     """Response representation of a task."""
 

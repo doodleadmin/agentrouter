@@ -1,15 +1,28 @@
 """Tasks router — CRUD with status enforcement + plan pipeline trigger."""
 
+import hashlib
+import hmac
+import time
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db.enums import ActorType, TaskStatus
 from app.db.session import get_async_session
 from app.integrations.queue import enqueue_agent_plan
-from app.schemas.task import TaskCreate, TaskRead, TaskStatusUpdate, TaskUpdate
+from app.schemas.task import (
+    CallbackAnswerIn,
+    CallbackAnswerRead,
+    TaskCreate,
+    TaskPlanRead,
+    TaskRead,
+    TaskStatusUpdate,
+    TaskUpdate,
+)
+from app.services.approval_service import ApprovalService
 from app.services.task_event_service import TaskEventService
 from app.services.task_service import TaskService
 
@@ -24,7 +37,70 @@ def _event_svc(s: AsyncSession = Depends(get_async_session)) -> TaskEventService
     return TaskEventService(s)
 
 
+def _appr_svc(s: AsyncSession = Depends(get_async_session)) -> ApprovalService:
+    return ApprovalService(s)
+
+
 _TASK_404 = "Task not found"
+
+# ── callback data helpers ──────────────────────────────────────────────
+
+CALLBACK_FIELD_SEP = "|"
+CALLBACK_VERSION = 1  # v1 protocol: 6 fields + sig
+
+
+def _parse_callback_fields(data: str) -> dict[str, str] | None:
+    """Parse v1 callback data: version|action|task_id|approval_id|rev|exp|sig"""
+    parts = data.split(CALLBACK_FIELD_SEP)
+    if len(parts) != 7:
+        return None
+    try:
+        version = int(parts[0])
+    except (ValueError, TypeError):
+        return None
+    if version != CALLBACK_VERSION:
+        return None
+    return {
+        "version": parts[0],
+        "action": parts[1],
+        "task_id": parts[2],
+        "approval_id": parts[3],
+        "rev": parts[4],
+        "exp": parts[5],
+        "sig": parts[6],
+    }
+
+
+def _compute_callback_signature(base: str) -> str:
+    """HMAC-SHA256 of the base string (fields 0-5 joined by |)."""
+    secret = settings.CALLBACK_SECRET.encode("utf-8") if settings.CALLBACK_SECRET else b""
+    return hmac.new(secret, base.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _validate_callback_data(callback_data: str) -> dict[str, str]:
+    """
+    Validate callback_data: parse, check signature, check expiry.
+    Returns parsed fields on success. Raises ValueError on validation failure.
+    """
+    fields = _parse_callback_fields(callback_data)
+    if fields is None:
+        raise ValueError("Invalid callback_data format")
+
+    # Signature check: base = everything except last field
+    base = CALLBACK_FIELD_SEP.join(callback_data.split(CALLBACK_FIELD_SEP)[:6])
+    expected_sig = _compute_callback_signature(base)
+    if not hmac.compare_digest(fields["sig"], expected_sig):
+        raise ValueError("Invalid callback_data signature")
+
+    # Expiry check
+    try:
+        exp = int(fields["exp"])
+    except (ValueError, TypeError):
+        raise ValueError("Invalid expiry in callback_data")
+    if time.time() > exp:
+        raise ValueError("Callback data expired")
+
+    return fields
 
 
 def _map_integrity_error(exc: IntegrityError) -> HTTPException:
@@ -168,3 +244,128 @@ async def trigger_plan(
     enqueue_agent_plan(str(task_id))
 
     return TaskRead.model_validate(task)
+
+
+@router.get("/{task_id}/plan", response_model=TaskPlanRead)
+async def get_task_plan(
+    task_id: UUID,
+    svc: TaskService = Depends(_svc),
+) -> TaskPlanRead:
+    """Return the current plan_text for a task."""
+    obj = await svc.get(task_id)
+    if obj is None:
+        raise HTTPException(status_code=404, detail=_TASK_404)
+    return TaskPlanRead(
+        task_id=obj.id,
+        plan_text=obj.plan_text,
+        plan_version=1,
+        status=obj.status,
+    )
+
+
+@router.post("/{task_id}/callback-answer", response_model=CallbackAnswerRead)
+async def callback_answer(
+    task_id: UUID,
+    body: CallbackAnswerIn,
+    svc: TaskService = Depends(_svc),
+    esvc: TaskEventService = Depends(_event_svc),
+    asvc: ApprovalService = Depends(_appr_svc),
+) -> CallbackAnswerRead:
+    """Validate a Telegram inline-button callback and return task+approval state.
+
+    Used by the bot for UI feedback on button clicks (approve/reject/show-plan/refresh).
+    Validation happens API-side for security.
+    """
+    # 1. Validate callback_data cryptographically
+    try:
+        fields = _validate_callback_data(body.callback_data)
+    except ValueError as exc:
+        return CallbackAnswerRead(
+            task_id=task_id,
+            task_status="unknown",
+            task_external_id="",
+            action_valid=False,
+            action="unknown",
+            error=str(exc),
+        )
+
+    action = fields["action"]
+
+    # 2. Load task
+    task = await svc.get(task_id)
+    if task is None:
+        return CallbackAnswerRead(
+            task_id=task_id,
+            task_status="unknown",
+            task_external_id="",
+            action_valid=False,
+            action=action,
+            error="Task not found",
+        )
+
+    # 3. Validate chat/thread/user constraints if provided
+    if body.telegram_chat_id is not None and task.telegram_chat_id is not None:
+        if body.telegram_chat_id != task.telegram_chat_id:
+            return CallbackAnswerRead(
+                task_id=task_id,
+                task_status=task.status,
+                task_external_id=task.external_id,
+                action_valid=False,
+                action=action,
+                error="Chat mismatch",
+            )
+    if body.telegram_thread_id is not None and task.telegram_thread_id is not None:
+        if body.telegram_thread_id != task.telegram_thread_id:
+            return CallbackAnswerRead(
+                task_id=task_id,
+                task_status=task.status,
+                task_external_id=task.external_id,
+                action_valid=False,
+                action=action,
+                error="Thread mismatch",
+            )
+
+    # 4. Load approval if approval_id is present
+    approval_id: UUID | None = None
+    approval_status: str | None = None
+    try:
+        approval_uuid_raw = fields.get("approval_id", "")
+        if approval_uuid_raw and approval_uuid_raw != "none":
+            approval_id = UUID(approval_uuid_raw)
+    except (ValueError, TypeError):
+        pass
+
+    if approval_id is not None:
+        approval = await asvc.get(approval_id)
+        if approval is not None:
+            approval_status = approval.status
+            if str(approval.task_id) != str(task_id):
+                return CallbackAnswerRead(
+                    task_id=task_id,
+                    task_status=task.status,
+                    task_external_id=task.external_id,
+                    approval_id=approval_id,
+                    approval_status=approval_status,
+                    action_valid=False,
+                    action=action,
+                    error="Approval task mismatch",
+                )
+
+    # 5. Audit event
+    await esvc.create(
+        task_id,
+        "callback_received",
+        ActorType.USER if body.telegram_user_id else ActorType.SYSTEM,
+        actor_id=str(body.telegram_user_id) if body.telegram_user_id else None,
+        payload={"action": action},
+    )
+
+    return CallbackAnswerRead(
+        task_id=task_id,
+        task_status=task.status,
+        task_external_id=task.external_id,
+        approval_id=approval_id,
+        approval_status=approval_status,
+        action_valid=True,
+        action=action,
+    )
