@@ -1,4 +1,7 @@
-"""TG-03: Tests for /reject handler."""
+"""TG-03: Tests for /reject handler.
+TG-05: Admin gate tests (fail-closed)."""
+
+from unittest.mock import MagicMock
 
 from app.handlers import reject_handler as mod
 
@@ -32,9 +35,9 @@ class FakeApiClient:
 
 
 class FakeMessage:
-    def __init__(self):
+    def __init__(self, user_id: int = 12345):
         self.message_thread_id = 99
-        self.from_user = FakeUser()
+        self.from_user = FakeUser(user_id)
         self.text = ""
         self.answers = []
 
@@ -43,10 +46,25 @@ class FakeMessage:
 
 
 class FakeUser:
-    id = 12345
+    def __init__(self, uid: int = 12345):
+        self.id = uid
+
+
+# ── helpers ─────────────────────────────────────────────────────────────
+
+
+def _patch_admin_ids(monkeypatch, ids: list[int]) -> None:
+    """Monkeypatch settings.admin_user_ids() to return given IDs."""
+    mock_settings = MagicMock()
+    mock_settings.admin_user_ids.return_value = ids
+    monkeypatch.setattr(mod, "settings", mock_settings)
+
+
+# ── existing tests (updated with admin gate) ────────────────────────────
 
 
 async def test_reject_no_args(monkeypatch) -> None:
+    _patch_admin_ids(monkeypatch, [12345])
     msg = FakeMessage()
     msg.text = "/reject"
     monkeypatch.setattr(mod, "get_api_client", lambda: FakeApiClient())
@@ -55,6 +73,7 @@ async def test_reject_no_args(monkeypatch) -> None:
 
 
 async def test_reject_task_not_found(monkeypatch) -> None:
+    _patch_admin_ids(monkeypatch, [12345])
     msg = FakeMessage()
     msg.text = "/reject task-9999"
     monkeypatch.setattr(mod, "get_api_client", lambda: FakeApiClient(task_return=None))
@@ -63,6 +82,7 @@ async def test_reject_task_not_found(monkeypatch) -> None:
 
 
 async def test_reject_no_pending(monkeypatch) -> None:
+    _patch_admin_ids(monkeypatch, [12345])
     task = {
         "id": "uuid-123",
         "external_id": "task-0001",
@@ -89,6 +109,7 @@ async def test_reject_no_pending(monkeypatch) -> None:
 
 
 async def test_reject_success(monkeypatch) -> None:
+    _patch_admin_ids(monkeypatch, [12345])
     task = {
         "id": "uuid-123",
         "external_id": "task-0001",
@@ -116,3 +137,73 @@ async def test_reject_success(monkeypatch) -> None:
     assert fake._reject_calls[0][0] == "approval-1"
     assert fake._reject_calls[0][1]["reason"] == "too dangerous"
     assert any("rejected" in a["text"].lower() for a in msg.answers)
+
+
+# ── TG-05: Admin gate tests ────────────────────────────────────────────
+
+
+async def test_reject_non_admin_rejected(monkeypatch) -> None:
+    """Non-admin user gets rejection message; API is NOT called."""
+    _patch_admin_ids(monkeypatch, [99999])  # different from FakeMessage user_id=12345
+    fake = FakeApiClient(task_return={"id": "x"})
+    msg = FakeMessage(user_id=12345)
+    msg.text = "/reject task-0001"
+    monkeypatch.setattr(mod, "get_api_client", lambda: fake)
+    await mod.reject_handler(msg)
+    assert len(msg.answers) == 1
+    assert "администратор" in msg.answers[0]["text"].lower() or "admin" in msg.answers[0]["text"].lower()
+    assert len(fake._reject_calls) == 0
+
+
+async def test_reject_empty_admin_list_rejects_everyone(monkeypatch) -> None:
+    """Empty admin list = fail-closed = reject everyone."""
+    _patch_admin_ids(monkeypatch, [])
+    fake = FakeApiClient(task_return={"id": "x"})
+    msg = FakeMessage(user_id=12345)
+    msg.text = "/reject task-0001"
+    monkeypatch.setattr(mod, "get_api_client", lambda: fake)
+    await mod.reject_handler(msg)
+    assert len(msg.answers) == 1
+    assert "администратор" in msg.answers[0]["text"].lower() or "admin" in msg.answers[0]["text"].lower()
+    assert len(fake._reject_calls) == 0
+
+
+async def test_reject_missing_from_user_rejected(monkeypatch) -> None:
+    """from_user=None → reject immediately."""
+    _patch_admin_ids(monkeypatch, [12345])
+    msg = FakeMessage()
+    msg.from_user = None
+    msg.text = "/reject task-0001"
+    monkeypatch.setattr(mod, "get_api_client", lambda: FakeApiClient())
+    await mod.reject_handler(msg)
+    assert len(msg.answers) == 1
+    assert len(msg.answers[0]["text"]) > 0
+
+
+async def test_reject_admin_can_proceed(monkeypatch) -> None:
+    """Admin user can reach the API call path."""
+    _patch_admin_ids(monkeypatch, [12345])
+    task = {
+        "id": "uuid-abc",
+        "external_id": "task-0007",
+        "title": "Deploy",
+        "status": "waiting_approval",
+        "risk_level": "high",
+        "intent": "deploy",
+        "project_id": None,
+        "agent_id": None,
+        "plan_text": "Plan",
+        "result_summary": None,
+        "payload": {},
+        "created_at": "2026-05-06T12:00:00.000Z",
+        "updated_at": "2026-05-06T12:00:00.000Z",
+    }
+    fake = FakeApiClient(
+        task_return=task,
+        approvals_return=[{"id": "ap-1", "status": "pending", "action": "deploy"}],
+    )
+    msg = FakeMessage(user_id=12345)
+    msg.text = "/reject uuid-abc dangerous"
+    monkeypatch.setattr(mod, "get_api_client", lambda: fake)
+    await mod.reject_handler(msg)
+    assert len(fake._reject_calls) == 1

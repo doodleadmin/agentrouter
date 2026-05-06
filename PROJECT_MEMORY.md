@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
 
@@ -98,6 +98,21 @@
 - **Validation:** task-0009 (7d2e2519) approved, worker PID 12165 alive after 35s, 0 ImportError, 0 "Restarting celery", 0 Traceback in log, cleanup PASS, git 2 files +50 lines.
 - **Notes:** `setsid` approach was tried first but broke PID tracking (forks child when process is group leader). `disown` is bash-specific but script already uses bash.
 - Task summary: [.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md](.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md)
+
+### 2026-05-06 — TG-05 Phase 1: Live Telegram Notifications + Admin Approval Gate
+- **Агент:** studio-orchestrator (coordinated implementation)
+- **Контур:** local only; без deploy/migrations/.env/secrets/live Telegram.
+- **Цель:** (1) Give worker access to TELEGRAM_BOT_TOKEN via .env.local. (2) Add fail-closed admin gate to /approve and /reject. (3) Add tests.
+- **Сделано:**
+  - `scripts/dev-linux/start-worker.sh` — sources `.env.local` via `set -a/source/set +a` (process-scoped). Warns if missing or token empty. Never prints token value.
+  - `apps/telegram-bot/app/handlers/approve_handler.py` — admin gate: `from_user is None` → reject; `admin_user_ids()` empty or user not in list → reject with "Только администраторы могут подтверждать задачи". No API call if not admin.
+  - `apps/telegram-bot/app/handlers/reject_handler.py` — same admin gate pattern.
+  - `apps/worker/tests/test_notifier.py` — 5 new tests (8 total): get_notifier stub/telegram factory, send success, send failure no token leak, set_notifier override.
+  - `apps/telegram-bot/tests/test_approve_handler.py` — 4 new tests (8 total): non-admin rejected, empty admin list rejects all, missing from_user, admin can proceed.
+  - `apps/telegram-bot/tests/test_reject_handler.py` — 4 new tests (8 total): same pattern.
+- **Validation:** bash -n ✅, compileall ✅, ruff ✅ (telegram-bot), pytest worker 97/98 ✅ (1 pre-existing), pytest telegram-bot 75/75 ✅.
+- **Security:** fail-closed admin gate, no token in logs/tests, .env.local not committed, no live bot started.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md](.ai_memory/tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md)
 
 ### 2026-05-06 — TG-04 Phase 5: Final Live Private Chat E2E
 - **Агент:** studio-orchestrator (coordinated execution)

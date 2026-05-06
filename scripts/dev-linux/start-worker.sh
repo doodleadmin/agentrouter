@@ -45,6 +45,7 @@ Environment (process-scoped, never persisted):
   API_BASE_URL=http://127.0.0.1:<port>
   API_TIMEOUT_SECONDS=<api-timeout>
   SANDBOX_RUNNER_MODE=fake
+  TELEGRAM_BOT_TOKEN=<from .env.local, optional>
 
 Logs: $LOG_FILE
 PID:  $PID_FILE
@@ -119,6 +120,7 @@ if $DRY_RUN; then
     echo "    API_BASE_URL=http://127.0.0.1:$PORT"
     echo "    API_TIMEOUT_SECONDS=$API_TIMEOUT"
     echo "    SANDBOX_RUNNER_MODE=fake"
+    log_dryrun "source .env.local if present (TELEGRAM_BOT_TOKEN, etc.)"
     log_dryrun "start celery worker (queues=$QUEUES) from $WORKER_DIR"
     log_dryrun "nohup ... > $LOG_FILE 2>&1 &"
     echo "=========================================="
@@ -157,12 +159,30 @@ export API_BASE_URL="http://127.0.0.1:$PORT"
 export API_TIMEOUT_SECONDS="$API_TIMEOUT"
 export SANDBOX_RUNNER_MODE="fake"
 
+# ── source .env.local (process-scoped, never persisted) ────────────────
+# TG-05: Load TELEGRAM_BOT_TOKEN and other secrets from .env.local.
+# Worker uses StubNotifier if token is absent.
+ENV_LOCAL="$PROJECT_ROOT/.env.local"
+if [[ -f "$ENV_LOCAL" ]]; then
+    set -a
+    source "$ENV_LOCAL"
+    set +a
+    if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+        log_info "TELEGRAM_BOT_TOKEN: set (not displayed)"
+    else
+        log_warn "TELEGRAM_BOT_TOKEN not set in .env.local — notifications will use StubNotifier"
+    fi
+else
+    log_warn ".env.local not found — notifications will use StubNotifier"
+fi
+
 log_info "Process-scoped env set:"
 echo "  CELERY_BROKER_URL = $CELERY_BROKER_URL"
 echo "  CELERY_RESULT_BACKEND = $CELERY_RESULT_BACKEND"
 echo "  API_BASE_URL = $API_BASE_URL"
 echo "  API_TIMEOUT_SECONDS = $API_TIMEOUT_SECONDS"
 echo "  SANDBOX_RUNNER_MODE = $SANDBOX_RUNNER_MODE"
+echo "  TELEGRAM_BOT_TOKEN = $(if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then echo '***set***'; else echo '(empty)'; fi)"
 
 # ── start worker ────────────────────────────────────────────────────────
 

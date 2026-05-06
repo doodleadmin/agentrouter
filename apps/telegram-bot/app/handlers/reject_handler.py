@@ -1,4 +1,5 @@
-"""TG-03: /reject <task_id|external_id> — reject the latest pending approval for a task."""
+"""TG-03: /reject <task_id|external_id> — reject the latest pending approval for a task.
+TG-05: Admin gate — only TELEGRAM_ADMIN_USER_IDS can reject."""
 
 from html import escape as html_escape
 
@@ -6,6 +7,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from app.config import settings
 from app.keyboards import build_task_keyboard
 from app.services import get_api_client
 from app.services.formatters import format_error_message, format_task_card
@@ -15,6 +17,18 @@ router = Router(name="reject")
 
 @router.message(Command("reject"))
 async def reject_handler(message: Message) -> None:
+    # ── TG-05: Admin gate (fail-closed) ────────────────────────────────
+    if message.from_user is None:
+        await message.answer("⛔ Не удалось определить пользователя.")
+        return
+
+    user_id = message.from_user.id
+    admin_ids = settings.admin_user_ids()
+
+    if not admin_ids or user_id not in admin_ids:
+        await message.answer("⛔ Только администраторы могут отклонять задачи.")
+        return
+
     client = get_api_client()
     args = (message.text or "").strip().split(maxsplit=2)
     if len(args) < 2:
