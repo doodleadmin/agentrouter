@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes).
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS.
 **Дата последнего обновления:** 2026-05-07
 **Project root:** `F:\dev\agentrouter`
 
@@ -145,6 +145,20 @@
   2. Approval task transition: approval_service.approve() didn't update task status. Fix: added transition in approvals router.
 - **Verdict:** PASS
 - Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-phase3-admin-approval-flow.md](.ai_memory/tasks/2026-05-07-task-tg05-phase3-admin-approval-flow.md)
+
+### 2026-05-07 — TG-05 Phase 4: Live Admin Reject Flow
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
+- **Цель:** Verify live admin reject flow: medium-risk task → waiting_approval → /reject → cancelled.
+- **Results:**
+  - Medium-risk task → waiting_approval ✅
+  - Approval record created (pending) ✅
+  - Telegram notification delivered (method=telegram) ✅
+  - Admin /reject → approval rejected, reason saved ✅
+  - Task status transitioned to cancelled ✅
+  - Feedback loop: 4 tasks, no duplicates ✅
+- **Verdict:** PASS
+- Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-phase4-admin-reject-flow.md](.ai_memory/tasks/2026-05-07-task-tg05-phase4-admin-reject-flow.md)
 
 ### 2026-05-07 — CI-01: Phase 1 Local Validation
 - **Агент:** git-workflow-master
