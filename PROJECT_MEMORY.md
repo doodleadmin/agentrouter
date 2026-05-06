@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
 
@@ -98,6 +98,30 @@
 - **Validation:** task-0009 (7d2e2519) approved, worker PID 12165 alive after 35s, 0 ImportError, 0 "Restarting celery", 0 Traceback in log, cleanup PASS, git 2 files +50 lines.
 - **Notes:** `setsid` approach was tried first but broke PID tracking (forks child when process is group leader). `disown` is bash-specific but script already uses bash.
 - Task summary: [.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md](.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md)
+
+### 2026-05-06 — TG-04 Phase 5: Final Live Private Chat E2E
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
+- **Цель:** Validate full live private chat E2E: Telegram user message → API task → Celery worker → stub runtime plan → approved → notification.
+- **Сделано:**
+  - Started API stub (PID 12328), Celery worker (PID 13000, SIGHUP fix active), Telegram bot (PID 13087, @agentrouters_bot).
+  - User sent "TG-04 final live smoke" in private chat.
+  - Bot received message, created task-0010 (5d16fe1e), triggered plan.
+  - Worker picked up task, called runtime plan endpoint, got approved status.
+  - Notification dispatched via StubNotifier (token not in worker env).
+  - Total processing time: 0.125s (worker) + 1.49s (bot handler).
+- **Validation:** 11/11 checks PASS:
+  - task_created ✓, plan_triggered ✓, runtime_session_created (stub-session) ✓
+  - plan_generated count=1 ✓, final status=approved ✓
+  - no runtime_error ✓, no policy_blocked ✓
+  - notification dispatched ✓, worker alive ✓, bot alive ✓
+  - no feedback loop (10 tasks total, 0 after task-0010) ✓
+- **Observations:**
+  - TelegramConflictError transient conflicts (recovered after ~23 retries).
+  - StubNotifier used because worker env lacks TELEGRAM_BOT_TOKEN.
+  - No runtime_session_created event in task_events (embedded in payload instead).
+- **Cleanup:** worker/bot stopped, API restarted stub (PID 13337), ports clean.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg-04-phase5-live-e2e.md](.ai_memory/tasks/2026-05-06-task-tg-04-phase5-live-e2e.md)
 
 ### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
 - **Агент:** studio-orchestrator (coordinated execution)
