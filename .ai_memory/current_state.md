@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-07 | Автор: git-workflow-master
+Обновлено: 2026-05-07 | Автор: studio-orchestrator
 
 ---
 

@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS.
 **Дата последнего обновления:** 2026-05-07
 **Project root:** `F:\dev\agentrouter`
 
@@ -113,6 +113,21 @@
 - **Validation:** bash -n ✅, compileall ✅, ruff ✅ (telegram-bot), pytest worker 97/98 ✅ (1 pre-existing), pytest telegram-bot 75/75 ✅.
 - **Security:** fail-closed admin gate, no token in logs/tests, .env.local not committed, no live bot started.
 - Task summary: [.ai_memory/tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md](.ai_memory/tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md)
+
+### 2026-05-07 — TG-05 Phase 2: Live Telegram Notification Smoke
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
+- **Цель:** Verify worker uses TelegramNotifier and real notification arrives in Telegram.
+- **Results:**
+  - .env.local: all 4 vars present ✅
+  - Worker: TELEGRAM_BOT_TOKEN set, no StubNotifier ✅
+  - Task f6972b69 (task-0001): approved, plan_text non-empty ✅
+  - Notification: POST api.telegram.org sendMessage 200 OK, method=telegram ✅
+  - Feedback loop: only 1 task, no duplicate ✅
+  - Cleanup: all stopped, API stub restored, git clean ✅
+- **Issues:** Bot conflict (old Windows process), private chat not bound (had to create project/agent/topic)
+- **Verdict:** PASS
+- Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-phase2-live-notification-smoke.md](.ai_memory/tasks/2026-05-07-task-tg05-phase2-live-notification-smoke.md)
 
 ### 2026-05-07 — CI-01: Phase 1 Local Validation
 - **Агент:** git-workflow-master
