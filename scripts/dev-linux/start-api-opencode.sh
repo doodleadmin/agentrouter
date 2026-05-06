@@ -101,15 +101,17 @@ OPENCODE_DOC_URL="${OPENCODE_URL}/doc"
 
 # ── preconditions ───────────────────────────────────────────────────────
 
-# 1. OpenCode healthy
-if ! curl -sf "$OPENCODE_HEALTH_URL" >/dev/null 2>&1; then
-    exit_fail "OpenCode not healthy at $OPENCODE_URL. Run start-opencode.sh first."
-fi
-log_info "OpenCode healthy at $OPENCODE_URL"
+if ! $DRY_RUN; then
+    # 1. OpenCode healthy
+    if ! curl -sf "$OPENCODE_HEALTH_URL" >/dev/null 2>&1; then
+        exit_fail "OpenCode not healthy at $OPENCODE_URL. Run start-opencode.sh first."
+    fi
+    log_info "OpenCode healthy at $OPENCODE_URL"
 
-# 2. uvicorn installed
-if ! python -c "import uvicorn" 2>/dev/null; then
-    exit_fail "uvicorn is not installed."
+    # 2. uvicorn installed
+    if ! python -c "import uvicorn" 2>/dev/null; then
+        exit_fail "uvicorn is not installed."
+    fi
 fi
 
 # ── fast-path: already running in opencode_http mode ────────────────────

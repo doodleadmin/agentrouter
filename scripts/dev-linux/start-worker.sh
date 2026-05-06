@@ -79,25 +79,27 @@ API_HEALTH_URL="http://127.0.0.1:${PORT}/health"
 
 # ── preconditions ───────────────────────────────────────────────────────
 
-# 1. Redis healthy
-REDIS_PING=$(docker exec "$REDIS_CONTAINER" redis-cli ping 2>/dev/null || echo "FAIL")
-if [[ "$REDIS_PING" != "PONG" ]]; then
-    exit_fail "Redis not healthy. Ensure '$REDIS_CONTAINER' is running and returns PONG."
-fi
-log_info "Redis healthy: PONG"
+if ! $DRY_RUN; then
+    # 1. Redis healthy
+    REDIS_PING=$(docker exec "$REDIS_CONTAINER" redis-cli ping 2>/dev/null || echo "FAIL")
+    if [[ "$REDIS_PING" != "PONG" ]]; then
+        exit_fail "Redis not healthy. Ensure '$REDIS_CONTAINER' is running and returns PONG."
+    fi
+    log_info "Redis healthy: PONG"
 
-# 2. API healthy
-if ! curl -sf "$API_HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
-    exit_fail "API not healthy at $API_HEALTH_URL. Start API first."
-fi
-log_info "API healthy at $API_HEALTH_URL"
+    # 2. API healthy
+    if ! curl -sf "$API_HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
+        exit_fail "API not healthy at $API_HEALTH_URL. Start API first."
+    fi
+    log_info "API healthy at $API_HEALTH_URL"
 
-# 3. Celery installed
-if ! python -c "import celery" 2>/dev/null; then
-    exit_fail "Celery is not installed."
+    # 3. Celery installed
+    if ! python -c "import celery" 2>/dev/null; then
+        exit_fail "Celery is not installed."
+    fi
+    CELERY_VER=$(python -c "import celery; print(celery.__version__)" 2>/dev/null || echo "unknown")
+    log_info "Celery version: $CELERY_VER"
 fi
-CELERY_VER=$(python -c "import celery; print(celery.__version__)" 2>/dev/null || echo "unknown")
-log_info "Celery version: $CELERY_VER"
 
 # ── dry-run ─────────────────────────────────────────────────────────────
 

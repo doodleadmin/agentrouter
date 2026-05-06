@@ -37,6 +37,20 @@
 - **Валидация:** bash -n syntax check pending (Linux required), --dry-run support confirmed
 - Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md)
 
+### 2026-05-06 — DEV-LINUX-01B dry-run precondition fix
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local only; без deploy/migrations/.env/secrets.
+- **Проблема:** 5 из 10 scripts выполняли реальные curl/redis/docker проверки ДО dry-run ветки. 2 скрипта exit 1, 3 скрипта делали реальные сетевые подключения.
+- **Решение:** Wrapped preconditions in `if ! $DRY_RUN` guards.
+- **Сделано:**
+  - `start-api-opencode.sh` — OpenCode health + uvicorn check wrapped
+  - `smoke-real-opencode-runtime.sh` — OpenCode + API + git baseline wrapped
+  - `start-worker.sh` — Redis + API + Celery check wrapped
+  - `start-telegram-bot.sh` — .env.local + API health wrapped
+  - `smoke-stub-runtime.sh` — API health + git dirty wrapped
+- **Валидация:** bash -n 10/10 ✅, --help 10/10 ✅, --dry-run 10/10 ✅ (all exit 0), no real connections, no processes, no artifacts
+- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md)
+
 ### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
 - **Агент:** studio-orchestrator (coordinated execution)
 - **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.

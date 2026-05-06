@@ -74,17 +74,19 @@ done
 
 # ── preconditions ───────────────────────────────────────────────────────
 
-# 1. API healthy
-if ! curl -sf "$API_BASE/health" 2>/dev/null | grep -q '"ok"'; then
-    exit_fail "API not healthy at $API_BASE"
-fi
-log_info "API healthy at $API_BASE"
+if ! $DRY_RUN; then
+    # 1. API healthy
+    if ! curl -sf "$API_BASE/health" 2>/dev/null | grep -q '"ok"'; then
+        exit_fail "API not healthy at $API_BASE"
+    fi
+    log_info "API healthy at $API_BASE"
 
-# 2. Git clean
-if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null)" ]]; then
-    exit_fail "Git working tree is dirty. Commit or stash before running smoke."
+    # 2. Git clean
+    if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null)" ]]; then
+        exit_fail "Git working tree is dirty. Commit or stash before running smoke."
+    fi
+    log_info "Git status: clean"
 fi
-log_info "Git status: clean"
 
 # ── dry-run ─────────────────────────────────────────────────────────────
 

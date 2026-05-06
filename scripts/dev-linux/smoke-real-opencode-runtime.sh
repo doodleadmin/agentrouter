@@ -105,21 +105,23 @@ done
 
 # ── preconditions ───────────────────────────────────────────────────────
 
-# 1. OpenCode healthy
-if ! curl -sf "$OPENCODE_BASE/global/health" >/dev/null 2>&1; then
-    exit_fail "OpenCode not healthy at $OPENCODE_BASE. Run start-opencode.sh first."
-fi
-log_info "OpenCode healthy at $OPENCODE_BASE"
+if ! $DRY_RUN; then
+    # 1. OpenCode healthy
+    if ! curl -sf "$OPENCODE_BASE/global/health" >/dev/null 2>&1; then
+        exit_fail "OpenCode not healthy at $OPENCODE_BASE. Run start-opencode.sh first."
+    fi
+    log_info "OpenCode healthy at $OPENCODE_BASE"
 
-# 2. API healthy
-if ! curl -sf "$API_BASE/health" 2>/dev/null | grep -q '"ok"'; then
-    exit_fail "API not healthy at $API_BASE. Run start-api-opencode.sh first."
-fi
-log_info "API healthy at $API_BASE"
+    # 2. API healthy
+    if ! curl -sf "$API_BASE/health" 2>/dev/null | grep -q '"ok"'; then
+        exit_fail "API not healthy at $API_BASE. Run start-api-opencode.sh first."
+    fi
+    log_info "API healthy at $API_BASE"
 
-# 3. Git baseline
-GIT_BEFORE=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null || echo "")
-log_info "Git status baseline captured."
+    # 3. Git baseline
+    GIT_BEFORE=$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null || echo "")
+    log_info "Git status baseline captured."
+fi
 
 # ── dry-run ─────────────────────────────────────────────────────────────
 

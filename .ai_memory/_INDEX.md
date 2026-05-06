@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 51 |
+| **Task logs** | 52 |
 | **Шаблоны** | 5 |
 
 ---
@@ -116,6 +116,8 @@
 | [2026-05-04-task-be11-runtime-runbook-automation.md](tasks/2026-05-04-task-be11-runtime-runbook-automation.md) | BE-11: Runtime Runbook + Local Smoke Automation Scripts |
 | [2026-05-05-task-be12-opencode-read-timeout-alignment.md](tasks/2026-05-05-task-be12-opencode-read-timeout-alignment.md) | BE-12: OpenCode Read-Timeout Alignment |
 | [2026-05-05-task-be11-scripts-final-repair.md](tasks/2026-05-05-task-be11-scripts-final-repair.md) | BE-11: Scripts Final Repair (parse/dry-run PASS) |
+| [2026-05-06-task-dev-linux-01-runtime-scripts.md](tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md) | DEV-LINUX-01: Ubuntu 22.04 Runtime Scripts |
+| [2026-05-06-task-dev-linux-01b-dryrun-fix.md](tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md) | DEV-LINUX-01B: Dry-Run Precondition Fix |
 
 ---
 

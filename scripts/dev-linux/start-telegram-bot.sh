@@ -73,21 +73,23 @@ API_HEALTH_URL="http://127.0.0.1:${PORT}/health"
 
 # ── preconditions ───────────────────────────────────────────────────────
 
-# 1. .env.local exists with TELEGRAM_BOT_TOKEN
-if [[ ! -f "$ENV_LOCAL" ]]; then
-    exit_fail ".env.local not found at $ENV_LOCAL. Copy from .env.local.example."
-fi
+if ! $DRY_RUN; then
+    # 1. .env.local exists with TELEGRAM_BOT_TOKEN
+    if [[ ! -f "$ENV_LOCAL" ]]; then
+        exit_fail ".env.local not found at $ENV_LOCAL. Copy from .env.local.example."
+    fi
 
-if ! grep -q '^TELEGRAM_BOT_TOKEN=.' "$ENV_LOCAL" 2>/dev/null; then
-    exit_fail "TELEGRAM_BOT_TOKEN is not set in .env.local."
-fi
-log_info ".env.local found with TELEGRAM_BOT_TOKEN set."
+    if ! grep -q '^TELEGRAM_BOT_TOKEN=.' "$ENV_LOCAL" 2>/dev/null; then
+        exit_fail "TELEGRAM_BOT_TOKEN is not set in .env.local."
+    fi
+    log_info ".env.local found with TELEGRAM_BOT_TOKEN set."
 
-# 2. API healthy
-if ! curl -sf "$API_HEALTH_URL" >/dev/null 2>&1; then
-    exit_fail "API not healthy at $API_HEALTH_URL. Start API first."
+    # 2. API healthy
+    if ! curl -sf "$API_HEALTH_URL" >/dev/null 2>&1; then
+        exit_fail "API not healthy at $API_HEALTH_URL. Start API first."
+    fi
+    log_info "API healthy at $API_HEALTH_URL"
 fi
-log_info "API healthy at $API_HEALTH_URL"
 
 # ── dry-run ─────────────────────────────────────────────────────────────
 
