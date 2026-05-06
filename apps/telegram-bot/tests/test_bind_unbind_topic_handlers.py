@@ -49,10 +49,10 @@ class FakeApiClient:
 
 
 class FakeMessage:
-    def __init__(self, text: str, thread_id: int | None = 7):
+    def __init__(self, text: str, thread_id: int | None = 7, chat_type: str = "supergroup"):
         self.text = text
         self.message_thread_id = thread_id
-        self.chat = SimpleNamespace(id=100)
+        self.chat = SimpleNamespace(id=100, type=chat_type)
         self.answers = []
 
     async def answer(self, text: str, **kwargs):
@@ -70,14 +70,16 @@ async def test_bind_topic_success(monkeypatch) -> None:
     assert "Привязка topic" in msg.answers[0]
 
 
-async def test_bind_topic_forum_only(monkeypatch) -> None:
+async def test_bind_topic_private_chat(monkeypatch) -> None:
     client = FakeApiClient()
-    msg = FakeMessage("/bind_topic project=academy-bot agent=backend", thread_id=None)
+    msg = FakeMessage("/bind_topic project=academy-bot agent=backend", thread_id=None, chat_type="private")
     monkeypatch.setattr(bind_topic, "get_api_client", lambda: client)
 
     await bind_topic.bind_topic_handler(msg)
 
-    assert "только внутри forum topic" in msg.answers[0]
+    assert client._topic is not None
+    assert client._topic["message_thread_id"] == 0
+    assert "Привязка чат" in msg.answers[0]
 
 
 async def test_unbind_topic_success(monkeypatch) -> None:
@@ -99,6 +101,25 @@ async def test_unbind_topic_success(monkeypatch) -> None:
     assert "soft deactivate" in msg.answers[0]
 
 
+async def test_unbind_topic_private_chat(monkeypatch) -> None:
+    client = FakeApiClient()
+    client._topic = {
+        "id": "t-1",
+        "chat_id": 100,
+        "message_thread_id": 0,
+        "project_id": "p-1",
+        "agent_id": "a-1",
+        "is_active": True,
+    }
+    msg = FakeMessage("/unbind_topic", thread_id=None, chat_type="private")
+    monkeypatch.setattr(unbind_topic, "get_api_client", lambda: client)
+
+    await unbind_topic.unbind_topic_handler(msg)
+
+    assert client._topic["is_active"] is False
+    assert "Чат отвязан" in msg.answers[0]
+
+
 async def test_topic_status_bound(monkeypatch) -> None:
     client = FakeApiClient()
     client._topic = {
@@ -116,3 +137,14 @@ async def test_topic_status_bound(monkeypatch) -> None:
 
     assert "Topic status" in msg.answers[0]
     assert "status=active" in msg.answers[0]
+
+
+async def test_topic_status_private_chat_unbound(monkeypatch) -> None:
+    client = FakeApiClient()
+    msg = FakeMessage("/topic_status", thread_id=None, chat_type="private")
+    monkeypatch.setattr(topic_status, "get_api_client", lambda: client)
+
+    await topic_status.topic_status_handler(msg)
+
+    assert "Привязка для чат не найдена" in msg.answers[0]
+    assert "message_thread_id=0" in msg.answers[0]

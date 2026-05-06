@@ -11,15 +11,16 @@ router = Router(name="unbind_topic")
 
 @router.message(Command("unbind_topic"))
 async def unbind_topic_handler(message: Message) -> None:
-    if message.message_thread_id is None:
-        await message.answer("⚠️ /unbind_topic работает только внутри forum topic.")
-        return
+    is_private = message.chat.type == "private"
+    thread_id = message.message_thread_id if not is_private else (message.message_thread_id or 0)
 
     client = get_api_client()
-    current = await client.find_topic_binding(message.chat.id, message.message_thread_id)
+    current = await client.find_topic_binding(message.chat.id, thread_id)
     if current is None:
-        await message.answer("ℹ️ Topic ещё не привязан.")
+        label = "чат" if is_private else "Topic"
+        await message.answer(f"ℹ️ {label} ещё не привязан.")
         return
 
     await client.deactivate_topic_binding(current["id"])
-    await message.answer("✅ Topic отвязан (soft deactivate).")
+    label = "Чат" if is_private else "Topic"
+    await message.answer(f"✅ {label} отвязан (soft deactivate).")
