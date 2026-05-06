@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
 
@@ -68,6 +68,24 @@
   - cleanup-runtime.sh: ✅ all stopped, API restarted stub mode
 - **Валидация:** bash -n 10/10 ✅, --dry-run 10/10 ✅, --help 10/10 ✅, real contour 5/5 ✅
 - Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md)
+
+### 2026-05-06 — DEV-LINUX-01D real OpenCode runtime contour
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local WSL2 Ubuntu 22.04; без deploy/migrations/.env/secrets.
+- **Цель:** Validate real OpenCode runtime contour on Linux: OpenCode → API opencode_http → smoke-real-opencode-runtime → cleanup.
+- **Окружение:** Ubuntu 22.04.5 LTS on WSL2, Node v20.20.2, npm 10.8.2, OpenCode 1.14.39.
+- **Сделано:**
+  - check-db.sh: ✅ 9/9 tables, alembic head
+  - start-opencode.sh: ✅ PID 8570, 127.0.0.1:4096, /global/health 200, /doc 200
+  - CLI attach probe (`opencode run --attach`): ✅ exit 0, ~42s, session ses_201ad1cf9ffeuGz8Ag5JiGQM0v
+  - start-api-opencode.sh: ✅ PID 9014, 127.0.0.1:8000, provider opencode_http, /health /projects /agents 200
+  - smoke-real-opencode-runtime: ✅ task bc4853b6, approved, 103.2s, session ses_201a17dfcffem78R3kuE96eZPf, 2099 chars plan
+  - cleanup-runtime.sh: ✅ OpenCode stopped, API restarted stub mode, git clean
+- **Event timeline:** task_created → runtime_session_created → runtime_retry_scheduled → runtime_event_received ×2 → plan_generated
+- **Real OpenCode proof:** session ses_* (not stub), no stub fingerprints, 103.2s duration, real project analysis in plan
+- **Validation:** all 9 checks PASS (final_status=approved, plan_text_nonempty, real_session_id, plan_generated_count=1, session_created_before_events, no_stub_fingerprints, no_runtime_error, no_policy_blocked, no_command_file_sandbox)
+- **Findings:** (1) First smoke attempt hit 420s timeout on cold-start — manual retry succeeded in 103s; (2) smoke script missing normalized_text field — fixed; (3) Node.js missing in WSL — installed via NodeSource; (4) OpenCode npm package is platform-specific — used opencode-linux-x64 + symlink.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md)
 
 ### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
 - **Агент:** studio-orchestrator (coordinated execution)
