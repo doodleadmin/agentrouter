@@ -21,9 +21,9 @@ class FakeApiClient:
 
 
 class FakeMessage:
-    def __init__(self, text: str, chat_id: int = 100, thread_id: int | None = 10, username: str = "tester"):
+    def __init__(self, text: str, chat_id: int = 100, thread_id: int | None = 10, username: str = "tester", chat_type: str = "group"):
         self.text = text
-        self.chat = SimpleNamespace(id=chat_id)
+        self.chat = SimpleNamespace(id=chat_id, type=chat_type)
         self.message_thread_id = thread_id
         self.from_user = SimpleNamespace(id=77, username=username, is_bot=False)
         self.answers = []
@@ -59,6 +59,24 @@ async def test_text_message_unbound_topic(monkeypatch) -> None:
 
     assert len(msg.answers) == 1
     assert "не привязан" in msg.answers[0]
+    assert "topic" in msg.answers[0]
+    assert "/bind_topic project=<code>project_slug</code> agent=<code>agent_slug</code>" in msg.answers[0]
+
+
+async def test_text_message_unbound_private_chat(monkeypatch) -> None:
+    msg = FakeMessage("hello", chat_type="private")
+
+    async def _resolve(*args, **kwargs):
+        return TopicContext(is_bound=False)
+
+    monkeypatch.setattr(messages, "resolve_topic_context", _resolve)
+    monkeypatch.setattr(messages, "get_api_client", lambda: FakeApiClient())
+
+    await messages.text_message_handler(msg)
+
+    assert len(msg.answers) == 1
+    assert "чат" in msg.answers[0]
+    assert "Этот topic" not in msg.answers[0]
     assert "/bind_topic project=<code>project_slug</code> agent=<code>agent_slug</code>" in msg.answers[0]
 
 

@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
 
@@ -22,6 +22,16 @@
 - **Валидация:** compileall ✅, ruff ✅, pytest 64/64 ✅
 - **Guardrails:** no secrets/tokens touched, .env.local gitignored, API/runtime code unchanged.
 - Task summary: [.ai_memory/tasks/2026-05-06-task-tg04-html-placeholder-fix.md](.ai_memory/tasks/2026-05-06-task-tg04-html-placeholder-fix.md)
+
+### 2026-05-06 — TG-04 private chat wording fix
+- **Агент:** studio-orchestrator
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Проблема:** В private chat бот отвечал "Этот topic пока не привязан..." — слово "topic" нелогично для 1:1 чата.
+- **Сделано:**
+  - `messages.py`: проверка `message.chat.type == "private"` → "чат" вместо "topic".
+  - `test_messages.py`: добавлен `chat_type` параметр в `FakeMessage`, новый тест `test_text_message_unbound_private_chat`.
+- **Валидация:** compileall ✅, ruff ✅, pytest 65/65 ✅
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg04-private-chat-wording-fix.md](.ai_memory/tasks/2026-05-06-task-tg04-private-chat-wording-fix.md)
 
 ### 2026-05-06 — TG-04 aiogram 3.15 message_thread_id compatibility fix
 - **Агент:** studio-orchestrator (coordinated execution)

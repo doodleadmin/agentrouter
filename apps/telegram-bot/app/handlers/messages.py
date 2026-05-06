@@ -41,9 +41,11 @@ async def text_message_handler(message: Message) -> None:
 
     topic_ctx = await resolve_topic_context(chat_id=chat_id, message_thread_id=thread_id)
     if not topic_ctx.is_bound:
+        is_private = message.chat.type == "private"
+        label = "чат" if is_private else "topic"
         await message.answer(
             (
-                "⚠️ Этот topic пока не привязан в системе.\n"
+                f"⚠️ Этот {label} пока не привязан в системе.\n"
                 "Используйте /bind_topic project=<code>project_slug</code> agent=<code>agent_slug</code>."
             ),
         )
