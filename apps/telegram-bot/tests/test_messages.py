@@ -28,8 +28,8 @@ class FakeMessage:
         self.from_user = SimpleNamespace(id=77, username=username, is_bot=False)
         self.answers = []
 
-    async def answer(self, text: str, message_thread_id: int | None = None):
-        self.answers.append((text, message_thread_id))
+    async def answer(self, text: str, **kwargs):
+        self.answers.append(text)
 
 
 class FakeBotMessage(FakeMessage):
@@ -58,9 +58,8 @@ async def test_text_message_unbound_topic(monkeypatch) -> None:
     await messages.text_message_handler(msg)
 
     assert len(msg.answers) == 1
-    assert "не привязан" in msg.answers[0][0]
-    assert "/bind_topic project=<project_slug> agent=<agent_slug>" in msg.answers[0][0]
-    assert msg.answers[0][1] == 10
+    assert "не привязан" in msg.answers[0]
+    assert "/bind_topic project=<code>project_slug</code> agent=<code>agent_slug</code>" in msg.answers[0]
 
 
 async def test_text_message_bound_topic_creates_task_and_triggers_plan(monkeypatch) -> None:
@@ -86,8 +85,8 @@ async def test_text_message_bound_topic_creates_task_and_triggers_plan(monkeypat
     assert fake_client.created_payload["telegram_thread_id"] == 10
     assert fake_client.triggered_plan_task_id == "00000000-0000-0000-0000-000000000099"
     assert len(msg.answers) == 1
-    assert "Task создан" in msg.answers[0][0]
-    assert "Plan pipeline запущен" in msg.answers[0][0]
+    assert "Task создан" in msg.answers[0]
+    assert "Plan pipeline запущен" in msg.answers[0]
 
 
 async def test_text_message_bound_topic_plan_trigger_fails_gracefully(monkeypatch) -> None:
@@ -111,8 +110,8 @@ async def test_text_message_bound_topic_plan_trigger_fails_gracefully(monkeypatc
     assert fake_client.created_payload is not None
     assert fake_client.triggered_plan_task_id is None
     assert len(msg.answers) == 1
-    assert "Task создан" in msg.answers[0][0]
-    assert "не удалось запустить" in msg.answers[0][0]
+    assert "Task создан" in msg.answers[0]
+    assert "не удалось запустить" in msg.answers[0]
 
 
 # ── TG-04: bot message filtering ────────────────────────────────────────

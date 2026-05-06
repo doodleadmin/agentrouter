@@ -1,6 +1,7 @@
 """Bot/dispatcher factory for Telegram gateway."""
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
@@ -23,7 +24,10 @@ from app.handlers import (
 def create_bot() -> Bot:
     """Create configured aiogram Bot instance."""
 
-    return Bot(token=settings.TELEGRAM_BOT_TOKEN, parse_mode=ParseMode.HTML)
+    return Bot(
+        token=settings.TELEGRAM_BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
 
 
 def create_dispatcher() -> Dispatcher:

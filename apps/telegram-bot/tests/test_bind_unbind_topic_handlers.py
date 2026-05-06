@@ -55,8 +55,8 @@ class FakeMessage:
         self.chat = SimpleNamespace(id=100)
         self.answers = []
 
-    async def answer(self, text: str, message_thread_id: int | None = None):
-        self.answers.append((text, message_thread_id))
+    async def answer(self, text: str, **kwargs):
+        self.answers.append(text)
 
 
 async def test_bind_topic_success(monkeypatch) -> None:
@@ -67,7 +67,7 @@ async def test_bind_topic_success(monkeypatch) -> None:
     await bind_topic.bind_topic_handler(msg)
 
     assert client._topic is not None
-    assert "Привязка topic" in msg.answers[0][0]
+    assert "Привязка topic" in msg.answers[0]
 
 
 async def test_bind_topic_forum_only(monkeypatch) -> None:
@@ -77,7 +77,7 @@ async def test_bind_topic_forum_only(monkeypatch) -> None:
 
     await bind_topic.bind_topic_handler(msg)
 
-    assert "только внутри forum topic" in msg.answers[0][0]
+    assert "только внутри forum topic" in msg.answers[0]
 
 
 async def test_unbind_topic_success(monkeypatch) -> None:
@@ -96,7 +96,7 @@ async def test_unbind_topic_success(monkeypatch) -> None:
     await unbind_topic.unbind_topic_handler(msg)
 
     assert client._topic["is_active"] is False
-    assert "soft deactivate" in msg.answers[0][0]
+    assert "soft deactivate" in msg.answers[0]
 
 
 async def test_topic_status_bound(monkeypatch) -> None:
@@ -114,5 +114,5 @@ async def test_topic_status_bound(monkeypatch) -> None:
 
     await topic_status.topic_status_handler(msg)
 
-    assert "Topic status" in msg.answers[0][0]
-    assert "status=active" in msg.answers[0][0]
+    assert "Topic status" in msg.answers[0]
+    assert "status=active" in msg.answers[0]

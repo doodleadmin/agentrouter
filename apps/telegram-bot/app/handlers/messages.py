@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
+from html import escape as html_escape
+
 from aiogram import Router
 from aiogram.types import Message
 
 from app.services import get_api_client, resolve_topic_context
 
 router = Router(name="messages")
-
-
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
 
 
 def _make_title(text: str) -> str:
@@ -46,9 +44,8 @@ async def text_message_handler(message: Message) -> None:
         await message.answer(
             (
                 "⚠️ Этот topic пока не привязан в системе.\n"
-                "Используйте /bind_topic project=<project_slug> agent=<agent_slug>."
+                "Используйте /bind_topic project=<code>project_slug</code> agent=<code>agent_slug</code>."
             ),
-            message_thread_id=_thread_id(message),
         )
         return
 
@@ -70,11 +67,11 @@ async def text_message_handler(message: Message) -> None:
 
     response_lines = [
         "✅ Task создан.",
-        f"ID: {task.get('external_id')}",
-        f"Topic: {topic_ctx.title or 'bound-topic'}",
+        f"ID: {html_escape(str(task.get('external_id', 'N/A')))}",
+        f"Topic: {html_escape(topic_ctx.title or 'bound-topic')}",
     ]
     if username:
-        response_lines.append(f"User: @{username}")
+        response_lines.append(f"User: @{html_escape(username)}")
 
     # Trigger plan pipeline via backend API → Celery agent_plan queue
     task_id = task.get("id")
@@ -85,4 +82,4 @@ async def text_message_handler(message: Message) -> None:
         except Exception:
             response_lines.append("⚠️ Plan pipeline не удалось запустить.")
 
-    await message.answer("\n".join(response_lines), message_thread_id=_thread_id(message))
+    await message.answer("\n".join(response_lines))

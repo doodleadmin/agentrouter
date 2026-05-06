@@ -11,19 +11,12 @@ from app.services.formatters import format_error_message, format_plan_excerpt
 router = Router(name="plan")
 
 
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
-
-
 @router.message(Command("plan"))
 async def plan_handler(message: Message) -> None:
     client = get_api_client()
     args = (message.text or "").strip().split(maxsplit=1)
     if len(args) < 2:
-        await message.answer(
-            "⚠️ Usage: /plan <task_id|external_id>",
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer("⚠️ Usage: /plan <code>task_id</code> or <code>external_id</code>")
         return
 
     task_ref = args[1].strip()
@@ -44,7 +37,6 @@ async def plan_handler(message: Message) -> None:
     if task is None:
         await message.answer(
             format_error_message("Task not found", f"No task matching '{task_ref}'"),
-            message_thread_id=_thread_id(message),
         )
         return
 
@@ -58,9 +50,4 @@ async def plan_handler(message: Message) -> None:
 
     keyboard = build_plan_keyboard(task_id)
 
-    await message.answer(
-        header + excerpt,
-        reply_markup=keyboard,
-        message_thread_id=_thread_id(message),
-        parse_mode="HTML",
-    )
+    await message.answer(header + excerpt, reply_markup=keyboard, parse_mode="HTML")

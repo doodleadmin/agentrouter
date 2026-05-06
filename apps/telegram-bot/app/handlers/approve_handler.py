@@ -1,5 +1,7 @@
 """TG-03: /approve <task_id|external_id> — approve the latest pending approval for a task."""
 
+from html import escape as html_escape
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -11,19 +13,12 @@ from app.services.formatters import format_error_message, format_task_card
 router = Router(name="approve")
 
 
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
-
-
 @router.message(Command("approve"))
 async def approve_handler(message: Message) -> None:
     client = get_api_client()
     args = (message.text or "").strip().split(maxsplit=1)
     if len(args) < 2:
-        await message.answer(
-            "⚠️ Usage: /approve <task_id|external_id>",
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer("⚠️ Usage: /approve <code>task_id</code> or <code>external_id</code>")
         return
 
     task_ref = args[1].strip()
@@ -44,7 +39,6 @@ async def approve_handler(message: Message) -> None:
     if task is None:
         await message.answer(
             format_error_message("Task not found", f"No task matching '{task_ref}'"),
-            message_thread_id=_thread_id(message),
         )
         return
 
@@ -54,25 +48,15 @@ async def approve_handler(message: Message) -> None:
     try:
         approvals = await client.list_approvals_by_task(task_id)
     except Exception as exc:
-        await message.answer(
-            format_error_message("API error", str(exc)),
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer(format_error_message("API error", str(exc)))
         return
 
     pending = [a for a in approvals if a.get("status") == "pending"]
     if not pending:
-        await message.answer(
-            "ℹ️ No pending approvals for this task.",
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer("ℹ️ No pending approvals for this task.")
         # Still show task status
         text = format_task_card(task)
-        await message.answer(
-            text,
-            message_thread_id=_thread_id(message),
-            parse_mode="HTML",
-        )
+        await message.answer(text, parse_mode="HTML")
         return
 
     # Approve the first pending approval
@@ -83,15 +67,11 @@ async def approve_handler(message: Message) -> None:
     try:
         result = await client.approve_approval(approval_id, {"approved_by": user_id})
         await message.answer(
-            f"✅ Approval <code>{result.get('action')}</code> — <b>approved</b>.",
-            message_thread_id=_thread_id(message),
+            f"✅ Approval <code>{html_escape(str(result.get('action', 'unknown')))}</code> — <b>approved</b>.",
             parse_mode="HTML",
         )
     except Exception as exc:
-        await message.answer(
-            format_error_message("Approve failed", str(exc)),
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer(format_error_message("Approve failed", str(exc)))
         return
 
     # Show updated task card
@@ -122,9 +102,4 @@ async def approve_handler(message: Message) -> None:
         has_plan=bool(task.get("plan_text")),
     )
 
-    await message.answer(
-        text,
-        reply_markup=keyboard,
-        message_thread_id=_thread_id(message),
-        parse_mode="HTML",
-    )
+    await message.answer(text, reply_markup=keyboard, parse_mode="HTML")

@@ -9,18 +9,11 @@ from app.services import get_api_client
 router = Router(name="topic_status")
 
 
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
-
-
 @router.message(Command("topic_status"))
 async def topic_status_handler(message: Message) -> None:
     thread_id = message.message_thread_id
     if thread_id is None:
-        await message.answer(
-            "⚠️ /topic_status доступна только внутри forum topic.",
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer("⚠️ /topic_status доступна только внутри forum topic.")
         return
 
     client = get_api_client()
@@ -33,7 +26,6 @@ async def topic_status_handler(message: Message) -> None:
                 f"message_thread_id={thread_id}\n"
                 "status=unbound"
             ),
-            message_thread_id=_thread_id(message),
         )
         return
 
@@ -46,5 +38,4 @@ async def topic_status_handler(message: Message) -> None:
             f"agent_id={current.get('agent_id')}\n"
             f"status={'active' if current.get('is_active') else 'inactive'}"
         ),
-        message_thread_id=_thread_id(message),
     )

@@ -6,9 +6,33 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Проблема:** `TelegramBadRequest: can't parse entities: Unsupported start tag "project_slug"` — raw `<project_slug>` в help тексте при `parse_mode=HTML`.
+- **Сделано:**
+  - Заменены raw `<placeholder>` на `<code>placeholder</code>` в **6 handler файлах** (messages, bind_topic, plan_handler, approve_handler, reject_handler, status_handler).
+  - Добавлен `html.escape()` для динамических значений из API/user в **4 handler файлах** (approve_handler, reject_handler, bind_topic, messages).
+  - Исправлен import order (stdlib перед third-party) для ruff I001 compliance.
+  - Обновлён **1 тест** (test_messages.py assertion).
+- **Валидация:** compileall ✅, ruff ✅, pytest 64/64 ✅
+- **Guardrails:** no secrets/tokens touched, .env.local gitignored, API/runtime code unchanged.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg04-html-placeholder-fix.md](.ai_memory/tasks/2026-05-06-task-tg04-html-placeholder-fix.md)
+
+### 2026-05-06 — TG-04 aiogram 3.15 message_thread_id compatibility fix
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Проблема:** `TypeError: got multiple values for keyword argument 'message_thread_id'` при `/start` в private chat. aiogram 3.15 автоматически прокидывает `message_thread_id` из входящего сообщения, а код передавал его явно → дублирование.
+- **Сделано:**
+  - Удалён `_thread_id()` helper и явный `message_thread_id=_thread_id(message)` из **10 handler файлов** (start, commands, messages, status, approve, reject, plan, topic_status, bind_topic, unbind_topic).
+  - Обновлены **7 тестовых файлов** (FakeMessage.answer() signatures + assertions).
+- **Валидация:** compileall ✅, ruff ✅, pytest 64/64 ✅
+- **Guardrails:** no secrets/tokens touched, .env.local gitignored, API/runtime code unchanged.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-tg04-aiogram-message-thread-fix.md](.ai_memory/tasks/2026-05-06-task-tg04-aiogram-message-thread-fix.md)
 
 ### 2026-05-06 — TG-04 Live Integration Phase 1 (security prerequisites)
 - **Агенты:** security-engineer + backend-architect

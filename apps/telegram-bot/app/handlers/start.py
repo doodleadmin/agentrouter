@@ -7,10 +7,6 @@ from aiogram.types import Message
 router = Router(name="start")
 
 
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
-
-
 @router.message(Command("start"))
 async def start_handler(message: Message) -> None:
     await message.answer(
@@ -22,7 +18,6 @@ async def start_handler(message: Message) -> None:
             "/agents — активные агенты\n"
             "/tasks — последние задачи"
         ),
-        message_thread_id=_thread_id(message),
     )
 
 
@@ -35,5 +30,4 @@ async def help_handler(message: Message) -> None:
             "- обычный текст создаёт Task, если topic привязан\n"
             "- запуск runtime/агентов пока отключён"
         ),
-        message_thread_id=_thread_id(message),
     )

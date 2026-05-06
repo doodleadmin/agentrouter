@@ -11,19 +11,12 @@ from app.services.formatters import format_error_message, format_task_card
 router = Router(name="status")
 
 
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
-
-
 @router.message(Command("status"))
 async def status_handler(message: Message) -> None:
     client = get_api_client()
     args = (message.text or "").strip().split(maxsplit=1)
     if len(args) < 2:
-        await message.answer(
-            "⚠️ Usage: /status <task_id|external_id>",
-            message_thread_id=_thread_id(message),
-        )
+        await message.answer("⚠️ Usage: /status <code>task_id</code> or <code>external_id</code>")
         return
 
     task_ref = args[1].strip()
@@ -44,7 +37,6 @@ async def status_handler(message: Message) -> None:
     if task is None:
         await message.answer(
             format_error_message("Task not found", f"No task matching '{task_ref}'"),
-            message_thread_id=_thread_id(message),
         )
         return
 
@@ -75,4 +67,4 @@ async def status_handler(message: Message) -> None:
         has_plan=has_plan,
     )
 
-    await message.answer(text, reply_markup=keyboard, message_thread_id=_thread_id(message), parse_mode="HTML")
+    await message.answer(text, reply_markup=keyboard, parse_mode="HTML")

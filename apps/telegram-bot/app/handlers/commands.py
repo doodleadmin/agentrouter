@@ -9,10 +9,6 @@ from app.services import get_api_client
 router = Router(name="commands")
 
 
-def _thread_id(message: Message) -> int | None:
-    return message.message_thread_id
-
-
 @router.message(Command("projects"))
 async def projects_handler(message: Message) -> None:
     client = get_api_client()
@@ -24,7 +20,7 @@ async def projects_handler(message: Message) -> None:
         for p in items[:20]:
             lines.append(f"• {p.get('slug')} — {p.get('name')}")
         text = "\n".join(lines)
-    await message.answer(text, message_thread_id=_thread_id(message))
+    await message.answer(text)
 
 
 @router.message(Command("agents"))
@@ -38,7 +34,7 @@ async def agents_handler(message: Message) -> None:
         for a in items[:20]:
             lines.append(f"• {a.get('slug')} ({a.get('role')})")
         text = "\n".join(lines)
-    await message.answer(text, message_thread_id=_thread_id(message))
+    await message.answer(text)
 
 
 @router.message(Command("tasks"))
@@ -52,4 +48,4 @@ async def tasks_handler(message: Message) -> None:
         for t in items[:20]:
             lines.append(f"• {t.get('external_id')} | {t.get('status')} | {t.get('title')}")
         text = "\n".join(lines)
-    await message.answer(text, message_thread_id=_thread_id(message))
+    await message.answer(text)

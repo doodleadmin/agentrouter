@@ -17,27 +17,26 @@ class FakeMessage:
         self.message_thread_id = 99
         self.answers = []
 
-    async def answer(self, text: str, message_thread_id: int | None = None):
-        self.answers.append((text, message_thread_id))
+    async def answer(self, text: str, **kwargs):
+        self.answers.append(text)
 
 
 async def test_projects_command(monkeypatch) -> None:
     msg = FakeMessage()
     monkeypatch.setattr(commands, "get_api_client", lambda: FakeApiClient())
     await commands.projects_handler(msg)
-    assert "Активные проекты" in msg.answers[0][0]
-    assert msg.answers[0][1] == 99
+    assert "Активные проекты" in msg.answers[0]
 
 
 async def test_agents_command(monkeypatch) -> None:
     msg = FakeMessage()
     monkeypatch.setattr(commands, "get_api_client", lambda: FakeApiClient())
     await commands.agents_handler(msg)
-    assert "Активные агенты" in msg.answers[0][0]
+    assert "Активные агенты" in msg.answers[0]
 
 
 async def test_tasks_command(monkeypatch) -> None:
     msg = FakeMessage()
     monkeypatch.setattr(commands, "get_api_client", lambda: FakeApiClient())
     await commands.tasks_handler(msg)
-    assert "Последние задачи" in msg.answers[0][0]
+    assert "Последние задачи" in msg.answers[0]

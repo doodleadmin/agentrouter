@@ -36,8 +36,8 @@ class FakeMessage:
         self.text = ""
         self.answers = []
 
-    async def answer(self, text: str, message_thread_id=None, reply_markup=None, parse_mode=None):
-        self.answers.append({"text": text, "thread_id": message_thread_id, "reply_markup": reply_markup})
+    async def answer(self, text: str, reply_markup=None, parse_mode=None, **kwargs):
+        self.answers.append({"text": text, "reply_markup": reply_markup})
 
 
 class FakeUser:
