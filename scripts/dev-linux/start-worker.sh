@@ -173,11 +173,17 @@ log_info "Queues: $QUEUES"
 log_info "Working dir: $WORKER_DIR"
 
 cd "$WORKER_DIR"
+# WORKER-LINUX-01: Use nohup + disown to prevent SIGHUP from parent shell.
+# Celery's SIGHUP restart handler (installed for non-TTY stdout) would crash
+# with ImportError when os.execv runs celery/__main__.py as a script.
+# Primary fix: monkey-patch _reload_current_worker in celery_app.py.
+# Secondary fix: disown prevents bash from sending SIGHUP on shell exit.
 nohup python -m celery -A app.celery_app worker \
     --loglevel=INFO \
     --pool=solo \
     --queues="$QUEUES" \
     > "$LOG_FILE" 2>&1 &
+disown
 
 WORKER_PID=$!
 echo "$WORKER_PID" > "$PID_FILE"

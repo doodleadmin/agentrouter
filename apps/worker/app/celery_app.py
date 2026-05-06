@@ -7,7 +7,10 @@ Creates a Celery app with:
 - Route decorators per task module
 """
 
+import signal
+
 from celery import Celery
+from celery.signals import worker_ready
 
 from app.config import settings
 from app.queues import ALL_QUEUES
@@ -65,3 +68,44 @@ def create_celery_app() -> Celery:
 
 # Module-level app instance (used by `celery -A app.celery_app worker`)
 celery_app = create_celery_app()
+
+
+# WORKER-LINUX-01: Fix Celery's broken SIGHUP restart mechanism.
+#
+# Root cause: Celery's install_worker_restart_handler() registers a SIGHUP handler
+# (when stdout is not a TTY, i.e. nohup) that calls _reload_current_worker():
+#   os.execv(sys.executable, [sys.executable] + sys.argv)
+# When started via `python -m celery ...`, sys.argv[0] is the full path to
+# celery/__main__.py. The os.execv restart runs it as a standalone script
+# (not via -m), so `from . import maybe_patch_concurrency` fails with:
+#   "ImportError: attempted relative import with no known parent package"
+#
+# Fix: monkey-patch _reload_current_worker to use `-m celery` instead.
+# Also override the SIGHUP handler to SIG_IGN as defense in depth.
+
+import celery.apps.worker as _worker_module
+
+def _fixed_reload_current_worker():
+    """Fixed restart: uses `python -m celery` to preserve package context."""
+    import os
+    import sys
+    from celery.platforms import close_open_fds
+    close_open_fds([sys.__stdin__, sys.__stdout__, sys.__stderr__])
+    # Use -m celery so relative imports in celery/__main__.py work correctly
+    os.execv(sys.executable, [sys.executable, '-m', 'celery'] + sys.argv[1:])
+
+# Monkey-patch the broken function
+_worker_module._reload_current_worker = _fixed_reload_current_worker
+
+
+@worker_ready.connect
+def _reset_sighup_after_celery_init(**kwargs):
+    """Override Celery's SIGHUP restart handler to SIG_IGN.
+
+    Defense in depth: even with the fixed _reload_current_worker, we don't
+    want SIGHUP restarts in dev — they serve no purpose for solo pool.
+    """
+    try:
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    except (OSError, ValueError):
+        pass  # SIGHUP not available on this platform (e.g. Windows)

@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
 
@@ -86,6 +86,18 @@
 - **Validation:** all 9 checks PASS (final_status=approved, plan_text_nonempty, real_session_id, plan_generated_count=1, session_created_before_events, no_stub_fingerprints, no_runtime_error, no_policy_blocked, no_command_file_sandbox)
 - **Findings:** (1) First smoke attempt hit 420s timeout on cold-start — manual retry succeeded in 103s; (2) smoke script missing normalized_text field — fixed; (3) Node.js missing in WSL — installed via NodeSource; (4) OpenCode npm package is platform-specific — used opencode-linux-x64 + symlink.
 - Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md)
+
+### 2026-05-06 — WORKER-LINUX-01 Celery SIGHUP restart crash fix
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local WSL2 Ubuntu 22.04; без deploy/migrations/.env/secrets.
+- **Проблема:** Celery worker died after every task. Root cause: Celery 5.6.3 installs SIGHUP restart handler for non-TTY stdout (nohup). On shell exit, SIGHUP triggers `os.execv(sys.executable, [sys.executable] + sys.argv)` which runs `celery/__main__.py` as a script (not via `-m`), breaking relative imports: `ImportError: attempted relative import with no known parent package`.
+- **Решение:** (1) Monkey-patch `_reload_current_worker` in celery_app.py to use `python -m celery` instead of direct script path. (2) Override SIGHUP→SIG_IGN via `@worker_ready.connect` signal. (3) Add `disown` in start-worker.sh to prevent bash SIGHUP on shell exit.
+- **Changed files:**
+  - `apps/worker/app/celery_app.py` — +44 lines: monkey-patch + SIGHUP reset
+  - `scripts/dev-linux/start-worker.sh` — +6 lines: comment + `disown`
+- **Validation:** task-0009 (7d2e2519) approved, worker PID 12165 alive after 35s, 0 ImportError, 0 "Restarting celery", 0 Traceback in log, cleanup PASS, git 2 files +50 lines.
+- **Notes:** `setsid` approach was tried first but broke PID tracking (forks child when process is group leader). `disown` is bash-specific but script already uses bash.
+- Task summary: [.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md](.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md)
 
 ### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
 - **Агент:** studio-orchestrator (coordinated execution)
