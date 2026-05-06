@@ -6,6 +6,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Auto-detect Python venv
+if [[ -d "$PROJECT_ROOT/.venv/bin" ]]; then
+    export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+fi
+
 API_BASE="http://127.0.0.1:8000"
 OPENCODE_BASE="http://127.0.0.1:4096"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
@@ -233,7 +238,7 @@ log_info "Fetching updated task..."
 UPDATED_TASK=$(api_get "$API_BASE/tasks/$TASK_ID") || exit_fail "Failed to fetch updated task."
 
 log_info "Fetching task events..."
-EVENTS_RESP=$(api_get "$API_BASE/task-events?task_id=$TASK_ID" 2>/dev/null || echo '{"items":[]}')
+EVENTS_RESP=$(api_get "$API_BASE/events/tasks/$TASK_ID/events" 2>/dev/null || echo '{"items":[]}')
 
 # ── verifications ───────────────────────────────────────────────────────
 
@@ -241,17 +246,29 @@ EVENTS_RESP=$(api_get "$API_BASE/task-events?task_id=$TASK_ID" 2>/dev/null || ec
 STUB_FP_JSON=$(printf '%s\n' "${STUB_FINGERPRINTS[@]}" | python -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin]))" 2>/dev/null || echo '[]')
 SECRET_PAT_JSON=$(printf '%s\n' "${SECRET_PATTERNS[@]}" | python -c "import sys,json; print(json.dumps([l.strip() for l in sys.stdin]))" 2>/dev/null || echo '[]')
 
+# Use temp files to avoid shell interpolation issues with JSON content
+TASK_JSON_FILE=$(mktemp)
+EVENTS_JSON_FILE=$(mktemp)
+STUB_FP_FILE=$(mktemp)
+SECRET_PAT_FILE=$(mktemp)
+echo "$UPDATED_TASK" > "$TASK_JSON_FILE"
+echo "$EVENTS_RESP" > "$EVENTS_JSON_FILE"
+echo "$STUB_FP_JSON" > "$STUB_FP_FILE"
+echo "$SECRET_PAT_JSON" > "$SECRET_PAT_FILE"
+
 CHECKS=$(python3 -c "
 import json, sys, re
 
-task_json = '''$UPDATED_TASK'''
-events_json = '''$EVENTS_RESP'''
-stub_fps = json.loads('''$STUB_FP_JSON''')
-secret_pats = json.loads('''$SECRET_PAT_JSON''')
-
-task = json.loads(task_json)
+with open(sys.argv[1]) as f:
+    task = json.load(f)
+with open(sys.argv[2]) as f:
+    events_raw = f.read()
+with open(sys.argv[3]) as f:
+    stub_fps = json.load(f)
+with open(sys.argv[4]) as f:
+    secret_pats = json.load(f)
 try:
-    events = json.loads(events_json)
+    events = json.loads(events_raw)
     if isinstance(events, dict):
         event_list = events.get('items', events.get('events', [events]))
     elif isinstance(events, list):
@@ -344,7 +361,9 @@ checks['plan_length'] = len(plan_text)
 checks['session_id'] = session_id
 
 print(json.dumps(checks))
-" 2>/dev/null || echo '{}')
+" "$TASK_JSON_FILE" "$EVENTS_JSON_FILE" "$STUB_FP_FILE" "$SECRET_PAT_FILE" 2>/dev/null || echo '{}')
+
+rm -f "$TASK_JSON_FILE" "$EVENTS_JSON_FILE" "$STUB_FP_FILE" "$SECRET_PAT_FILE"
 
 # Parse results
 STATUS_APPROVED=$(echo "$CHECKS" | python -c "import sys,json; print(json.load(sys.stdin).get('status_approved',False))" 2>/dev/null || echo "False")

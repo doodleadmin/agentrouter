@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
 
@@ -50,6 +50,24 @@
   - `smoke-stub-runtime.sh` — API health + git dirty wrapped
 - **Валидация:** bash -n 10/10 ✅, --help 10/10 ✅, --dry-run 10/10 ✅ (all exit 0), no real connections, no processes, no artifacts
 - Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md)
+
+### 2026-05-06 — DEV-LINUX-01C real stub contour validation
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Проблема:** Scripts never ran against real infrastructure. Three blockers found: (1) venv not in PATH — scripts use `python`/`uvicorn`/`celery` directly; (2) JSON shell interpolation `'''$UPDATED_TASK'''` breaks on plan_text with backticks/newlines; (3) wrong events URL in smoke-real-opencode-runtime.sh.
+- **Решение:** (1) Added venv auto-detection (`$PROJECT_ROOT/.venv/bin` → PATH) to 8 scripts. (2) Replaced inline shell interpolation with temp file approach for JSON parsing in both smoke scripts. (3) Fixed events URL to `/events/tasks/{id}/events`.
+- **Сделано:**
+  - 8 scripts updated with venv auto-detection
+  - smoke-stub-runtime.sh: temp file JSON parsing
+  - smoke-real-opencode-runtime.sh: temp file JSON parsing + events URL fix
+- **Real contour results (WSL Ubuntu 22.04):**
+  - check-db.sh: ✅ 9/9 tables, alembic head
+  - start-api-stub.sh: ✅ PID 5867, /health /projects /agents 200
+  - start-worker.sh: ✅ PID 6316, Celery 5.6.3, Redis PONG
+  - smoke-stub-runtime.sh: ✅ ALL 8 CHECKS PASS (status=approved, session_id=stub, plan_generated=1)
+  - cleanup-runtime.sh: ✅ all stopped, API restarted stub mode
+- **Валидация:** bash -n 10/10 ✅, --dry-run 10/10 ✅, --help 10/10 ✅, real contour 5/5 ✅
+- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md)
 
 ### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
 - **Агент:** studio-orchestrator (coordinated execution)

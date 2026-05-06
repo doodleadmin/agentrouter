@@ -7,6 +7,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Auto-detect Python venv
+if [[ -d "$PROJECT_ROOT/.venv/bin" ]]; then
+    export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+fi
+
 CONTAINER_NAME="amc-dev-postgres"
 DB_NAME="agent_mc"
 DB_USER="agent_mc"

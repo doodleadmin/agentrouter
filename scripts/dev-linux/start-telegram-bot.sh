@@ -6,6 +6,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Auto-detect Python venv
+if [[ -d "$PROJECT_ROOT/.venv/bin" ]]; then
+    export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+fi
+
 BOT_DIR="$PROJECT_ROOT/apps/telegram-bot"
 ENV_LOCAL="$PROJECT_ROOT/.env.local"
 PORT="${PORT:-8000}"

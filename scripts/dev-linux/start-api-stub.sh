@@ -6,6 +6,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Auto-detect Python venv
+if [[ -d "$PROJECT_ROOT/.venv/bin" ]]; then
+    export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+fi
+
 API_DIR="$PROJECT_ROOT/apps/api"
 PORT="${PORT:-8000}"
 HEALTH_URL="http://127.0.0.1:${PORT}/health"

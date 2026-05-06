@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 52 |
+| **Task logs** | 53 |
 | **Шаблоны** | 5 |
 
 ---
@@ -118,6 +118,7 @@
 | [2026-05-05-task-be11-scripts-final-repair.md](tasks/2026-05-05-task-be11-scripts-final-repair.md) | BE-11: Scripts Final Repair (parse/dry-run PASS) |
 | [2026-05-06-task-dev-linux-01-runtime-scripts.md](tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md) | DEV-LINUX-01: Ubuntu 22.04 Runtime Scripts |
 | [2026-05-06-task-dev-linux-01b-dryrun-fix.md](tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md) | DEV-LINUX-01B: Dry-Run Precondition Fix |
+| [2026-05-06-task-dev-linux-01c-real-stub-contour.md](tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md) | DEV-LINUX-01C: Real Stub Contour Validation |
 
 ---
 

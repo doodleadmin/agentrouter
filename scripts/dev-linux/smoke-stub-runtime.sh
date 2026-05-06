@@ -7,6 +7,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Auto-detect Python venv
+if [[ -d "$PROJECT_ROOT/.venv/bin" ]]; then
+    export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+fi
+
 API_BASE="http://127.0.0.1:8000"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 PROJECT_SLUG="smoke-stub-$TIMESTAMP"
@@ -198,12 +203,20 @@ EVENTS_RESP=$(api_get "$API_BASE/events/tasks/$TASK_ID/events" 2>/dev/null || ec
 
 # ── verifications ───────────────────────────────────────────────────────
 
-# Parse with python for reliability
+# Parse with python for reliability (use temp files to avoid shell interpolation issues)
+TASK_JSON_FILE=$(mktemp)
+EVENTS_JSON_FILE=$(mktemp)
+echo "$UPDATED_TASK" > "$TASK_JSON_FILE"
+echo "$EVENTS_RESP" > "$EVENTS_JSON_FILE"
+
 CHECKS=$(python3 -c "
 import json, sys
 
-task = json.loads('''$UPDATED_TASK''')
-events_raw = '''$EVENTS_RESP'''
+with open(sys.argv[1]) as f:
+    task = json.load(f)
+with open(sys.argv[2]) as f:
+    events_raw = f.read()
+
 try:
     events = json.loads(events_raw)
     if isinstance(events, dict):
@@ -246,7 +259,9 @@ for evt in event_list:
     if 'sandbox' in et: checks['sandbox_events'] += 1
 
 print(json.dumps(checks))
-" 2>/dev/null || echo '{}')
+" "$TASK_JSON_FILE" "$EVENTS_JSON_FILE" 2>/dev/null || echo '{}')
+
+rm -f "$TASK_JSON_FILE" "$EVENTS_JSON_FILE"
 
 # Parse checks
 STATUS_APPROVED=$(echo "$CHECKS" | python -c "import sys,json; print(json.load(sys.stdin).get('status_approved',False))" 2>/dev/null || echo "False")
