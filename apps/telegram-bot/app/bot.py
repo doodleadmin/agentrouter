@@ -39,11 +39,12 @@ def create_dispatcher() -> Dispatcher:
     dp.include_router(bind_topic_router)
     dp.include_router(unbind_topic_router)
     dp.include_router(topic_status_router)
-    dp.include_router(messages_router)
-    # TG-03: status, plan, approve, reject, callbacks
+    # TG-03: status, plan, approve, reject — BEFORE messages_router catch-all
     dp.include_router(status_router)
     dp.include_router(plan_router)
     dp.include_router(approve_router)
     dp.include_router(reject_router)
+    # messages_router catch-all must be last before callbacks
+    dp.include_router(messages_router)
     dp.include_router(callbacks_router)
     return dp

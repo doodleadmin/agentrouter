@@ -5,15 +5,22 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.enums import TaskStatus
 from app.db.session import get_async_session
 from app.schemas.approval import ApprovalCreate, ApprovalDecideIn, ApprovalRead
+from app.schemas.task import TaskStatusUpdate
 from app.services.approval_service import ApprovalService
+from app.services.task_service import TaskService
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
 
 
 def _svc(s: AsyncSession = Depends(get_async_session)) -> ApprovalService:
     return ApprovalService(s)
+
+
+def _task_svc(s: AsyncSession = Depends(get_async_session)) -> TaskService:
+    return TaskService(s)
 
 
 _APPROVAL_404 = "Approval not found"
@@ -54,6 +61,7 @@ async def approve_approval(
     approval_id: UUID,
     body: ApprovalDecideIn | None = None,
     svc: ApprovalService = Depends(_svc),
+    task_svc: TaskService = Depends(_task_svc),
 ) -> ApprovalRead:
     try:
         obj = await svc.approve(approval_id, body)
@@ -61,6 +69,15 @@ async def approve_approval(
         raise HTTPException(status_code=404, detail=_APPROVAL_404)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+
+    # Transition task: waiting_approval → approved
+    try:
+        await task_svc.update_status(
+            obj.task_id, TaskStatusUpdate(status=TaskStatus.APPROVED)
+        )
+    except (KeyError, ValueError):
+        pass  # task already moved or not found — non-fatal
+
     return ApprovalRead.model_validate(obj)
 
 
@@ -69,6 +86,7 @@ async def reject_approval(
     approval_id: UUID,
     body: ApprovalDecideIn | None = None,
     svc: ApprovalService = Depends(_svc),
+    task_svc: TaskService = Depends(_task_svc),
 ) -> ApprovalRead:
     try:
         obj = await svc.reject(approval_id, body)
@@ -76,4 +94,13 @@ async def reject_approval(
         raise HTTPException(status_code=404, detail=_APPROVAL_404)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+
+    # Transition task: waiting_approval → cancelled
+    try:
+        await task_svc.update_status(
+            obj.task_id, TaskStatusUpdate(status=TaskStatus.CANCELLED)
+        )
+    except (KeyError, ValueError):
+        pass  # task already moved or not found — non-fatal
+
     return ApprovalRead.model_validate(obj)
