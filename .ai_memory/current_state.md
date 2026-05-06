@@ -7,7 +7,7 @@
 ## Статус проекта
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success, BE-09-phase1-worker-timeout, BE-09-phase2-real-opencode-e2e-success, BE-10-runtime-reliability-hardening, BE-10-real-opencode-regression-smoke, BE-11-runtime-runbook-automation, BE-11-scripts-final-repair, BE-12-opencode-read-timeout-alignment, TG-03-telegram-approvals-ux, TG-04-live-integration-phase1, TG-04-aiogram-message-thread-fix, TG-04-html-placeholder-fix, TG-04-private-chat-wording-fix, TG-04-private-chat-binding-support выполнены. CRITICAL/HIGH закрыты.
+**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..03, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success, BE-09-phase1-worker-timeout, BE-09-phase2-real-opencode-e2e-success, BE-10-runtime-reliability-hardening, BE-10-real-opencode-regression-smoke, BE-11-runtime-runbook-automation, BE-11-scripts-final-repair, BE-12-opencode-read-timeout-alignment, TG-03-telegram-approvals-ux, TG-04-live-integration-phase1, TG-04-aiogram-message-thread-fix, TG-04-html-placeholder-fix, TG-04-private-chat-wording-fix, TG-04-private-chat-binding-support, DEV-LINUX-01-ubuntu-runtime-scripts выполнены. CRITICAL/HIGH закрыты.
 **Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
 **Критические проблемы:** Нет
 
@@ -105,6 +105,7 @@
 | TG-04: HTML Placeholder Fix | ✅ Выполнена | studio-orchestrator |
 | TG-04: Private Chat Wording Fix | ✅ Выполнена | studio-orchestrator |
 | TG-04: Private Chat Binding Support | ✅ Выполнена | studio-orchestrator |
+| DEV-LINUX-01: Ubuntu 22.04 Runtime Scripts | ✅ Выполнена | studio-orchestrator |
 
 - **BE-12 OpenCode read-timeout alignment (backend-architect):** `send_message()` локальный `httpx.AsyncClient` с `read=None` (SDK-aligned). `create_session()` bounded. Error mapping сохранён. Guardrails нетронуты. 16/16 transport tests pass (+5 BE-12). 251/252 full suite pass. Real OpenCode не запускался.
 - **TG-03 Telegram Approvals + Task Status UX (backend-architect):** 7 phases complete. API: 409 for already-decided (was 422), GET /tasks/{id}/plan, POST /tasks/{id}/callback-answer with HMAC-signed callback validation. Bot: /status, /plan, /approve, /reject commands + inline keyboards (approve/reject/show-plan/refresh) + callback handler with API-side validation. API client extended (8 new methods). Formatters (task cards, approval cards, plan excerpts). Tests: 35/35 bot tests + 11 API tests pass (1 pre-existing flake).
@@ -116,6 +117,8 @@
 - **TG-04 private chat wording fix (studio-orchestrator):** In private chat, "Этот topic" replaced with "Этот чат" via `message.chat.type == "private"` check. Added `test_text_message_unbound_private_chat`. Validation: compileall ✅, ruff ✅, pytest 65/65 ✅. No secrets touched.
 
 - **TG-04 private chat binding support (studio-orchestrator):** `/bind_topic`, `/unbind_topic`, `/topic_status` now work in private chats. Private chat uses `message_thread_id=0` as sentinel (DB NOT NULL BigInteger). Removed forum-only guards from 3 handlers. Added `chat_type` to `FakeMessage`. 3 new tests: `test_bind_topic_private_chat`, `test_unbind_topic_private_chat`, `test_topic_status_private_chat_unbound`. Validation: compileall ✅, ruff ✅, pytest 67/67 ✅. No secrets touched, no migrations needed.
+
+- **DEV-LINUX-01 Ubuntu 22.04 runtime scripts (studio-orchestrator):** Created 10 bash scripts in `scripts/dev-linux/` replacing Windows PS1 automation. All scripts: `set -euo pipefail`, `--dry-run`, `--help`. Process management: `nohup` + PID files in `.runtime/`. Services: API stub, API opencode_http, OpenCode server, Celery worker, Telegram bot. Tests: stub smoke, real OpenCode smoke. Infrastructure: check-db, bootstrap-db, cleanup. Safety: 127.0.0.1 only, PID validation, cleanup never touches DB/containers. Docs: `docs/dev-linux-runbook.md`. .gitignore: added `.runtime/`. Windows PS1 scripts preserved as legacy. No Python code changes, no docker-compose changes, no .env changes.
 
 ## Следующие шаги
 

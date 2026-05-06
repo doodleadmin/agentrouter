@@ -56,3 +56,6 @@ opencode-agents-*.zip
 /tmp/
 
 logs/
+
+# Runtime PID files
+.runtime/

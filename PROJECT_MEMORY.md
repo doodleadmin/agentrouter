@@ -6,9 +6,36 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-04 Live Integration complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE.
 **Дата последнего обновления:** 2026-05-06
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-06 — DEV-LINUX-01 Ubuntu 22.04 runtime scripts
+- **Агент:** studio-orchestrator (coordinated execution)
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode/real services.
+- **Проблема:** Windows PowerShell automation hangs on long-running processes (uvicorn, celery, opencode) due to console handle inheritance in `Start-Process`. Production target is Ubuntu.
+- **Решение:** Create Linux-native bash scripts using `nohup` + PID files + log redirection.
+- **Сделано:**
+  - **10 bash scripts** in `scripts/dev-linux/`:
+    - `check-db.sh` — DB health check (container, pg_isready, 9 tables, alembic version)
+    - `bootstrap-db.sh` — Alembic `upgrade head` with --force confirmation
+    - `start-api-stub.sh` — API stub mode on 127.0.0.1:8000
+    - `start-opencode.sh` — OpenCode server on 127.0.0.1:4096
+    - `start-api-opencode.sh` — API opencode_http mode
+    - `start-worker.sh` — Celery worker (critical fix for Windows hang)
+    - `start-telegram-bot.sh` — Telegram bot gateway
+    - `smoke-stub-runtime.sh` — Stub runtime smoke test
+    - `smoke-real-opencode-runtime.sh` — Real OpenCode smoke test
+    - `cleanup-runtime.sh` — Stop tracked processes, optional API restart
+  - **All scripts:** `#!/usr/bin/env bash`, `set -euo pipefail`, `--dry-run`, `--help`
+  - **Process management:** `nohup ... > logs/dev/<service>.log 2>&1 &` + PID in `.runtime/<service>.pid`
+  - **Safety:** 127.0.0.1 only, no port 3001, no persistent env, PID validation before kill, cleanup never touches DB/containers
+  - **Docs:** `docs/dev-linux-runbook.md` — prerequisites, quick start, full reference
+  - **.gitignore:** added `.runtime/` (`logs/` already covered)
+- **Windows scripts** in `scripts/dev/` preserved as legacy reference.
+- **NOT changed:** opencode.json, Python code, docker-compose.yml, .env files
+- **Валидация:** bash -n syntax check pending (Linux required), --dry-run support confirmed
+- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md)
 
 ### 2026-05-06 — TG-04 HTML placeholder fix (TelegramBadRequest)
 - **Агент:** studio-orchestrator (coordinated execution)
