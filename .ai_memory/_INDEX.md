@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 55 |
+| **Task logs** | 56 |
 | **Шаблоны** | 5 |
 
 ---
@@ -121,6 +121,7 @@
 | [2026-05-06-task-dev-linux-01c-real-stub-contour.md](tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md) | DEV-LINUX-01C: Real Stub Contour Validation |
 | [2026-05-07-task-tg06-phase2-compact-callbacks.md](tasks/2026-05-07-task-tg06-phase2-compact-callbacks.md) | TG-06 Phase 2: Compact Telegram Callback Protocol |
 | [2026-05-07-task-tg06-phase3-live-test.md](tasks/2026-05-07-task-tg06-phase3-live-test.md) | TG-06 Phase 3: Live Compact Callback E2E |
+| [2026-05-07-task-infra-01-dev-runtime-config.md](tasks/2026-05-07-task-infra-01-dev-runtime-config.md) | INFRA-01: Dev Runtime Config Drift Fix |
 
 ---
 

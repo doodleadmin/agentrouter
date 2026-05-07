@@ -107,6 +107,7 @@ if $DRY_RUN; then
     echo "========== Start API Stub DryRun =========="
     log_dryrun "remove existing RUNTIME env overrides from process"
     log_dryrun "set process-scoped DEBUG=true"
+    log_dryrun "source .env.local if present (CALLBACK_SECRET, etc.)"
     log_dryrun "start uvicorn on 127.0.0.1:$PORT (provider: stub)"
     log_dryrun "verify $HEALTH_URL -> 200"
     log_dryrun "verify $PROJECTS_URL -> 200"
@@ -151,6 +152,23 @@ mkdir -p "$LOG_DIR" "$PID_DIR"
 # Clean runtime env overrides
 unset RUNTIME_PROVIDER OPENCODE_SERVER_URL RUNTIME_ALLOW_REAL_OPENCODE_HTTP API_TIMEOUT_SECONDS 2>/dev/null || true
 export DEBUG="true"
+
+# ── source .env.local (process-scoped, never persisted) ──────────────────
+# INFRA-01: Load CALLBACK_SECRET and other secrets from .env.local.
+# API's pydantic-settings reads from process env (overrides file defaults).
+ENV_LOCAL="$PROJECT_ROOT/.env.local"
+if [[ -f "$ENV_LOCAL" ]]; then
+    set -a
+    source "$ENV_LOCAL"
+    set +a
+    if [[ -n "${CALLBACK_SECRET:-}" ]]; then
+        log_info "CALLBACK_SECRET: set (not displayed)"
+    else
+        log_warn "CALLBACK_SECRET not set in .env.local — callback validation will fail"
+    fi
+else
+    log_warn ".env.local not found — callback validation will fail"
+fi
 
 log_info "Starting API in stub mode on 127.0.0.1:$PORT ..."
 log_info "Provider mode: stub (default)"
@@ -202,11 +220,12 @@ echo "========== Start API Stub Report =========="
 echo "  PID          : $API_PID"
 echo "  Listen       : 127.0.0.1:$PORT"
 echo "  Provider     : stub"
-echo "  /health      : $(if $HEALTH_OK; then echo '200 OK'; else echo 'FAIL'; fi)"
-echo "  /projects    : $(if $PROJECTS_OK; then echo '200 OK'; else echo 'FAIL'; fi)"
-echo "  /agents      : $(if $AGENTS_OK; then echo '200 OK'; else echo 'FAIL'; fi)"
-echo "  DATABASE_URL : (not set — using config default)"
-echo "  Log file     : $LOG_FILE"
+  echo "  /health      : $(if $HEALTH_OK; then echo '200 OK'; else echo 'FAIL'; fi)"
+  echo "  /projects    : $(if $PROJECTS_OK; then echo '200 OK'; else echo 'FAIL'; fi)"
+  echo "  /agents      : $(if $AGENTS_OK; then echo '200 OK'; else echo 'FAIL'; fi)"
+  echo "  CALLBACK_SECRET : $(if [[ -n "${CALLBACK_SECRET:-}" ]]; then echo 'set (not displayed)'; else echo '(empty — callbacks will fail)'; fi)"
+  echo "  DATABASE_URL : $(if [[ -n "${DATABASE_URL:-}" ]]; then echo 'set (from env)'; else echo '(using config default)'; fi)"
+  echo "  Log file     : $LOG_FILE"
 echo "============================================="
 echo ""
 

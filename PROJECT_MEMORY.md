@@ -6,7 +6,7 @@
 ## Текущий статус
 
 **Фаза:** Phase 1 — Telegram Routing (TG-06 Phase 3 Live Callback E2E COMPLETE)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE.
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE.
 **Дата последнего обновления:** 2026-05-07
 **Project root:** `F:\dev\agentrouter`
 
@@ -242,6 +242,40 @@
 - **No BUTTON_DATA_INVALID errors in any logs.**
 - **Verdict:** COMPLETE
 - Task summary: [.ai_memory/tasks/2026-05-07-task-tg06-phase3-live-test.md](.ai_memory/tasks/2026-05-07-task-tg06-phase3-live-test.md)
+
+### 2026-05-07 — INFRA-01: Dev Runtime Config Drift Fix
+- **Агент:** studio-orchestrator
+- **Контур:** local WSL2 Ubuntu 22.04; bash scripts + dev DB; no deploy/migrations/.env/secrets/OpenCode.
+- **Цель:** Fix two config drift issues discovered during TG-06 Phase 3 live test that required manual workarounds.
+- **Fix A — start-api-stub.sh now sources .env.local:**
+  - Added `.env.local` sourcing block (same pattern as `start-worker.sh`) after clean env block
+  - Uses `set -a; source .env.local; set +a` — process-scoped, never persisted
+  - Logs `CALLBACK_SECRET: set (not displayed)` or `CALLBACK_SECRET: not set`
+  - Updated dry-run section to mention `.env.local` sourcing
+  - Updated report section to show `CALLBACK_SECRET` status and `DATABASE_URL` source
+  - No `.env` workaround (symlink/temp file) needed anymore
+- **Fix B — bootstrap-seed.sh for dev project repo_path:**
+  - New script: `scripts/dev-linux/bootstrap-seed.sh`
+  - Ensures `agentrouter` project and `studio-orchestrator` agent exist in dev DB
+  - Uses `repo_path=$(realpath "$PROJECT_ROOT")` — platform-correct on any machine
+  - Idempotent: `INSERT ON CONFLICT` behavior (updates existing wrong `repo_path`)
+  - Works with both native PostgreSQL and Docker-based `psql`
+  - Supports `--dry-run`, `--help`
+  - NEVER uses `DROP`/`TRUNCATE`/`DELETE`
+- **Changed files:**
+  - `scripts/dev-linux/start-api-stub.sh` — added .env.local sourcing + report updates
+  - `scripts/dev-linux/bootstrap-seed.sh` — NEW file
+- **Validation results:**
+  - `bash -n`: all 11 scripts pass
+  - API: compileall OK, ruff OK, pytest 275/275
+  - Worker: compileall OK, ruff OK, pytest 98/98
+  - Telegram-bot: compileall OK, ruff OK, pytest 79/79
+  - Runtime smoke: plan endpoint working — task created→approved, no Path-escapes error
+  - Temp `.env` removed: confirmed absent, no workaround needed
+  - `CALLBACK_SECRET`: confirmed "set (not displayed)" in API log
+  - `repo_path`: confirmed `/root/agentrouter` in DB
+- **Verdict:** COMPLETE
+- Task summary: [.ai_memory/tasks/2026-05-07-task-infra-01-dev-runtime-config.md](.ai_memory/tasks/2026-05-07-task-infra-01-dev-runtime-config.md)
 
 ### 2026-05-06 — TG-04 Phase 5: Final Live Private Chat E2E
 - **Агент:** studio-orchestrator (coordinated execution)
