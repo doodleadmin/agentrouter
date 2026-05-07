@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS.
+**Фаза:** Phase 1 — Telegram Routing (SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE.
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
@@ -36,294 +36,26 @@
 - **Changed files:** None (memory-only update)
 - Task summary: [.ai_memory/tasks/2026-05-08-task-sec01-phase3-live-smoke.md](.ai_memory/tasks/2026-05-08-task-sec01-phase3-live-smoke.md)
 
+### 2026-05-08 — SEC-02 Phase 2: Security Audit DB Model, Migration, and Service
+
+- **Агент:** security-engineer
+- **Контур:** local only; without deploy/migrations run/secrets/OpenCode.
+- **Цель:** Implement the infrastructure for the security audit trail: DB model, Alembic migration, append-only service, and redaction helpers.
+- **Сделано:**
+  - **Model `SecurityAuditEvent`** — 21-column SQLAlchemy model (id, event_type, actor_type, actor_id, source, action, decision, audit_code, reason, task_id FK, approval_id FK, project_id FK, agent_id FK, chat_id, thread_id, ip_hash, correlation_id, request_id, metadata JSONB, error_code, created_at). Append-only — no updated_at column.
+  - **Migration `0002_add_security_audit_events`** — additive only: creates `security_audit_events` table with 5 indexes, 4 FK constraints (all SET NULL on delete). Downgrade: drops indexes then table. No changes to existing tables/data.
+  - **`SecurityAuditService`** — append-only service with 5 methods: `record()`, `record_best_effort()` (static, non-blocking), `query_by_task()`, `query_by_actor()`, `query_by_decision()`.
+  - **Redaction helpers** — `redact_text()` (strips bot tokens, Bearer tokens, JWTs, API keys, password/secret assignments), `sanitize_metadata()` (removes sensitive keys), `hash_ip()` (SHA-256 truncated to 32 hex).
+  - **Registered** `SecurityAuditEvent` in `apps/api/app/models/__init__.py`.
+- **Валидация:** API 331/331 (297 existing + 34 new audit tests), Bot 79/79, Worker 98/98, **Total: 508/508**, ruff clean.
+- **Migration NOT run** against any real database (validated via `alembic upgrade head --sql` only).
+- **Not done (Phase 3):** No wiring into approve/reject/permission/callback endpoints. No Telegram bot changes. No Worker changes.
+- **Изменённые файлы (5):**
+  - NEW: `apps/api/app/models/security_audit.py`, `apps/api/alembic/versions/0002_add_security_audit_events.py`, `apps/api/app/services/audit_service.py`, `apps/api/tests/test_security_audit.py`
+  - MODIFIED: `apps/api/app/models/__init__.py`
+- Task summary: [.ai_memory/tasks/2026-05-08-task-sec02-phase2-audit-model-service.md](.ai_memory/tasks/2026-05-08-task-sec02-phase2-audit-model-service.md)
+
 ### 2026-05-06 — DEV-LINUX-01 Ubuntu 22.04 runtime scripts
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode/real services.
-- **Проблема:** Windows PowerShell automation hangs on long-running processes (uvicorn, celery, opencode) due to console handle inheritance in `Start-Process`. Production target is Ubuntu.
-- **Решение:** Create Linux-native bash scripts using `nohup` + PID files + log redirection.
-- **Сделано:**
-  - **10 bash scripts** in `scripts/dev-linux/`:
-    - `check-db.sh` — DB health check (container, pg_isready, 9 tables, alembic version)
-    - `bootstrap-db.sh` — Alembic `upgrade head` with --force confirmation
-    - `start-api-stub.sh` — API stub mode on 127.0.0.1:8000
-    - `start-opencode.sh` — OpenCode server on 127.0.0.1:4096
-    - `start-api-opencode.sh` — API opencode_http mode
-    - `start-worker.sh` — Celery worker (critical fix for Windows hang)
-    - `start-telegram-bot.sh` — Telegram bot gateway
-    - `smoke-stub-runtime.sh` — Stub runtime smoke test
-    - `smoke-real-opencode-runtime.sh` — Real OpenCode smoke test
-    - `cleanup-runtime.sh` — Stop tracked processes, optional API restart
-  - **All scripts:** `#!/usr/bin/env bash`, `set -euo pipefail`, `--dry-run`, `--help`
-  - **Process management:** `nohup ... > logs/dev/<service>.log 2>&1 &` + PID in `.runtime/<service>.pid`
-  - **Safety:** 127.0.0.1 only, no port 3001, no persistent env, PID validation before kill, cleanup never touches DB/containers
-  - **Docs:** `docs/dev-linux-runbook.md` — prerequisites, quick start, full reference
-  - **.gitignore:** added `.runtime/` (`logs/` already covered)
-- **Windows scripts** in `scripts/dev/` preserved as legacy reference.
-- **NOT changed:** opencode.json, Python code, docker-compose.yml, .env files
-- **Валидация:** bash -n syntax check pending (Linux required), --dry-run support confirmed
-- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md)
-
-### 2026-05-06 — DEV-LINUX-01B dry-run precondition fix
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local only; без deploy/migrations/.env/secrets.
-- **Проблема:** 5 из 10 scripts выполняли реальные curl/redis/docker проверки ДО dry-run ветки. 2 скрипта exit 1, 3 скрипта делали реальные сетевые подключения.
-- **Решение:** Wrapped preconditions in `if ! $DRY_RUN` guards.
-- **Сделано:**
-  - `start-api-opencode.sh` — OpenCode health + uvicorn check wrapped
-  - `smoke-real-opencode-runtime.sh` — OpenCode + API + git baseline wrapped
-  - `start-worker.sh` — Redis + API + Celery check wrapped
-  - `start-telegram-bot.sh` — .env.local + API health wrapped
-  - `smoke-stub-runtime.sh` — API health + git dirty wrapped
-- **Валидация:** bash -n 10/10 ✅, --help 10/10 ✅, --dry-run 10/10 ✅ (all exit 0), no real connections, no processes, no artifacts
-- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md)
-
-### 2026-05-06 — DEV-LINUX-01C real stub contour validation
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
-- **Проблема:** Scripts never ran against real infrastructure. Three blockers found: (1) venv not in PATH — scripts use `python`/`uvicorn`/`celery` directly; (2) JSON shell interpolation `'''$UPDATED_TASK'''` breaks on plan_text with backticks/newlines; (3) wrong events URL in smoke-real-opencode-runtime.sh.
-- **Решение:** (1) Added venv auto-detection (`$PROJECT_ROOT/.venv/bin` → PATH) to 8 scripts. (2) Replaced inline shell interpolation with temp file approach for JSON parsing in both smoke scripts. (3) Fixed events URL to `/events/tasks/{id}/events`.
-- **Сделано:**
-  - 8 scripts updated with venv auto-detection
-  - smoke-stub-runtime.sh: temp file JSON parsing
-  - smoke-real-opencode-runtime.sh: temp file JSON parsing + events URL fix
-- **Real contour results (WSL Ubuntu 22.04):**
-  - check-db.sh: ✅ 9/9 tables, alembic head
-  - start-api-stub.sh: ✅ PID 5867, /health /projects /agents 200
-  - start-worker.sh: ✅ PID 6316, Celery 5.6.3, Redis PONG
-  - smoke-stub-runtime.sh: ✅ ALL 8 CHECKS PASS (status=approved, session_id=stub, plan_generated=1)
-  - cleanup-runtime.sh: ✅ all stopped, API restarted stub mode
-- **Валидация:** bash -n 10/10 ✅, --dry-run 10/10 ✅, --help 10/10 ✅, real contour 5/5 ✅
-- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md)
-
-### 2026-05-06 — DEV-LINUX-01D real OpenCode runtime contour
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local WSL2 Ubuntu 22.04; без deploy/migrations/.env/secrets.
-- **Цель:** Validate real OpenCode runtime contour on Linux: OpenCode → API opencode_http → smoke-real-opencode-runtime → cleanup.
-- **Окружение:** Ubuntu 22.04.5 LTS on WSL2, Node v20.20.2, npm 10.8.2, OpenCode 1.14.39.
-- **Сделано:**
-  - check-db.sh: ✅ 9/9 tables, alembic head
-  - start-opencode.sh: ✅ PID 8570, 127.0.0.1:4096, /global/health 200, /doc 200
-  - CLI attach probe (`opencode run --attach`): ✅ exit 0, ~42s, session ses_201ad1cf9ffeuGz8Ag5JiGQM0v
-  - start-api-opencode.sh: ✅ PID 9014, 127.0.0.1:8000, provider opencode_http, /health /projects /agents 200
-  - smoke-real-opencode-runtime: ✅ task bc4853b6, approved, 103.2s, session ses_201a17dfcffem78R3kuE96eZPf, 2099 chars plan
-  - cleanup-runtime.sh: ✅ OpenCode stopped, API restarted stub mode, git clean
-- **Event timeline:** task_created → runtime_session_created → runtime_retry_scheduled → runtime_event_received ×2 → plan_generated
-- **Real OpenCode proof:** session ses_* (not stub), no stub fingerprints, 103.2s duration, real project analysis in plan
-- **Validation:** all 9 checks PASS (final_status=approved, plan_text_nonempty, real_session_id, plan_generated_count=1, session_created_before_events, no_stub_fingerprints, no_runtime_error, no_policy_blocked, no_command_file_sandbox)
-- **Findings:** (1) First smoke attempt hit 420s timeout on cold-start — manual retry succeeded in 103s; (2) smoke script missing normalized_text field — fixed; (3) Node.js missing in WSL — installed via NodeSource; (4) OpenCode npm package is platform-specific — used opencode-linux-x64 + symlink.
-- Task summary: [.ai_memory/tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md](.ai_memory/tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md)
-
-### 2026-05-06 — WORKER-LINUX-01 Celery SIGHUP restart crash fix
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local WSL2 Ubuntu 22.04; без deploy/migrations/.env/secrets.
-- **Проблема:** Celery worker died after every task. Root cause: Celery 5.6.3 installs SIGHUP restart handler for non-TTY stdout (nohup). On shell exit, SIGHUP triggers `os.execv(sys.executable, [sys.executable] + sys.argv)` which runs `celery/__main__.py` as a script (not via `-m`), breaking relative imports: `ImportError: attempted relative import with no known parent package`.
-- **Решение:** (1) Monkey-patch `_reload_current_worker` in celery_app.py to use `python -m celery` instead of direct script path. (2) Override SIGHUP→SIG_IGN via `@worker_ready.connect` signal. (3) Add `disown` in start-worker.sh to prevent bash SIGHUP on shell exit.
-- **Changed files:**
-  - `apps/worker/app/celery_app.py` — +44 lines: monkey-patch + SIGHUP reset
-  - `scripts/dev-linux/start-worker.sh` — +6 lines: comment + `disown`
-- **Validation:** task-0009 (7d2e2519) approved, worker PID 12165 alive after 35s, 0 ImportError, 0 "Restarting celery", 0 Traceback in log, cleanup PASS, git 2 files +50 lines.
-- **Notes:** `setsid` approach was tried first but broke PID tracking (forks child when process is group leader). `disown` is bash-specific but script already uses bash.
-- Task summary: [.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md](.ai_memory/tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md)
-
-### 2026-05-06 — TG-05 Phase 1: Live Telegram Notifications + Admin Approval Gate
-- **Агент:** studio-orchestrator (coordinated implementation)
-- **Контур:** local only; без deploy/migrations/.env/secrets/live Telegram.
-- **Цель:** (1) Give worker access to TELEGRAM_BOT_TOKEN via .env.local. (2) Add fail-closed admin gate to /approve and /reject. (3) Add tests.
-- **Сделано:**
-  - `scripts/dev-linux/start-worker.sh` — sources `.env.local` via `set -a/source/set +a` (process-scoped). Warns if missing or token empty. Never prints token value.
-  - `apps/telegram-bot/app/handlers/approve_handler.py` — admin gate: `from_user is None` → reject; `admin_user_ids()` empty or user not in list → reject with "Только администраторы могут подтверждать задачи". No API call if not admin.
-  - `apps/telegram-bot/app/handlers/reject_handler.py` — same admin gate pattern.
-  - `apps/worker/tests/test_notifier.py` — 5 new tests (8 total): get_notifier stub/telegram factory, send success, send failure no token leak, set_notifier override.
-  - `apps/telegram-bot/tests/test_approve_handler.py` — 4 new tests (8 total): non-admin rejected, empty admin list rejects all, missing from_user, admin can proceed.
-  - `apps/telegram-bot/tests/test_reject_handler.py` — 4 new tests (8 total): same pattern.
-- **Validation:** bash -n ✅, compileall ✅, ruff ✅ (telegram-bot), pytest worker 97/98 ✅ (1 pre-existing), pytest telegram-bot 75/75 ✅.
-- **Security:** fail-closed admin gate, no token in logs/tests, .env.local not committed, no live bot started.
-- Task summary: [.ai_memory/tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md](.ai_memory/tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md)
-
-### 2026-05-07 — TG-05 Phase 2: Live Telegram Notification Smoke
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
-- **Цель:** Verify worker uses TelegramNotifier and real notification arrives in Telegram.
-- **Results:**
-  - .env.local: all 4 vars present ✅
-  - Worker: TELEGRAM_BOT_TOKEN set, no StubNotifier ✅
-  - Task f6972b69 (task-0001): approved, plan_text non-empty ✅
-  - Notification: POST api.telegram.org sendMessage 200 OK, method=telegram ✅
-  - Feedback loop: only 1 task, no duplicate ✅
-  - Cleanup: all stopped, API stub restored, git clean ✅
-- **Issues:** Bot conflict (old Windows process), private chat not bound (had to create project/agent/topic)
-- **Verdict:** PASS
-- Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-phase2-live-notification-smoke.md](.ai_memory/tasks/2026-05-07-task-tg05-phase2-live-notification-smoke.md)
-
-### 2026-05-07 — TG-05 Phase 3: Live Admin Approval Flow
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
-- **Цель:** Verify live admin approval flow: medium-risk task → waiting_approval → admin /approve → approved.
-- **Results:**
-  - Medium-risk task → waiting_approval ✅
-  - Approval record created (pending) ✅
-  - Telegram notification delivered (method=telegram) ✅
-  - Admin /approve → approval approved, approved_by=admin_id ✅
-  - Task status transitioned to approved ✅
-  - Feedback loop: 3 tasks, no duplicates ✅
-- **Bugs found & fixed:**
-  1. Router ordering: messages_router catch-all consumed /approve before approve_router. Fix: moved command routers before messages_router in bot.py.
-  2. Approval task transition: approval_service.approve() didn't update task status. Fix: added transition in approvals router.
-- **Verdict:** PASS
-- Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-phase3-admin-approval-flow.md](.ai_memory/tasks/2026-05-07-task-tg05-phase3-admin-approval-flow.md)
-
-### 2026-05-07 — TG-05 Phase 4: Live Admin Reject Flow
-- **Агент:** studio-orchestrator (coordinated execution)
-- **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
-- **Цель:** Verify live admin reject flow: medium-risk task → waiting_approval → /reject → cancelled.
-- **Results:**
-  - Medium-risk task → waiting_approval ✅
-  - Approval record created (pending) ✅
-  - Telegram notification delivered (method=telegram) ✅
-  - Admin /reject → approval rejected, reason saved ✅
-  - Task status transitioned to cancelled ✅
-  - Feedback loop: 4 tasks, no duplicates ✅
-- **Verdict:** PASS
-- Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-phase4-admin-reject-flow.md](.ai_memory/tasks/2026-05-07-task-tg05-phase4-admin-reject-flow.md)
-
-### 2026-05-07 — TG-05 Closeout: Live Telegram Approval Flow
-- **Агент:** studio-orchestrator
-- **Final Verdict:** ✅ PASS
-- **Confirmed capabilities:**
-  - Worker reads TELEGRAM_BOT_TOKEN from .env.local process-scoped
-  - Worker uses TelegramNotifier when token exists
-  - Real Telegram notification delivery works
-  - Medium-risk task creates waiting_approval
-  - Admin /approve works
-  - Admin /reject works with reason
-  - Non-admin blocked (fail-closed)
-  - No feedback loop
-  - Secrets never printed
-- **Bugs found & fixed:**
-  1. Router ordering: command routers moved before messages_router catch-all
-  2. Approval task transition: waiting_approval → approved/cancelled added
-- **Non-blocking finding:** BUTTON_DATA_INVALID cosmetic (separate task recommended)
-- **Security:** fail-closed admin gate, SecretRedactionFilter active
-- Task summary: [.ai_memory/tasks/2026-05-07-task-tg05-closeout.md](.ai_memory/tasks/2026-05-07-task-tg05-closeout.md)
-
-### 2026-05-07 — CI-01: Phase 1 Local Validation
-- **Агент:** git-workflow-master
-- **Контур:** local WSL2 Ubuntu 22.04; no deploy/migrations/secrets.
-- **Цель:** Full Phase 1 validation before any deployment.
-- **Results:**
-  - compileall: API ✅, Telegram-bot ✅, Worker ✅
-  - pytest: API 162 pass/110 fail/7 err (pre-existing asyncio loop issue), Telegram-bot 75/75 ✅, Worker 97/98 ✅ (1 pre-existing WSL path issue)
-  - ruff: API ✅, Telegram-bot ✅, Worker ⚠️ 3 pre-existing in celery_app.py
-  - bash -n: all 10 scripts ✅
-  - docker compose config ✅
-- **Verdict:** PASS — all failures pre-existing and documented.
-- Task summary: [.ai_memory/tasks/2026-05-07-task-ci-01-phase1-local-validation.md](.ai_memory/tasks/2026-05-07-task-ci-01-phase1-local-validation.md)
-
-### 2026-05-07 — CI-02: Stabilize Pre-existing Local Validation Failures
-- **Агент:** studio-orchestrator
-- **Контур:** local WSL2 Ubuntu 22.04; no deploy/migrations/secrets.
-- **Цель:** Fix 3 groups of pre-existing test/lint failures.
-- **Fixes:**
-  1. API pytest loop mismatch: `asyncio_mode="strict"` + `anyio_backend="asyncio"` fixture + missing anyio markers
-  2. Worker worktree root: removed hard-coded Windows path, added platform-safe env/default resolution
-  3. Worker ruff: moved celery_app.py imports to top, preserved SIGHUP fix
-- **Results:**
-  - API pytest: 272/272 (was 162/110/7) ✅
-  - Worker pytest: 98/98 (was 97/98) ✅
-  - Worker ruff: 0 errors (was 3) ✅
-  - Telegram-bot: 75/75 ✅
-  - bash -n: all scripts ✅
-- **Verdict:** PASS
-- Task summary: [.ai_memory/tasks/2026-05-07-task-ci-02-local-validation-fixes.md](.ai_memory/tasks/2026-05-07-task-ci-02-local-validation-fixes.md)
-
-### 2026-05-07 — TG-06 Phase 2: Compact Telegram Callback Protocol
-- **Агент:** studio-orchestrator
-- **Контур:** local validation only; no live Telegram/OpenCode/deploy/migrations/git push/reset/checkout; no `.env`/secrets changes.
-- **Цель:** Replace oversized inline callback payloads with compact signed callback data while keeping legacy API validation compatibility.
-- **Protocol:** `v1:<alias>:<task_external_id>:<exp_base36>:<sig16>` where aliases are `a=approve`, `r=reject`, `f=refresh`, `p=show_plan`, `t=show_task`.
-- **Signing:** payload `v1|<alias>|<task_external_id>|<exp_base36>`, HMAC-SHA256 truncated to 16 hex chars; example payload length: 38 bytes for `task-0004`.
-- **Implementation summary:** API validates compact and legacy callback formats, checks compact `external_id` match, and finds pending approvals by task for approve/reject. Bot inline keyboards now use `task.external_id`; callback handlers/status/approve/reject/plan use compact callback data. Inline reject reason is `Rejected via Telegram inline button`.
-- **Changed app files recorded:** `apps/api/app/routers/tasks.py`; `apps/api/tests/test_tasks_plan_endpoint.py`; `apps/telegram-bot/app/keyboards/__init__.py`; `apps/telegram-bot/app/handlers/callbacks.py`; `apps/telegram-bot/tests/test_callback_handlers.py`; `apps/telegram-bot/tests/test_keyboards.py`.
-- **Validation:** API compileall/ruff/pytest 275 passed; telegram-bot compileall/ruff/pytest 79 passed; worker compileall/ruff/pytest 98 passed.
-- **Verdict:** COMPLETE
-- Task summary: [.ai_memory/tasks/2026-05-07-task-tg06-phase2-compact-callbacks.md](.ai_memory/tasks/2026-05-07-task-tg06-phase2-compact-callbacks.md)
-
-### 2026-05-07 — TG-06 Phase 3: Live Compact Callback E2E
-- **Агент:** studio-orchestrator
-- **Контур:** live WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub + native PostgreSQL 14 + Redis.
-- **Цель:** Validate compact Telegram callback protocol end-to-end with live inline button interaction.
-- **Results:**
-  - Medium-risk task (task-0002) created via worker ✅
-  - Plan generated, approval record created (fb8f305a) ✅
-  - User typed /status and clicked Approve inline button ✅
-  - Callback data: 38 bytes (under Telegram's 64-byte limit) ✅
-  - Callback validation succeeded (POST /callback-answer → 200, action_valid=true) ✅
-  - Approve flow completed (POST /approvals/{id}/approve → 200) ✅
-  - Task status: waiting_approval → approved ✅
-  - Approval: pending → approved, approved_by=1113930428 ✅
-- **Bugs found & fixed during live test:**
-  1. CALLBACK_SECRET mismatch: start-api-stub.sh doesn't load .env.local, so API used empty CALLBACK_SECRET. Bot used correct secret from .env.local → all callbacks rejected. Fixed by creating ~/agentrouter/.env with CALLBACK_SECRET.
-  2. project.repo_path invalid: DB had `/opt/agent-control/repos/agentrouter` which doesn't exist on the server. Fixed to `/root/agentrouter`.
-- **Validation baseline:** API 275/275 ✅, Telegram-bot 79/79 ✅, Worker 98/98 ✅, ruff clean ✅
-- **No BUTTON_DATA_INVALID errors in any logs.**
-- **Verdict:** COMPLETE
-- Task summary: [.ai_memory/tasks/2026-05-07-task-tg06-phase3-live-test.md](.ai_memory/tasks/2026-05-07-task-tg06-phase3-live-test.md)
-
-### 2026-05-07 — INFRA-01: Dev Runtime Config Drift Fix
-- **Агент:** studio-orchestrator
-- **Контур:** local WSL2 Ubuntu 22.04; bash scripts + dev DB; no deploy/migrations/.env/secrets/OpenCode.
-- **Цель:** Fix two config drift issues discovered during TG-06 Phase 3 live test that required manual workarounds.
-- **Fix A — start-api-stub.sh now sources .env.local:**
-  - Added `.env.local` sourcing block (same pattern as `start-worker.sh`) after clean env block
-  - Uses `set -a; source .env.local; set +a` — process-scoped, never persisted
-  - Logs `CALLBACK_SECRET: set (not displayed)` or `CALLBACK_SECRET: not set`
-  - Updated dry-run section to mention `.env.local` sourcing
-  - Updated report section to show `CALLBACK_SECRET` status and `DATABASE_URL` source
-  - No `.env` workaround (symlink/temp file) needed anymore
-- **Fix B — bootstrap-seed.sh for dev project repo_path:**
-  - New script: `scripts/dev-linux/bootstrap-seed.sh`
-  - Ensures `agentrouter` project and `studio-orchestrator` agent exist in dev DB
-  - Uses `repo_path=$(realpath "$PROJECT_ROOT")` — platform-correct on any machine
-  - Idempotent: `INSERT ON CONFLICT` behavior (updates existing wrong `repo_path`)
-  - Works with both native PostgreSQL and Docker-based `psql`
-  - Supports `--dry-run`, `--help`
-  - NEVER uses `DROP`/`TRUNCATE`/`DELETE`
-- **Changed files:**
-  - `scripts/dev-linux/start-api-stub.sh` — added .env.local sourcing + report updates
-  - `scripts/dev-linux/bootstrap-seed.sh` — NEW file
-- **Validation results:**
-  - `bash -n`: all 11 scripts pass
-  - API: compileall OK, ruff OK, pytest 275/275
-  - Worker: compileall OK, ruff OK, pytest 98/98
-  - Telegram-bot: compileall OK, ruff OK, pytest 79/79
-  - Runtime smoke: plan endpoint working — task created→approved, no Path-escapes error
-  - Temp `.env` removed: confirmed absent, no workaround needed
-  - `CALLBACK_SECRET`: confirmed "set (not displayed)" in API log
-  - `repo_path`: confirmed `/root/agentrouter` in DB
-- **Verdict:** COMPLETE
-- Task summary: [.ai_memory/tasks/2026-05-07-task-infra-01-dev-runtime-config.md](.ai_memory/tasks/2026-05-07-task-infra-01-dev-runtime-config.md)
-
-### 2026-05-07 — INFRA-02: TG-06 Regression Live Smoke Without Manual Workarounds
-- **Агент:** studio-orchestrator
-- **Контур:** live WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub + native PostgreSQL 14 + Redis.
-- **Цель:** Validate TG-06 compact callback flow end-to-end with zero manual workarounds after INFRA-01 fixes.
-- **Results:**
-  - Task task-0002 (1c39d0a4...) approved via inline button ✅
-  - Notification delivered to Telegram, message_id: 73 ✅
-  - Callback-answer: 200 OK, Approve endpoint: 200 OK ✅
-  - Callback data: 38 bytes (under 64-byte limit) ✅
-  - Callback update handled in 370 ms ✅
-  - No BUTTON_DATA_INVALID, TelegramBadRequest, CALLBACK_SECRET mismatch, Path-escapes, tracebacks, duplicates, feedback loop, token leakage ✅
-  - Event timeline: task_created → plan_triggered → plan_generated → approval_requested → callback_received → approval_granted ✅
-- **Zero manual workarounds (vs TG-06 Phase 3):**
-  - No temporary `~/agentrouter/.env` ✅
-  - No manual `UPDATE projects SET repo_path` ✅
-  - CALLBACK_SECRET loaded automatically from `.env.local` ✅
-  - repo_path auto-set by `bootstrap-seed.sh` to `/root/agentrouter` ✅
-- **Verdict:** PASS — TG-06 compact inline callback protocol is production-viable with zero manual workarounds. INFRA-01 fixes confirmed working.
-- Task summary: [.ai_memory/tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md](.ai_memory/tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md)
-
-### 2026-05-07 — SEC-01 Phase 2: Permission Engine MVP
 
 - **Агент:** security-engineer
 - **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
@@ -515,6 +247,7 @@
 - [x] Memory indexing + retrieval (MEM-03)
 - [x] **MEM-04 Phase 2:** Soft mandatory memory checkpoints (AGENTS.md rule #7, runbook, template, docs)
 - [x] **SEC-01 Phase 2:** Permission Engine MVP (fail-closed, 14 actions, 5 endpoints wired, 297/297 tests)
+- [x] **SEC-02 Phase 2:** Security Audit DB model, migration, append-only service, redaction helpers (508/508 tests)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация
@@ -530,8 +263,9 @@
 
 ## Следующие шаги
 
-1. Memory retrieval tuning: ranking quality + scope heuristics
-2. Полный план: [docs/mvp-backlog.md](docs/mvp-backlog.md)
+1. **SEC-02 Phase 3:** Wire `SecurityAuditService` into approve/reject/permission/callback endpoints
+2. Memory retrieval tuning: ranking quality + scope heuristics
+3. Полный план: [docs/mvp-backlog.md](docs/mvp-backlog.md)
 
 ### 2026-05-03 — WRK-04 Manual Local Backend Test Completed (WRK-04)
 - **Агент:** backend-architect

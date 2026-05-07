@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 60 |
+| **Task logs** | 61 |
 | **Шаблоны** | 5 |
 
 ---
@@ -126,6 +126,7 @@
 | [2026-05-07-task-mem04-memory-checkpoints.md](tasks/2026-05-07-task-mem04-memory-checkpoints.md) | MEM-04 Phase 2: Soft Mandatory Memory Checkpoints |
 | [2026-05-07-task-sec01-permission-engine.md](tasks/2026-05-07-task-sec01-permission-engine.md) | SEC-01 Phase 2: Permission Engine MVP |
 | [2026-05-08-task-sec01-phase3-live-smoke.md](tasks/2026-05-08-task-sec01-phase3-live-smoke.md) | SEC-01 Phase 3: Live Smoke — Admin Gate Validation |
+| [2026-05-08-task-sec02-phase2-audit-model-service.md](tasks/2026-05-08-task-sec02-phase2-audit-model-service.md) | SEC-02 Phase 2: Security Audit DB Model, Migration & Service |
 
 ---
 
