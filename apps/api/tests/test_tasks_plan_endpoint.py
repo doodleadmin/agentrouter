@@ -25,6 +25,29 @@ def _make_callback_data(
     return f"{base}|{sig}"
 
 
+def _to_base36(value: int) -> str:
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    if value == 0:
+        return "0"
+    chars = []
+    while value:
+        value, rem = divmod(value, 36)
+        chars.append(alphabet[rem])
+    return "".join(reversed(chars))
+
+
+def _make_compact_callback_data(
+    alias: str,
+    external_id: str,
+    ttl: int = 300,
+    secret: str = "",
+) -> str:
+    exp_base36 = _to_base36(int(time.time()) + ttl)
+    payload = f"v1|{alias}|{external_id}|{exp_base36}"
+    sig = hmac.new(secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+    return f"v1:{alias}:{external_id}:{exp_base36}:{sig}"
+
+
 # ── /tasks/{id}/plan ───────────────────────────────────────────────────
 
 @pytest.mark.anyio
@@ -88,6 +111,75 @@ async def test_callback_answer_valid(async_client: AsyncClient) -> None:
     assert data["task_id"] == task_id
     assert data["action_valid"] is True
     assert data["action"] == "show_plan"
+
+
+@pytest.mark.anyio
+async def test_callback_answer_compact_valid_actions(async_client: AsyncClient) -> None:
+    """Compact callbacks validate for refresh/show_plan/show_task and resolve aliases."""
+    resp = await async_client.post("/tasks", json={
+        "title": "compact cb test", "raw_text": "raw", "normalized_text": "norm",
+    })
+    task = resp.json()
+    task_id = task["id"]
+    external_id = task["external_id"]
+
+    for alias, action in [("f", "refresh"), ("p", "show_plan"), ("t", "show_task")]:
+        cb = _make_compact_callback_data(alias, external_id)
+        assert len(cb.encode("utf-8")) <= 64
+        r = await async_client.post(f"/tasks/{task_id}/callback-answer", json={"callback_data": cb})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["action_valid"] is True
+        assert data["action"] == action
+        assert data["task_external_id"] == external_id
+
+
+@pytest.mark.anyio
+async def test_callback_answer_compact_approve_reject_resolve_pending_approval(async_client: AsyncClient) -> None:
+    """Compact approve/reject carry no approval UUID and resolve the task's pending approval."""
+    resp = await async_client.post("/tasks", json={
+        "title": "compact approval cb", "raw_text": "raw", "normalized_text": "norm",
+    })
+    task = resp.json()
+    task_id = task["id"]
+    external_id = task["external_id"]
+    approval = (await async_client.post(
+        f"/approvals/tasks/{task_id}/approvals",
+        json={"action": "deploy_staging"},
+    )).json()
+
+    for alias, action in [("a", "approve"), ("r", "reject")]:
+        cb = _make_compact_callback_data(alias, external_id)
+        assert approval["id"] not in cb
+        r = await async_client.post(f"/tasks/{task_id}/callback-answer", json={"callback_data": cb})
+        data = r.json()
+        assert data["action_valid"] is True
+        assert data["action"] == action
+        assert data["approval_id"] == approval["id"]
+        assert data["approval_status"] == "pending"
+
+
+@pytest.mark.anyio
+async def test_callback_answer_compact_expired_tampered_unknown_malformed(async_client: AsyncClient) -> None:
+    """Compact callbacks reject expired, tampered, unknown alias, and malformed payloads."""
+    resp = await async_client.post("/tasks", json={
+        "title": "compact invalid cb", "raw_text": "raw", "normalized_text": "norm",
+    })
+    task = resp.json()
+    task_id = task["id"]
+    external_id = task["external_id"]
+
+    expired = _make_compact_callback_data("f", external_id, ttl=-60)
+    tampered = _make_compact_callback_data("p", external_id).replace(external_id, "task-9999")
+    unknown = _make_compact_callback_data("f", external_id).replace("v1:f:", "v1:x:")
+    malformed = "v1:f:task-0001"
+
+    cases = [(expired, "expired"), (tampered, "signature"), (unknown, "unknown"), (malformed, "format")]
+    for cb, error_text in cases:
+        r = await async_client.post(f"/tasks/{task_id}/callback-answer", json={"callback_data": cb})
+        data = r.json()
+        assert data["action_valid"] is False
+        assert error_text in data.get("error", "").lower()
 
 
 @pytest.mark.anyio

@@ -23,7 +23,13 @@ router = Router(name="callbacks")
 
 
 def _extract_task_id_from_cb(callback_data: str) -> str | None:
-    """Extract task_id from v1 callback data (field index 2)."""
+    """Extract task UUID (legacy) or task external_id (compact) from callback data."""
+    if callback_data.startswith("v1:"):
+        parts = callback_data.split(":")
+        if len(parts) == 5 and parts[2].startswith("task-"):
+            return parts[2]
+        return None
+
     parts = callback_data.split("|")
     if len(parts) >= 3:
         try:
@@ -32,6 +38,29 @@ def _extract_task_id_from_cb(callback_data: str) -> str | None:
         except (ValueError, TypeError):
             return None
     return None
+
+
+async def _resolve_task_uuid_for_callback(client, task_ref: str) -> str | None:
+    """Resolve compact external_id to API UUID; legacy UUIDs pass through unchanged."""
+    try:
+        UUID(task_ref)
+        return task_ref
+    except (ValueError, TypeError):
+        pass
+
+    if not task_ref.startswith("task-"):
+        return None
+    task = await client.find_task_by_external_id(task_ref)
+    if not task:
+        return None
+    task_id = task.get("id")
+    if not isinstance(task_id, str):
+        return None
+    try:
+        UUID(task_id)
+    except (ValueError, TypeError):
+        return None
+    return task_id
 
 
 async def _get_chat_thread_ids(query: CallbackQuery) -> tuple[int | None, int | None, int | None]:
@@ -56,14 +85,23 @@ async def handle_callback(query: CallbackQuery) -> None:
         return
 
     # Extract task_id early
-    task_id = _extract_task_id_from_cb(callback_data)
-    if not task_id:
+    task_ref = _extract_task_id_from_cb(callback_data)
+    if not task_ref:
         await query.answer("Invalid callback data", show_alert=False)
         return
 
     chat_id, thread_id, user_id = await _get_chat_thread_ids(query)
 
     client = get_api_client()
+
+    try:
+        task_id = await _resolve_task_uuid_for_callback(client, task_ref)
+    except Exception as exc:
+        await query.answer(f"API error: {exc}", show_alert=True)
+        return
+    if not task_id:
+        await query.answer("Task not found", show_alert=True)
+        return
 
     # Step 1: Validate callback via API
     try:
@@ -88,6 +126,7 @@ async def handle_callback(query: CallbackQuery) -> None:
         return
 
     action = cb_result.get("action", "unknown")
+    keyboard_task_ref = cb_result.get("task_external_id") or task_ref
 
     # Step 2: Perform the action
     if action == "approve":
@@ -95,7 +134,7 @@ async def handle_callback(query: CallbackQuery) -> None:
     elif action == "reject":
         await _handle_reject_action(query, client, task_id, cb_result)
     elif action == "show_plan":
-        await _handle_show_plan_action(query, client, task_id)
+        await _handle_show_plan_action(query, client, task_id, keyboard_task_ref)
     elif action == "show_task":
         await _handle_show_task_action(query, client, task_id)
     elif action == "refresh":
@@ -142,7 +181,10 @@ async def _handle_reject_action(
 
     try:
         user_id = query.from_user.id if query.from_user else None
-        await client.reject_approval(approval_id, {"approved_by": user_id, "reason": "Rejected via Telegram"})
+        await client.reject_approval(
+            approval_id,
+            {"approved_by": user_id, "reason": "Rejected via Telegram inline button"},
+        )
         await query.answer("Rejected.", show_alert=False)
     except Exception as exc:
         await query.answer(f"Reject failed: {exc}", show_alert=True)
@@ -156,6 +198,7 @@ async def _handle_show_plan_action(
     query: CallbackQuery,
     client,
     task_id: str,
+    keyboard_task_ref: str,
 ) -> None:
     """Handle show plan button — fetch and display plan text."""
     try:
@@ -166,12 +209,21 @@ async def _handle_show_plan_action(
 
     plan_text = plan_data.get("plan_text")
     task_status = plan_data.get("status", "unknown")
+    try:
+        UUID(keyboard_task_ref)
+        task = await client.get_task(task_id)
+        keyboard_task_ref = task.get("external_id") or keyboard_task_ref
+    except Exception:
+        pass
 
     excerpt = format_plan_excerpt(plan_text)
     header = f"📋 <b>Plan — Task {task_id[:8]}</b>\nStatus: <code>{task_status}</code>\n\n"
     text = header + excerpt
 
-    keyboard = build_plan_keyboard(task_id)
+    try:
+        keyboard = build_plan_keyboard(keyboard_task_ref)
+    except ValueError:
+        keyboard = None
 
     try:
         await query.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
@@ -224,8 +276,9 @@ async def _refresh_message(query: CallbackQuery, client, task_id: str) -> None:
         pass
 
     text = format_task_card(task)
+    keyboard_task_ref = task.get("external_id") or task_id
     keyboard = build_task_keyboard(
-        task_id=task_id,
+        task_id=keyboard_task_ref,
         task_status=task.get("status", ""),
         has_pending_approval=has_pending,
         approval_id=approval_id,

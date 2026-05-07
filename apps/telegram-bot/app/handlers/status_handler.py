@@ -60,7 +60,7 @@ async def status_handler(message: Message) -> None:
 
     text = format_task_card(task)
     keyboard = build_task_keyboard(
-        task_id=task_id,
+        task_id=task.get("external_id") or task_id,
         task_status=task_status,
         has_pending_approval=has_pending,
         approval_id=approval_id,

@@ -48,6 +48,6 @@ async def plan_handler(message: Message) -> None:
     excerpt = format_plan_excerpt(plan_text)
     header = f"📋 <b>Plan — {task.get('external_id', task_id[:8])}</b>\nStatus: <code>{status}</code>\n\n"
 
-    keyboard = build_plan_keyboard(task_id)
+    keyboard = build_plan_keyboard(task.get("external_id") or task_id)
 
     await message.answer(header + excerpt, reply_markup=keyboard, parse_mode="HTML")

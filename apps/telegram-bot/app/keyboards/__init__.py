@@ -1,4 +1,4 @@
-"""TG-03: Inline keyboard builders for task cards, approvals, and plan display."""
+"""TG-03/TG-06: Inline keyboard builders for task cards and callbacks."""
 
 from __future__ import annotations
 
@@ -10,27 +10,53 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 # ── callback protocol helpers ──────────────────────────────────────────
 
-_CALLBACK_FIELD_SEP = "|"
-_CALLBACK_VERSION = 1  # v1 protocol: version|action|task_id|approval_id|rev|exp|sig
+_CALLBACK_VERSION = "v1"
+_CALLBACK_ALIASES = {
+    "approve": "a",
+    "reject": "r",
+    "refresh": "f",
+    "show_plan": "p",
+    "show_task": "t",
+}
+_BASE36_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+
+def _to_base36(value: int) -> str:
+    """Encode a non-negative integer as lowercase base36."""
+    if value < 0:
+        raise ValueError("base36 value must be non-negative")
+    if value == 0:
+        return "0"
+    chars: list[str] = []
+    while value:
+        value, rem = divmod(value, 36)
+        chars.append(_BASE36_ALPHABET[rem])
+    return "".join(reversed(chars))
 
 
 def _make_callback_data(
     action: str,
-    task_id: str,
+    task_external_id: str,
     approval_id: str = "none",
     rev: int = 1,
     ttl: int = 300,
     secret: str = "",
 ) -> str:
-    """Build a signed v1 callback_data string with HMAC-SHA256 signature."""
-    exp = int(time.time()) + ttl
-    base = f"{_CALLBACK_VERSION}{_CALLBACK_FIELD_SEP}{action}{_CALLBACK_FIELD_SEP}{task_id}{_CALLBACK_FIELD_SEP}{approval_id}{_CALLBACK_FIELD_SEP}{rev}{_CALLBACK_FIELD_SEP}{exp}"
+    """Build compact signed callback_data: v1:<alias>:<external_id>:<exp36>:<sig16>."""
+    del approval_id, rev  # TG-06 compact protocol intentionally excludes these fields.
+
+    alias = _CALLBACK_ALIASES[action]
+    exp_base36 = _to_base36(int(time.time()) + ttl)
+    signing_payload = f"{_CALLBACK_VERSION}|{alias}|{task_external_id}|{exp_base36}"
     sig = hmac.new(
         secret.encode("utf-8") if secret else b"",
-        base.encode("utf-8"),
+        signing_payload.encode("utf-8"),
         hashlib.sha256,
-    ).hexdigest()
-    return f"{base}{_CALLBACK_FIELD_SEP}{sig}"
+    ).hexdigest()[:16]
+    callback_data = f"{_CALLBACK_VERSION}:{alias}:{task_external_id}:{exp_base36}:{sig}"
+    if len(callback_data.encode("utf-8")) > 64:
+        raise ValueError("callback_data exceeds Telegram 64-byte limit")
+    return callback_data
 
 
 def _get_callback_secret() -> str:

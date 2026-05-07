@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+import re
 import time
 from uuid import UUID
 
@@ -10,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db.enums import ActorType, TaskStatus
+from app.db.enums import ActorType, ApprovalStatus, TaskStatus
 from app.db.session import get_async_session
 from app.integrations.queue import enqueue_agent_plan
 from app.schemas.task import (
@@ -47,6 +48,18 @@ _TASK_404 = "Task not found"
 
 CALLBACK_FIELD_SEP = "|"
 CALLBACK_VERSION = 1  # v1 protocol: 6 fields + sig
+COMPACT_CALLBACK_SEP = ":"
+COMPACT_CALLBACK_VERSION = "v1"
+COMPACT_ACTION_ALIASES = {
+    "a": "approve",
+    "r": "reject",
+    "f": "refresh",
+    "p": "show_plan",
+    "t": "show_task",
+}
+COMPACT_EXTERNAL_ID_RE = re.compile(r"^task-[0-9]{4,}$")
+COMPACT_EXP_RE = re.compile(r"^[0-9a-z]+$")
+COMPACT_SIG_RE = re.compile(r"^[0-9a-f]{16}$")
 
 
 def _parse_callback_fields(data: str) -> dict[str, str] | None:
@@ -61,6 +74,7 @@ def _parse_callback_fields(data: str) -> dict[str, str] | None:
     if version != CALLBACK_VERSION:
         return None
     return {
+        "protocol": "legacy",
         "version": parts[0],
         "action": parts[1],
         "task_id": parts[2],
@@ -71,10 +85,63 @@ def _parse_callback_fields(data: str) -> dict[str, str] | None:
     }
 
 
+def _parse_compact_callback_fields(data: str) -> dict[str, str] | None:
+    """Parse compact v1 callback data: v1:<alias>:<external_id>:<exp36>:<sig16>."""
+    parts = data.split(COMPACT_CALLBACK_SEP)
+    if len(parts) != 5:
+        return None
+    version, alias, external_id, exp_base36, sig = parts
+    if version != COMPACT_CALLBACK_VERSION:
+        return None
+    if alias not in COMPACT_ACTION_ALIASES:
+        raise ValueError("Unknown callback action")
+    if not COMPACT_EXTERNAL_ID_RE.fullmatch(external_id):
+        raise ValueError("Invalid task external_id in callback_data")
+    if not COMPACT_EXP_RE.fullmatch(exp_base36):
+        raise ValueError("Invalid expiry in callback_data")
+    if not COMPACT_SIG_RE.fullmatch(sig):
+        raise ValueError("Invalid callback_data signature")
+    return {
+        "protocol": "compact",
+        "version": version,
+        "alias": alias,
+        "action": COMPACT_ACTION_ALIASES[alias],
+        "task_external_id": external_id,
+        "exp": exp_base36,
+        "sig": sig,
+    }
+
+
 def _compute_callback_signature(base: str) -> str:
     """HMAC-SHA256 of the base string (fields 0-5 joined by |)."""
     secret = settings.CALLBACK_SECRET.encode("utf-8") if settings.CALLBACK_SECRET else b""
     return hmac.new(secret, base.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _base36_to_int(value: str) -> int:
+    try:
+        return int(value, 36)
+    except (TypeError, ValueError):
+        raise ValueError("Invalid expiry in callback_data") from None
+
+
+def _validate_compact_callback_data(callback_data: str) -> dict[str, str]:
+    fields = _parse_compact_callback_fields(callback_data)
+    if fields is None:
+        raise ValueError("Invalid callback_data format")
+
+    signing_payload = (
+        f"{COMPACT_CALLBACK_VERSION}|{fields['alias']}|"
+        f"{fields['task_external_id']}|{fields['exp']}"
+    )
+    expected_sig = _compute_callback_signature(signing_payload)[:16]
+    if not hmac.compare_digest(fields["sig"], expected_sig):
+        raise ValueError("Invalid callback_data signature")
+
+    if time.time() > _base36_to_int(fields["exp"]):
+        raise ValueError("Callback data expired")
+
+    return fields
 
 
 def _validate_callback_data(callback_data: str) -> dict[str, str]:
@@ -82,9 +149,15 @@ def _validate_callback_data(callback_data: str) -> dict[str, str]:
     Validate callback_data: parse, check signature, check expiry.
     Returns parsed fields on success. Raises ValueError on validation failure.
     """
+    if callback_data.startswith(f"{COMPACT_CALLBACK_VERSION}{COMPACT_CALLBACK_SEP}"):
+        return _validate_compact_callback_data(callback_data)
+
     fields = _parse_callback_fields(callback_data)
     if fields is None:
         raise ValueError("Invalid callback_data format")
+
+    if fields["action"] not in set(COMPACT_ACTION_ALIASES.values()):
+        raise ValueError("Unknown callback action")
 
     # Signature check: base = everything except last field
     base = CALLBACK_FIELD_SEP.join(callback_data.split(CALLBACK_FIELD_SEP)[:6])
@@ -303,6 +376,26 @@ async def callback_answer(
             error="Task not found",
         )
 
+    # Compact callbacks bind to the short external_id; legacy callbacks bind to UUID.
+    if fields.get("protocol") == "compact" and fields.get("task_external_id") != task.external_id:
+        return CallbackAnswerRead(
+            task_id=task_id,
+            task_status=task.status,
+            task_external_id=task.external_id,
+            action_valid=False,
+            action=action,
+            error="Task external_id mismatch",
+        )
+    if fields.get("protocol") == "legacy" and fields.get("task_id") != str(task_id):
+        return CallbackAnswerRead(
+            task_id=task_id,
+            task_status=task.status,
+            task_external_id=task.external_id,
+            action_valid=False,
+            action=action,
+            error="Task id mismatch",
+        )
+
     # 3. Validate chat/thread/user constraints if provided
     if body.telegram_chat_id is not None and task.telegram_chat_id is not None:
         if body.telegram_chat_id != task.telegram_chat_id:
@@ -325,7 +418,8 @@ async def callback_answer(
                 error="Thread mismatch",
             )
 
-    # 4. Load approval if approval_id is present
+    # 4. Resolve approval. Compact callbacks never carry approval UUIDs, so
+    # approve/reject resolve the current pending approval for the task.
     approval_id: UUID | None = None
     approval_status: str | None = None
     try:
@@ -350,6 +444,25 @@ async def callback_answer(
                     action=action,
                     error="Approval task mismatch",
                 )
+
+    if fields.get("protocol") == "compact" and action in {"approve", "reject"}:
+        pending_approvals = [
+            approval
+            for approval in await asvc.list_by_task(task_id)
+            if approval.status == ApprovalStatus.PENDING.value
+        ]
+        if not pending_approvals:
+            return CallbackAnswerRead(
+                task_id=task_id,
+                task_status=task.status,
+                task_external_id=task.external_id,
+                action_valid=False,
+                action=action,
+                error="No pending approval for task",
+            )
+        approval = pending_approvals[0]
+        approval_id = approval.id
+        approval_status = approval.status
 
     # 5. Audit event
     await esvc.create(

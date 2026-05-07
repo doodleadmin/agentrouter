@@ -15,6 +15,7 @@ class FakeApiClient:
         self._approve_calls = []
         self._reject_calls = []
         self._cb_calls = []
+        self._find_calls = []
 
     async def get_task(self, task_id: str):
         return self._task
@@ -40,6 +41,12 @@ class FakeApiClient:
     async def callback_answer(self, task_id: str, body):
         self._cb_calls.append((task_id, body))
         return self._cb_result
+
+    async def find_task_by_external_id(self, external_id: str):
+        self._find_calls.append(external_id)
+        if external_id == "task-0004":
+            return {"id": "550e8400-e29b-41d4-a716-446655440000", "external_id": external_id}
+        return None
 
 
 class FakeCallbackQuery:
@@ -133,6 +140,36 @@ async def test_callback_refresh_action(monkeypatch) -> None:
     assert len(fake._cb_calls) == 1
     # Should have called answer("Refreshed")
     assert any("Refreshed" in a["text"] for a in query.answers)
+
+
+async def test_callback_compact_external_id_resolves_before_callback_answer(monkeypatch) -> None:
+    cb_data = "v1:f:task-0004:t6gc0w:0123456789abcdef"
+    query = FakeCallbackQuery(cb_data)
+    task = {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "external_id": "task-0004",
+        "title": "Test task",
+        "status": "created",
+        "risk_level": "low",
+        "intent": None,
+        "project_id": None,
+        "agent_id": None,
+        "plan_text": None,
+        "result_summary": None,
+        "payload": {},
+        "created_at": "2026-05-05T12:00:00.000Z",
+        "updated_at": "2026-05-05T12:00:00.000Z",
+    }
+    fake = FakeApiClient(
+        task_return=task,
+        cb_result={"action_valid": True, "action": "refresh", "approval_id": None},
+    )
+    monkeypatch.setattr(mod, "get_api_client", lambda: fake)
+    await mod.handle_callback(query)
+
+    assert fake._find_calls == ["task-0004"]
+    assert fake._cb_calls[0][0] == "550e8400-e29b-41d4-a716-446655440000"
+    assert fake._cb_calls[0][1]["callback_data"] == cb_data
 
 
 async def test_callback_approve_action(monkeypatch) -> None:
