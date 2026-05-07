@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 57 |
+| **Task logs** | 58 |
 | **Шаблоны** | 5 |
 
 ---
@@ -123,6 +123,7 @@
 | [2026-05-07-task-tg06-phase3-live-test.md](tasks/2026-05-07-task-tg06-phase3-live-test.md) | TG-06 Phase 3: Live Compact Callback E2E |
 | [2026-05-07-task-infra-01-dev-runtime-config.md](tasks/2026-05-07-task-infra-01-dev-runtime-config.md) | INFRA-01: Dev Runtime Config Drift Fix |
 | [2026-05-07-task-infra-02-tg06-regression-live-smoke.md](tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md) | INFRA-02: TG-06 Regression Live Smoke |
+| [2026-05-07-task-mem04-memory-checkpoints.md](tasks/2026-05-07-task-mem04-memory-checkpoints.md) | MEM-04 Phase 2: Soft Mandatory Memory Checkpoints |
 
 ---
 

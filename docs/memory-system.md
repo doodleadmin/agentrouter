@@ -97,6 +97,9 @@ Vault НЕ является базой данных. Это набор Markdown-
 3. **Добавить заметку** в `.ai_memory/projects/<slug>/agent_notes.md`
 4. **Обновить `projects/<slug>/current_state.md`** если проект изменился
 
+> **Memory checkpoint обязателен.** Задача не считается завершённой без memory checkpoint.
+> Подробный runbook: [.ai_memory/runbooks/memory-checkpoint.md](../.ai_memory/runbooks/memory-checkpoint.md)
+
 ### При архитектурном решении
 
 1. Создать ADR в `.ai_memory/decisions/00XX-<slug>.md`

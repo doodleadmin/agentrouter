@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (INFRA-02 TG-06 Regression Live Smoke PASS)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS.
+**Фаза:** Phase 1 — Telegram Routing (MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE.
 **Дата последнего обновления:** 2026-05-07
 **Project root:** `F:\dev\agentrouter`
 
@@ -297,6 +297,22 @@
 - **Verdict:** PASS — TG-06 compact inline callback protocol is production-viable with zero manual workarounds. INFRA-01 fixes confirmed working.
 - Task summary: [.ai_memory/tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md](.ai_memory/tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md)
 
+### 2026-05-07 — MEM-04 Phase 2: Soft Mandatory Memory Checkpoints
+- **Агент:** knowledge-steward
+- **Контур:** docs only; без deploy/migrations/.env/secrets/кода.
+- **Цель:** Implement soft enforcement of mandatory memory checkpoints for all significant tasks.
+- **Фаза 1 findings (MEM-04):** No automated enforcement existed. 0 of 57 legacy task logs contained "Memory updated" phrase — audit gap documented but not backfilled.
+- **Фаза 2 implementation (docs-only, no code changes):**
+  - `AGENTS.md` — added rule #7 "Memory checkpoint — обязательное правило" + full section with mandatory rules (when required, when skippable, closeout format, enforcement phases).
+  - `.ai_memory/runbooks/memory-checkpoint.md` — NEW runbook (10 sections: definition, when required, when skippable, required files, file contents, closeout report format, pre-git checklist, enforcement phases, template reference, FAQ).
+  - `.ai_memory/templates/task-summary-template.md` — enhanced "Память обновлена" checklist from 3 items to 7 items with mandatory note.
+  - `docs/memory-system.md` — added memory checkpoint reference and link to runbook after "После каждой задачи" subsection.
+- **Key decision:** Phase 2 = soft enforcement via AGENTS.md/runbook/template (docs-only). Phase 3 API-level gate (`memory_checkpoint_done` flag in DB) deferred — activate when soft enforcement proves insufficient.
+- **Enforcement:** studio-orchestrator responsible for verifying checkpoints before closing tasks.
+- **Changed files:** 4 modified (`AGENTS.md`, `PROJECT_MEMORY.md`, `.ai_memory/current_state.md`, `.ai_memory/_INDEX.md`) + 2 new (runbook + task log) + 2 updated (`task-summary-template.md`, `docs/memory-system.md`).
+- **Risk:** low — docs-only, no code/deploy/migrations.
+- Task summary: [.ai_memory/tasks/2026-05-07-task-mem04-memory-checkpoints.md](.ai_memory/tasks/2026-05-07-task-mem04-memory-checkpoints.md)
+
 ### 2026-05-06 — TG-04 Phase 5: Final Live Private Chat E2E
 - **Агент:** studio-orchestrator (coordinated execution)
 - **Контур:** local WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub.
@@ -440,6 +456,7 @@
 - [x] **DOP-02:** Dockerfiles + sandbox compose (sandbox isolation, non-root, no-new-privileges, limits)
 - [x] Worker execute pipeline (WRK-03)
 - [x] Memory indexing + retrieval (MEM-03)
+- [x] **MEM-04 Phase 2:** Soft mandatory memory checkpoints (AGENTS.md rule #7, runbook, template, docs)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация

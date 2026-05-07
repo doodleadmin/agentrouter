@@ -12,6 +12,7 @@ Agent Mission Control — orchestration platform для управления AI-
 4. **Безопасность прежде всего.** Не трогать production secrets, не делать force push, не удалять миграции без подтверждения.
 5. **Память обязательна.** После каждой задачи обновить `.ai_memory/` и `PROJECT_MEMORY.md`.
 6. **Ясный формат ответа.** Каждый ответ агента должен содержать: plan, changed files, commands run, risks, next steps.
+7. **Memory checkpoint — обязательное правило.** Значимая задача не считается завершённой, пока не сделан memory checkpoint. Подробнее: `.ai_memory/runbooks/memory-checkpoint.md`.
 
 ## Project Root
 
@@ -114,6 +115,52 @@ git push origin agent/<task-id>
 - кратко описать изменения
 - обновить `PROJECT_MEMORY.md` или `.ai_memory/`
 - остановиться и ждать следующего approve
+
+## Memory checkpoint — обязательное правило
+
+### Правило
+Значимая задача не считается завершённой, пока не сделан **memory checkpoint**.
+
+### Что такое memory checkpoint
+Обновление проектной памяти в `.ai_memory/` и `PROJECT_MEMORY.md` с фиксацией результата задачи.
+
+### Обязательные файлы при memory checkpoint
+- `PROJECT_MEMORY.md` — статус проекта
+- `.ai_memory/current_state.md` — активный статус системы
+- `.ai_memory/_INDEX.md` — навигация и индексы
+- `.ai_memory/tasks/<date>-task-<slug>.md` — task log
+
+### Когда memory checkpoint обязателен
+- Задача завершена (completed)
+- Задача провалена с полезными выводами (failed)
+- Задача отменена с полезными выводами (cancelled)
+- Live smoke / валидация
+- Bug fix
+- Infra/config изменение
+- Архитектурное/дизайн-решение
+
+### Когда можно пропустить
+- Тривиальный typo
+- Исследовательская команда без результата
+- Повторная неудачная попытка без новых данных
+- Пользователь явно просит не обновлять память
+
+**Пропуск должен быть явно указан в closeout report с причиной.**
+
+### Формат closeout report
+```
+## Memory checkpoint
+- **Memory updated:** yes/no
+- **Files updated:** <список>
+- **Commit hash:** <если сделан>
+- **Skipped reason:** <причина пропуска, если no>
+```
+
+### Enforcement
+- **Phase 2 (сейчас):** Soft enforcement через AGENTS.md, runbook и template.
+- **Phase 3 (будущее):** API-level gate — задача не может перейти в `completed`/`failed` без `memory_checkpoint_done` флага в БД.
+
+Подробный runbook: `.ai_memory/runbooks/memory-checkpoint.md`
 
 ## Команды проекта
 
