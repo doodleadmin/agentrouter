@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (TG-06 Phase 2 compact callback protocol complete)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE.
+**Фаза:** Phase 1 — Telegram Routing (TG-06 Phase 3 Live Callback E2E COMPLETE)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE.
 **Дата последнего обновления:** 2026-05-07
 **Project root:** `F:\dev\agentrouter`
 
@@ -221,6 +221,27 @@
 - **Validation:** API compileall/ruff/pytest 275 passed; telegram-bot compileall/ruff/pytest 79 passed; worker compileall/ruff/pytest 98 passed.
 - **Verdict:** COMPLETE
 - Task summary: [.ai_memory/tasks/2026-05-07-task-tg06-phase2-compact-callbacks.md](.ai_memory/tasks/2026-05-07-task-tg06-phase2-compact-callbacks.md)
+
+### 2026-05-07 — TG-06 Phase 3: Live Compact Callback E2E
+- **Агент:** studio-orchestrator
+- **Контур:** live WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API stub + native PostgreSQL 14 + Redis.
+- **Цель:** Validate compact Telegram callback protocol end-to-end with live inline button interaction.
+- **Results:**
+  - Medium-risk task (task-0002) created via worker ✅
+  - Plan generated, approval record created (fb8f305a) ✅
+  - User typed /status and clicked Approve inline button ✅
+  - Callback data: 38 bytes (under Telegram's 64-byte limit) ✅
+  - Callback validation succeeded (POST /callback-answer → 200, action_valid=true) ✅
+  - Approve flow completed (POST /approvals/{id}/approve → 200) ✅
+  - Task status: waiting_approval → approved ✅
+  - Approval: pending → approved, approved_by=1113930428 ✅
+- **Bugs found & fixed during live test:**
+  1. CALLBACK_SECRET mismatch: start-api-stub.sh doesn't load .env.local, so API used empty CALLBACK_SECRET. Bot used correct secret from .env.local → all callbacks rejected. Fixed by creating ~/agentrouter/.env with CALLBACK_SECRET.
+  2. project.repo_path invalid: DB had `/opt/agent-control/repos/agentrouter` which doesn't exist on the server. Fixed to `/root/agentrouter`.
+- **Validation baseline:** API 275/275 ✅, Telegram-bot 79/79 ✅, Worker 98/98 ✅, ruff clean ✅
+- **No BUTTON_DATA_INVALID errors in any logs.**
+- **Verdict:** COMPLETE
+- Task summary: [.ai_memory/tasks/2026-05-07-task-tg06-phase3-live-test.md](.ai_memory/tasks/2026-05-07-task-tg06-phase3-live-test.md)
 
 ### 2026-05-06 — TG-04 Phase 5: Final Live Private Chat E2E
 - **Агент:** studio-orchestrator (coordinated execution)
