@@ -7,9 +7,13 @@ Creates a Celery app with:
 - Route decorators per task module
 """
 
+import os
 import signal
+import sys
 
+import celery.apps.worker as _worker_module
 from celery import Celery
+from celery.platforms import close_open_fds
 from celery.signals import worker_ready
 
 from app.config import settings
@@ -83,16 +87,13 @@ celery_app = create_celery_app()
 # Fix: monkey-patch _reload_current_worker to use `-m celery` instead.
 # Also override the SIGHUP handler to SIG_IGN as defense in depth.
 
-import celery.apps.worker as _worker_module
 
 def _fixed_reload_current_worker():
     """Fixed restart: uses `python -m celery` to preserve package context."""
-    import os
-    import sys
-    from celery.platforms import close_open_fds
     close_open_fds([sys.__stdin__, sys.__stdout__, sys.__stderr__])
     # Use -m celery so relative imports in celery/__main__.py work correctly
     os.execv(sys.executable, [sys.executable, '-m', 'celery'] + sys.argv[1:])
+
 
 # Monkey-patch the broken function
 _worker_module._reload_current_worker = _fixed_reload_current_worker

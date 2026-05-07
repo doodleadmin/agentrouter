@@ -1,5 +1,7 @@
 """Tests for memory retrieval service with fake repository."""
 
+import pytest
+
 from app.services.memory_embedding_service import DeterministicEmbeddingProvider
 from app.services.memory_retrieval_service import (
     MemoryRetrievalService,
@@ -20,6 +22,7 @@ class FakeRepo:
         return results[: max(limit * 8, 50)]
 
 
+@pytest.mark.anyio
 async def test_retrieval_returns_top_k() -> None:
     embedder = DeterministicEmbeddingProvider(dimension=1536)
     q = "how to deploy staging"
@@ -51,6 +54,7 @@ async def test_retrieval_returns_top_k() -> None:
     assert items[0].path == "projects/a/deployment.md"
 
 
+@pytest.mark.anyio
 async def test_retrieval_filters_by_project_and_scope() -> None:
     embedder = DeterministicEmbeddingProvider(dimension=1536)
     records = [

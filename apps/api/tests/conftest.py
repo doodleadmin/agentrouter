@@ -26,6 +26,12 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 
 @pytest.fixture
+def anyio_backend():
+    """Force asyncio backend for anyio tests to avoid pytest-asyncio loop mismatch."""
+    return "asyncio"
+
+
+@pytest.fixture
 async def test_session() -> AsyncGenerator[AsyncSession, None]:
     """Create a fresh DB session bound to one connection; tables created/dropped per test."""
     engine = create_async_engine(

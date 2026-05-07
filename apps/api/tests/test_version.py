@@ -19,6 +19,7 @@ async def client() -> AsyncClient:
         yield ac
 
 
+@pytest.mark.anyio
 class TestVersionEndpoint:
     """GET /version behaviour."""
 

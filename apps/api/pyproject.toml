@@ -54,5 +54,7 @@ include = [
 ]
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
+# API tests use @pytest.mark.anyio with anyio_backend="asyncio" fixture.
+# strict mode avoids pytest-asyncio/anyio event-loop mismatch.
+asyncio_mode = "strict"
 testpaths = ["tests"]
