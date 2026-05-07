@@ -1,4 +1,4 @@
-"""TG-03: Verify GET /tasks/{id}/plan and POST /tasks/{id}/callback-answer endpoints."""
+"""TG-03: Verify GET /tasks/{id}/plan and POST /tasks/{id}/callback-answer endpoints (SEC-01 wired)."""
 
 import hashlib
 import hmac
@@ -7,6 +7,8 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+
+from tests.conftest import TEST_ADMIN_ID
 
 # ── helpers ────────────────────────────────────────────────────────────
 
@@ -151,7 +153,10 @@ async def test_callback_answer_compact_approve_reject_resolve_pending_approval(a
     for alias, action in [("a", "approve"), ("r", "reject")]:
         cb = _make_compact_callback_data(alias, external_id)
         assert approval["id"] not in cb
-        r = await async_client.post(f"/tasks/{task_id}/callback-answer", json={"callback_data": cb})
+        r = await async_client.post(f"/tasks/{task_id}/callback-answer", json={
+            "callback_data": cb,
+            "telegram_user_id": TEST_ADMIN_ID,
+        })
         data = r.json()
         assert data["action_valid"] is True
         assert data["action"] == action

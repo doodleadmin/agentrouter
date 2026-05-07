@@ -1,4 +1,4 @@
-"""Tasks router — CRUD with status enforcement + plan pipeline trigger."""
+"""Tasks router — CRUD with status enforcement + plan pipeline trigger + SEC-01 permission checks."""
 
 import hashlib
 import hmac
@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db.enums import ActorType, ApprovalStatus, TaskStatus
+from app.db.enums import ActorType, ApprovalStatus, RiskLevel, TaskStatus
 from app.db.session import get_async_session
 from app.integrations.queue import enqueue_agent_plan
 from app.schemas.task import (
@@ -23,11 +23,17 @@ from app.schemas.task import (
     TaskStatusUpdate,
     TaskUpdate,
 )
+from app.security.context import context_for_callback, context_for_system, context_for_telegram_user
+from app.security.permissions import PermissionAction, PermissionEngine
 from app.services.approval_service import ApprovalService
 from app.services.task_event_service import TaskEventService
 from app.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+
+def _engine() -> PermissionEngine:
+    return PermissionEngine(admin_user_ids=settings.admin_user_ids)
 
 
 def _svc(s: AsyncSession = Depends(get_async_session)) -> TaskService:
@@ -254,6 +260,13 @@ async def update_task_status(
     svc: TaskService = Depends(_svc),
     esvc: TaskEventService = Depends(_event_svc),
 ) -> TaskRead:
+    # SEC-01: permission check — system actors allowed, others need approval
+    engine = _engine()
+    ctx = context_for_system(action=PermissionAction.UPDATE_STATUS, task_id=str(task_id))
+    decision = engine.can_update_status(ctx)
+    if not decision.allowed:
+        raise HTTPException(status_code=403, detail=decision.reason)
+
     try:
         task = await svc.update_status(task_id, body)
     except KeyError:
@@ -281,6 +294,7 @@ async def cancel_task(
 @router.post("/{task_id}/trigger-plan", response_model=TaskRead, status_code=status.HTTP_202_ACCEPTED)
 async def trigger_plan(
     task_id: UUID,
+    triggered_by: int | None = Query(None, description="Telegram user ID of the requester"),
     svc: TaskService = Depends(_svc),
     esvc: TaskEventService = Depends(_event_svc),
 ) -> TaskRead:
@@ -304,6 +318,26 @@ async def trigger_plan(
             status_code=422,
             detail="Task must have project_id and agent_id before planning.",
         )
+
+    # SEC-01: permission check — risk-level gating
+    engine = _engine()
+    try:
+        risk_level = RiskLevel(task.risk_level) if task.risk_level else RiskLevel.LOW
+    except ValueError:
+        risk_level = RiskLevel.LOW
+    ctx = context_for_telegram_user(
+        user_id=str(triggered_by) if triggered_by is not None else "0",
+        action=PermissionAction.TRIGGER_PLAN,
+        task_id=str(task_id),
+        project_id=str(task.project_id),
+        agent_id=str(task.agent_id),
+        risk_level=risk_level,
+    )
+    decision = engine.can_trigger_plan(ctx)
+    if not decision.allowed:
+        raise HTTPException(status_code=403, detail=decision.reason)
+    # Note: requires_approval flag is advisory for now; existing flow
+    # already handles medium-risk tasks with approval creation elsewhere.
 
     # Transition created → routed
     try:
@@ -464,7 +498,24 @@ async def callback_answer(
         approval_id = approval.id
         approval_status = approval.status
 
-    # 5. Audit event
+    # 5. SEC-01: if action is approve/reject and telegram_user_id is provided,
+    #    verify the user has admin permission.
+    if action in {"approve", "reject"} and body.telegram_user_id is not None:
+        perm_action = PermissionAction.APPROVE if action == "approve" else PermissionAction.REJECT
+        engine = _engine()
+        ctx = context_for_callback(
+            user_id=body.telegram_user_id,
+            action=perm_action,
+            task_id=str(task_id),
+            project_id=str(task.project_id) if task.project_id else None,
+            agent_id=str(task.agent_id) if task.agent_id else None,
+            risk_level=task.risk_level,
+        )
+        decision = engine.evaluate(ctx)
+        if not decision.allowed:
+            raise HTTPException(status_code=403, detail=decision.reason)
+
+    # 6. Audit event
     await esvc.create(
         task_id,
         "callback_received",

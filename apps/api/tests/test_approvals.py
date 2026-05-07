@@ -1,7 +1,9 @@
-"""Tests for approvals router endpoints."""
+"""Tests for approvals router endpoints — SEC-01 Phase 2 wired."""
 
 import pytest
 from httpx import AsyncClient
+
+from tests.conftest import TEST_ADMIN_ID
 
 
 @pytest.fixture
@@ -49,7 +51,10 @@ async def test_approve_approval(async_client: AsyncClient, existing_task_id: str
         json={"action": "deploy_production"},
     )
     approval_id = create.json()["id"]
-    resp = await async_client.post(f"/approvals/{approval_id}/approve")
+    resp = await async_client.post(
+        f"/approvals/{approval_id}/approve",
+        json={"approved_by": TEST_ADMIN_ID},
+    )
     assert resp.status_code == 200
     assert resp.json()["status"] == "approved"
 
@@ -61,7 +66,10 @@ async def test_reject_approval(async_client: AsyncClient, existing_task_id: str)
         json={"action": "change_env"},
     )
     approval_id = create.json()["id"]
-    resp = await async_client.post(f"/approvals/{approval_id}/reject", json={"reason": "too risky"})
+    resp = await async_client.post(
+        f"/approvals/{approval_id}/reject",
+        json={"reason": "too risky", "approved_by": TEST_ADMIN_ID},
+    )
     assert resp.status_code == 200
     assert resp.json()["status"] == "rejected"
     assert resp.json()["reason"] == "too risky"
@@ -75,9 +83,15 @@ async def test_double_approve_rejected(async_client: AsyncClient, existing_task_
     )
     approval_id = create.json()["id"]
     # first approve
-    await async_client.post(f"/approvals/{approval_id}/approve")
+    await async_client.post(
+        f"/approvals/{approval_id}/approve",
+        json={"approved_by": TEST_ADMIN_ID},
+    )
     # second approve should fail with 409 (already decided)
-    resp = await async_client.post(f"/approvals/{approval_id}/approve")
+    resp = await async_client.post(
+        f"/approvals/{approval_id}/approve",
+        json={"approved_by": TEST_ADMIN_ID},
+    )
     assert resp.status_code == 409
 
 
@@ -88,8 +102,14 @@ async def test_double_reject_rejected(async_client: AsyncClient, existing_task_i
         json={"action": "delete_files"},
     )
     approval_id = create.json()["id"]
-    await async_client.post(f"/approvals/{approval_id}/reject")
-    resp = await async_client.post(f"/approvals/{approval_id}/reject")
+    await async_client.post(
+        f"/approvals/{approval_id}/reject",
+        json={"approved_by": TEST_ADMIN_ID},
+    )
+    resp = await async_client.post(
+        f"/approvals/{approval_id}/reject",
+        json={"approved_by": TEST_ADMIN_ID},
+    )
     assert resp.status_code == 409
 
 
@@ -106,7 +126,10 @@ async def test_events_created_on_approve(async_client: AsyncClient, existing_tas
         json={"action": "deploy_staging"},
     )
     approval_id = create.json()["id"]
-    await async_client.post(f"/approvals/{approval_id}/approve")
+    await async_client.post(
+        f"/approvals/{approval_id}/approve",
+        json={"approved_by": TEST_ADMIN_ID},
+    )
 
     resp = await async_client.get(f"/events/tasks/{existing_task_id}/events")
     events = resp.json()
@@ -124,3 +147,33 @@ async def test_events_list_all(async_client: AsyncClient) -> None:
     resp = await async_client.get("/events", params={"task_id": task_id})
     assert resp.status_code == 200
     assert len(resp.json()) == 1
+
+
+@pytest.mark.anyio
+async def test_approve_denied_non_admin(async_client: AsyncClient, existing_task_id: str) -> None:
+    """SEC-01: non-admin user gets 403 on approve."""
+    create = await async_client.post(
+        f"/approvals/tasks/{existing_task_id}/approvals",
+        json={"action": "deploy_staging"},
+    )
+    approval_id = create.json()["id"]
+    resp = await async_client.post(
+        f"/approvals/{approval_id}/approve",
+        json={"approved_by": 999999999},
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.anyio
+async def test_reject_denied_non_admin(async_client: AsyncClient, existing_task_id: str) -> None:
+    """SEC-01: non-admin user gets 403 on reject."""
+    create = await async_client.post(
+        f"/approvals/tasks/{existing_task_id}/approvals",
+        json={"action": "deploy_staging"},
+    )
+    approval_id = create.json()["id"]
+    resp = await async_client.post(
+        f"/approvals/{approval_id}/reject",
+        json={"approved_by": 999999999},
+    )
+    assert resp.status_code == 403

@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE.
+**Фаза:** Phase 1 — Telegram Routing (SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE.
 **Дата последнего обновления:** 2026-05-07
 **Project root:** `F:\dev\agentrouter`
 
@@ -297,6 +297,37 @@
 - **Verdict:** PASS — TG-06 compact inline callback protocol is production-viable with zero manual workarounds. INFRA-01 fixes confirmed working.
 - Task summary: [.ai_memory/tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md](.ai_memory/tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md)
 
+### 2026-05-07 — SEC-01 Phase 2: Permission Engine MVP
+
+- **Агент:** security-engineer
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Цель:** Implement centralized Permission Engine with fail-closed design and wire to critical API endpoints.
+- **Сделано:**
+  - **Package `apps/api/app/security/` создан:**
+    - `permissions.py` — `PermissionEngine` (fail-closed), `PermissionAction` enum (14 actions), `PermissionDecision` + `PermissionContext` Pydantic models
+    - `context.py` — helper factories (`context_for_telegram_user`, `context_for_system`, `context_for_callback`)
+  - **5 endpoints wired:**
+    1. `POST /approvals/{id}/approve` — admin-gated via `approved_by` param, 403 for non-admin
+    2. `POST /approvals/{id}/reject` — same with `rejected_by`
+    3. `POST /tasks/{id}/trigger-plan` — risk-level gating (low→allow, medium→allow+approval, high/critical→deny)
+    4. `POST /tasks/{id}/callback-answer` — approve/reject check telegram_user_id against admin list
+    5. `PATCH /tasks/{id}/status` — system actor check
+  - **Permission rules:**
+    - `can_approve/reject`: admin-gated (actor_id must be in `TELEGRAM_ADMIN_USER_IDS`; empty list = fail-closed)
+    - `can_trigger_plan`: LOW→allowed, MEDIUM→allowed+requires_approval, HIGH/CRITICAL→denied (missing context also denied)
+    - `can_update_status`: SYSTEM allowed, USER allowed with approval flag, others denied
+    - Stubs (always allow): `create_task`, `execute_runtime`, `access_project`, `write_memory`, `cancel_task`, `callback_validate`, `modify_project`, `modify_agent`
+    - Unknown actions: always denied
+  - **Конфиг:** `apps/api/app/config.py` — добавлен `TELEGRAM_ADMIN_USER_IDS`
+  - **Тесты:** 19 новых unit tests в `test_security_permissions.py` + 3 integration tests
+- **Валидация:** API 297/297 ✅ (was 275, +19 unit + 3 integration), Telegram-bot 79/79 ✅, Worker 98/98 ✅, ruff clean, compileall clean
+- **Известные ограничения (Phase 3 deferrals):** Agent permissions JSONB not read by code yet; runtime/memory/project access stubs; `can_update_status` USER flag not enforced at endpoint level; no DB schema changes; no migrations
+- **Безопасность:** No secrets exposed, no .env changes, no live Telegram/OpenCode/Deploy, compact callback protocol preserved, admin gate fail-closed preserved
+- **Изменённые файлы (10):**
+  - NEW: `apps/api/app/security/__init__.py`, `permissions.py`, `context.py`, `apps/api/tests/test_security_permissions.py`
+  - MODIFIED: `apps/api/app/config.py`, `apps/api/app/routers/approvals.py`, `apps/api/app/routers/tasks.py`, `apps/api/app/routers/runtime.py`, `apps/api/tests/conftest.py`, `apps/api/tests/test_approvals.py`, `apps/api/tests/test_approvals_idempotency.py`, `apps/api/tests/test_tasks_plan_endpoint.py`
+- Task summary: [.ai_memory/tasks/2026-05-07-task-sec01-permission-engine.md](.ai_memory/tasks/2026-05-07-task-sec01-permission-engine.md)
+
 ### 2026-05-07 — MEM-04 Phase 2: Soft Mandatory Memory Checkpoints
 - **Агент:** knowledge-steward
 - **Контур:** docs only; без deploy/migrations/.env/secrets/кода.
@@ -457,6 +488,7 @@
 - [x] Worker execute pipeline (WRK-03)
 - [x] Memory indexing + retrieval (MEM-03)
 - [x] **MEM-04 Phase 2:** Soft mandatory memory checkpoints (AGENTS.md rule #7, runbook, template, docs)
+- [x] **SEC-01 Phase 2:** Permission Engine MVP (fail-closed, 14 actions, 5 endpoints wired, 297/297 tests)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация

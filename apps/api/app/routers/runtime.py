@@ -1,4 +1,8 @@
-"""Runtime router for BE-03 plan-only task planning."""
+"""Runtime router for BE-03 plan-only task planning.
+
+SEC-01 Phase 2: Permission checks deferred to Phase 3.
+See app/security/permissions.py for the PermissionEngine.
+"""
 
 from uuid import UUID
 
@@ -21,6 +25,8 @@ async def plan_task_runtime(
     task_id: UUID,
     svc: RuntimeService = Depends(_svc),
 ) -> TaskRead:
+    # TODO(SEC-01 Phase 3): Add PermissionEngine.can_execute_runtime() check here.
+    # Currently stubbed — always allowed.
     try:
         task = await svc.generate_plan_for_task(task_id)
     except KeyError as exc:

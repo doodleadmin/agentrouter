@@ -77,5 +77,16 @@ class Settings(BaseSettings):
     CALLBACK_SECRET: str = ""  # HMAC signing secret for callback_data integrity
     CALLBACK_MAX_AGE_SECONDS: int = 300  # max age for callback actions
 
+    # Security (SEC-01)
+    TELEGRAM_ADMIN_USER_IDS: str = ""  # comma-separated Telegram user IDs; empty = fail-closed
+
+    @property
+    def admin_user_ids(self) -> list[str]:
+        """Return admin user IDs as list of strings. Empty = fail-closed."""
+        raw = self.TELEGRAM_ADMIN_USER_IDS
+        if not raw or raw.strip() == "":
+            return []
+        return [x.strip() for x in raw.split(",") if x.strip()]
+
 
 settings = Settings()

@@ -17,6 +17,16 @@ from app.config import settings
 from app.db.base import Base
 from app.db.session import get_async_session
 
+# SEC-01 Phase 2: test admin user ID used by integration tests
+TEST_ADMIN_ID = 1113930428
+TEST_ADMIN_ID_STR = str(TEST_ADMIN_ID)
+
+
+@pytest.fixture(autouse=True)
+def _set_admin_ids() -> None:
+    """Ensure TELEGRAM_ADMIN_USER_IDS includes the test admin for integration tests."""
+    settings.TELEGRAM_ADMIN_USER_IDS = TEST_ADMIN_ID_STR
+
 
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:

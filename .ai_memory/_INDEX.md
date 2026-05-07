@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 58 |
+| **Task logs** | 59 |
 | **Шаблоны** | 5 |
 
 ---
@@ -124,6 +124,7 @@
 | [2026-05-07-task-infra-01-dev-runtime-config.md](tasks/2026-05-07-task-infra-01-dev-runtime-config.md) | INFRA-01: Dev Runtime Config Drift Fix |
 | [2026-05-07-task-infra-02-tg06-regression-live-smoke.md](tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md) | INFRA-02: TG-06 Regression Live Smoke |
 | [2026-05-07-task-mem04-memory-checkpoints.md](tasks/2026-05-07-task-mem04-memory-checkpoints.md) | MEM-04 Phase 2: Soft Mandatory Memory Checkpoints |
+| [2026-05-07-task-sec01-permission-engine.md](tasks/2026-05-07-task-sec01-permission-engine.md) | SEC-01 Phase 2: Permission Engine MVP |
 
 ---
 

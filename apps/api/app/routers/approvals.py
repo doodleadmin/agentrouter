@@ -1,18 +1,25 @@
-"""Approvals router — create request, approve, reject."""
+"""Approvals router — create request, approve, reject (SEC-01 wired)."""
 
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db.enums import TaskStatus
 from app.db.session import get_async_session
 from app.schemas.approval import ApprovalCreate, ApprovalDecideIn, ApprovalRead
 from app.schemas.task import TaskStatusUpdate
+from app.security.context import context_for_telegram_user
+from app.security.permissions import PermissionAction, PermissionEngine
 from app.services.approval_service import ApprovalService
 from app.services.task_service import TaskService
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
+
+
+def _engine() -> PermissionEngine:
+    return PermissionEngine(admin_user_ids=settings.admin_user_ids)
 
 
 def _svc(s: AsyncSession = Depends(get_async_session)) -> ApprovalService:
@@ -63,6 +70,18 @@ async def approve_approval(
     svc: ApprovalService = Depends(_svc),
     task_svc: TaskService = Depends(_task_svc),
 ) -> ApprovalRead:
+    # SEC-01: permission check — admin-gated
+    engine = _engine()
+    user_id = str(body.approved_by) if body and body.approved_by is not None else None
+    ctx = context_for_telegram_user(
+        user_id=user_id or "0",
+        action=PermissionAction.APPROVE,
+        task_id=str(approval_id),  # temporary — will resolve task_id below
+    )
+    decision = engine.can_approve(ctx)
+    if not decision.allowed:
+        raise HTTPException(status_code=403, detail=decision.reason)
+
     try:
         obj = await svc.approve(approval_id, body)
     except KeyError:
@@ -88,6 +107,18 @@ async def reject_approval(
     svc: ApprovalService = Depends(_svc),
     task_svc: TaskService = Depends(_task_svc),
 ) -> ApprovalRead:
+    # SEC-01: permission check — admin-gated
+    engine = _engine()
+    user_id = str(body.approved_by) if body and body.approved_by is not None else None
+    ctx = context_for_telegram_user(
+        user_id=user_id or "0",
+        action=PermissionAction.REJECT,
+        task_id=str(approval_id),
+    )
+    decision = engine.can_reject(ctx)
+    if not decision.allowed:
+        raise HTTPException(status_code=403, detail=decision.reason)
+
     try:
         obj = await svc.reject(approval_id, body)
     except KeyError:
