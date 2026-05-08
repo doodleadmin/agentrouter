@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 69 |
+| **Task logs** | 70 |
 | **Шаблоны** | 5 |
 
 ---
@@ -135,6 +135,7 @@
 | [2026-05-08-task-dop03-production-runtime-templates.md](tasks/2026-05-08-task-dop03-production-runtime-templates.md) | DOP-03 Phase 2: Production Runtime Templates + Enhanced Health Check |
 | [2026-05-08-task-dop03-phase3-dry-run-validation.md](tasks/2026-05-08-task-dop03-phase3-dry-run-validation.md) | DOP-03 Phase 3: Production Templates Dry-run Validation |
 | [2026-05-08-task-dop04-release-workflow.md](tasks/2026-05-08-task-dop04-release-workflow.md) | DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts + Memory Checkpoint |
+| [2026-05-08-task-dop04-phase3-dry-run-release-validation.md](tasks/2026-05-08-task-dop04-phase3-dry-run-release-validation.md) | DOP-04 Phase 3: Release Workflow Dry-run Validation |
 
 ---
 
