@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 67 |
+| **Task logs** | 68 |
 | **Шаблоны** | 5 |
 
 ---
@@ -133,6 +133,7 @@
 | [2026-05-08-task-sec03-phase3-live-redaction-smoke.md](tasks/2026-05-08-task-sec03-phase3-live-redaction-smoke.md) | SEC-03 Phase 3: Live Redaction Smoke |
 | [2026-05-08-task-sec03b-sqlalchemy-log-safety.md](tasks/2026-05-08-task-sec03b-sqlalchemy-log-safety.md) | SEC-03B Phase 2: SQLAlchemy Log Safety |
 | [2026-05-08-task-dop03-production-runtime-templates.md](tasks/2026-05-08-task-dop03-production-runtime-templates.md) | DOP-03 Phase 2: Production Runtime Templates + Enhanced Health Check |
+| [2026-05-08-task-dop03-phase3-dry-run-validation.md](tasks/2026-05-08-task-dop03-phase3-dry-run-validation.md) | DOP-03 Phase 3: Production Templates Dry-run Validation |
 
 ---
 
