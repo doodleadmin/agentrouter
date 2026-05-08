@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE.
+**Фаза:** Phase 1 — Telegram Routing (SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
@@ -58,6 +58,36 @@
   - MODIFIED: `apps/api/app/services/audit_service.py` (+57 lines), `apps/api/app/routers/approvals.py` (+66 lines), `apps/api/app/routers/tasks.py` (+156 lines)
   - NEW: `apps/api/tests/test_security_audit_integration.py` (16 tests)
 - Task summary: [.ai_memory/tasks/2026-05-08-task-sec02-phase3-audit-integration.md](.ai_memory/tasks/2026-05-08-task-sec02-phase3-audit-integration.md)
+
+### 2026-05-08 — SEC-02 Phase 4: Live Smoke — Validate Audit Trail with Real Telegram Flows
+
+- **Агент:** security-engineer (execution), knowledge-steward (memory recording)
+- **Контур:** live WSL2 Ubuntu 22.04; live Telegram bot + Celery worker + API + native PostgreSQL 14 + Redis; commit 7ae7f6c.
+- **Цель:** Validate `SecurityAuditService` integration against real Telegram `/approve` flow.
+- **Test Setup:**
+  - DB re-initialized (Alembic 0001+0002 both applied)
+  - Seed restored (project `agentrouter` + agent `studio-orchestrator`)
+  - API (PID 14509), Worker (PID 14644), Bot (PID 9571) started
+- **Test Execution:**
+  - Created `task-0001` (ID `88194932`, medium risk) → plan → `waiting_approval`
+  - Approval `a90f100c` created (pending)
+  - User ran `/approve` in Telegram → task status: `approved`, approval: `approved_by=1113930428`
+- **Audit Event Verification (direct DB query):**
+  - Event written to `security_audit_events` table:
+    - `event_type`: `approval_decided`
+    - `decision`: `allowed`
+    - `action`: `approve`
+    - `audit_code`: `SEC-PERM-APPROVE-ALLOW`
+    - `actor_type`: `user`, `actor_id`: `1113930428`
+    - `source`: `telegram`
+    - `task_id`: `88194932`, `approval_id`: `a90f100c`
+  - Metadata (clean, no secrets): `risk_level=medium`, `external_id=task-0001`, `task_status_before=waiting_approval`, `task_status_after=approved`, `approval_status_before=pending`, `approval_status_after=approved`
+  - Reason: empty (no redaction needed)
+- **Old `task_events` co-exists:** `task_created`, `plan_triggered`, `plan_generated`, `approval_requested`, `approval_granted` written as before.
+- **Log Safety:** Bot: 4/4 HTTP 200 OK. API: audit INSERT confirmed. Worker: stale session errors pre-existing (not from test).
+- **Verdict:** PASS — audit trail validated for real Telegram `/approve` flow. All fields correctly captured. Both audit and `task_events` systems co-exist. No secrets exposed. No code changes.
+- **Changed files:** None (memory-only update)
+- Task summary: [.ai_memory/tasks/2026-05-08-task-sec02-phase4-live-smoke.md](.ai_memory/tasks/2026-05-08-task-sec02-phase4-live-smoke.md)
 
 ### 2026-05-08 — SEC-02 Phase 2: Security Audit DB Model, Migration, and Service
 
@@ -272,6 +302,7 @@
 - [x] **SEC-01 Phase 2:** Permission Engine MVP (fail-closed, 14 actions, 5 endpoints wired, 297/297 tests)
 - [x] **SEC-02 Phase 2:** Security Audit DB model, migration, append-only service, redaction helpers (508/508 tests)
 - [x] **SEC-02 Phase 3:** P0 Security Audit integration into approve/reject/callback endpoints (524/524 tests)
+- [x] **SEC-02 Phase 4:** Audit Trail Live Smoke — validated against real Telegram /approve flow (PASS)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация
