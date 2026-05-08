@@ -1,4 +1,7 @@
-"""Async service for task event audit trail (immutable, append-only)."""
+"""Async service for task event audit trail (immutable, append-only).
+
+SEC-03 Phase 2: payload is redacted before write via centralized redaction.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.enums import ActorType
 from app.models.task_event import TaskEvent
+from app.security.redaction import redact_mapping
 
 
 class TaskEventService:
@@ -26,12 +30,13 @@ class TaskEventService:
         actor_id: str | None = None,
         payload: dict[str, Any] | None = None,
     ) -> TaskEvent:
+        safe_payload = redact_mapping(payload or {})
         obj = TaskEvent(
             task_id=task_id,
             event_type=event_type,
             actor_type=actor_type.value,
             actor_id=actor_id,
-            payload=payload or {},
+            payload=safe_payload,  # type: ignore[arg-type]
         )
         self._session.add(obj)
         await self._session.flush()

@@ -859,7 +859,7 @@ async def test_redaction_still_applied_after_transport_changes(
         task = await svc.generate_plan_for_task(UUID(task_id))
         plan = (task.plan_text or "").lower()
         assert "abc123" not in plan
-        assert "[redacted]" in plan or "[TRUNCATED" in plan
+        assert "[redacted:" in plan or "[TRUNCATED" in plan
     finally:
         settings.RUNTIME_MAX_PLAN_BYTES = original
 

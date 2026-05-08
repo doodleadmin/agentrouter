@@ -4,6 +4,8 @@ Pipeline:
 1. Call ``POST /runtime/tasks/{task_id}/plan`` on Orchestrator API.
 2. Extract plan result (status, plan_text, chat_id, thread_id).
 3. Dispatch ``tasks.send_notification`` to the ``notifications`` queue.
+
+SEC-03 Phase 2: plan result fields are redacted before logging.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ import httpx
 from app.celery_app import celery_app
 from app.config import settings
 from app.queues import AGENT_PLAN
+from app.services.redaction import redact_text
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +119,7 @@ def generate_plan(task_id: str) -> dict:
                 logger.warning(
                     "agent_plan: notification dispatch failed for task=%s: %s",
                     task_id,
-                    exc,
+                    redact_text(str(exc)),
                 )
         else:
             logger.warning("agent_plan: no chat_id for task=%s — skipping notification", task_id)
@@ -129,7 +132,7 @@ def generate_plan(task_id: str) -> dict:
         }
 
     except httpx.HTTPError as exc:
-        logger.warning("agent_plan: HTTP error for task=%s: %s", task_id, exc)
+        logger.warning("agent_plan: HTTP error for task=%s: %s", task_id, redact_text(str(exc)))
         return {
             "status": "error",
             "task_id": task_id,

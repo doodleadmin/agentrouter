@@ -245,7 +245,7 @@ def test_redaction_masks_secrets() -> None:
     redacted = redact_text(text)
     assert "abc123" not in redacted
     assert "qwerty" not in redacted
-    assert "[REDACTED]" in redacted
+    assert "[REDACTED:" in redacted
 
 
 # ── Fake sandbox ──────────────────────────────────────────────────────

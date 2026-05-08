@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
+**Фаза:** Phase 1 — Telegram Routing (SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
@@ -88,6 +88,25 @@
 - **Verdict:** PASS — audit trail validated for real Telegram `/approve` flow. All fields correctly captured. Both audit and `task_events` systems co-exist. No secrets exposed. No code changes.
 - **Changed files:** None (memory-only update)
 - Task summary: [.ai_memory/tasks/2026-05-08-task-sec02-phase4-live-smoke.md](.ai_memory/tasks/2026-05-08-task-sec02-phase4-live-smoke.md)
+
+### 2026-05-08 — SEC-03 Phase 2: Centralized Secrets Redaction
+
+- **Агент:** security-engineer
+- **Контур:** local only; без deploy/migrations/environment/secrets/OpenCode.
+- **Цель:** Create a centralized redaction module unifying 4 previously separate redaction systems into a single source of truth with 10 secret pattern types.
+- **Сделано:**
+  - **Central module `apps/api/app/security/redaction.py`** — 5 functions (`redact_text`, `redact_mapping`, `contains_secret`, `sanitize_metadata`, `find_secret_matches`) covering 10 patterns: Telegram token, Bearer, JWT, `sk-*` API key, GitHub token, DB password, Redis password, generic assignments, PEM private key, CALLBACK_SECRET. All redacted values → `[REDACTED:TYPE]`.
+  - **Audit service** (`audit_service.py`) — removed local `redact_text`/`sanitize_metadata`, imports from central (removed ~70 lines).
+  - **Runtime guardrails** (`runtime_guardrails.py`) — `redact_payload` delegates to `redact_mapping`, `redact_text` from central.
+  - **Task events** (`task_event_service.py`) — `TaskEventService.create()` applies `redact_mapping(payload)` before INSERT.
+  - **Worker redaction** (`worker/app/services/redaction.py`) — synced 10-pattern set with sync comment.
+  - **Worker agent_plan** (`worker/app/tasks/agent_plan.py`) — `redact_text()` before exception logging.
+- **Валидация:** API 393/393 (was 347, +46 redaction tests), Bot 79/79, Worker 98/98, **Total: 570/570**, ruff clean, compileall clean.
+- **Not changed (out of scope):** MemoryPolicyService (keeps REJECT behavior), pre-commit hooks, git history scan, API logging filter (uvicorn), .env/secrets.
+- **Изменённые файлы (12):**
+  - NEW: `apps/api/app/security/redaction.py`, `apps/api/tests/test_security_redaction.py` (46 tests)
+  - MODIFIED: `apps/api/app/security/__init__.py`, `apps/api/app/services/audit_service.py`, `apps/api/app/policy/runtime_guardrails.py`, `apps/api/app/services/task_event_service.py`, `apps/worker/app/services/redaction.py`, `apps/worker/app/tasks/agent_plan.py`, `apps/api/tests/test_security_audit.py`, `apps/api/tests/test_runtime_be04.py`, `apps/worker/tests/test_execute_security.py`, `apps/worker/tests/test_execute_e2e_fake.py`
+- Task summary: [.ai_memory/tasks/2026-05-08-task-sec03-secrets-redaction.md](.ai_memory/tasks/2026-05-08-task-sec03-secrets-redaction.md)
 
 ### 2026-05-08 — SEC-02 Phase 2: Security Audit DB Model, Migration, and Service
 
@@ -303,6 +322,7 @@
 - [x] **SEC-02 Phase 2:** Security Audit DB model, migration, append-only service, redaction helpers (508/508 tests)
 - [x] **SEC-02 Phase 3:** P0 Security Audit integration into approve/reject/callback endpoints (524/524 tests)
 - [x] **SEC-02 Phase 4:** Audit Trail Live Smoke — validated against real Telegram /approve flow (PASS)
+- [x] **SEC-03 Phase 2:** Centralized secrets redaction module (10 patterns, unified 4 systems, 570/570 tests)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация

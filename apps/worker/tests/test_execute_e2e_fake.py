@@ -122,7 +122,7 @@ def test_fake_e2e_success_pipeline() -> None:
     assert "abc123" not in stdout
     assert "hello" not in stdout
     assert "very-secret-token" not in stderr
-    assert "[REDACTED]" in stdout or "[REDACTED]" in stderr
+    assert "[REDACTED:" in stdout or "[REDACTED:" in stderr
 
     assert state.updated_result_summary == "Execution completed in fake sandbox."
 

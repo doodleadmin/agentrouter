@@ -298,20 +298,20 @@ class TestAuditRedaction:
     """Privacy helpers: redaction, sanitization, IP hashing."""
 
     def test_redact_bot_token(self) -> None:
-        """Telegram bot tokens are replaced with [BOT_TOKEN]."""
-        # Real Telegram tokens are 9-10 digits : 35 alphanumeric chars
+        """Telegram bot tokens are replaced with [REDACTED:TELEGRAM_TOKEN]."""
+        # Real Telegram tokens are 8-11 digits : 30-45 alphanumeric chars
         text = "Error with token 1234567890:AAHq-RX_abcdefghijklmnopqrstuvwxyz1 here"
         cleaned = redact_text(text)
         assert cleaned is not None
         assert "1234567890" not in cleaned
-        assert "[BOT_TOKEN]" in cleaned
+        assert "[REDACTED:TELEGRAM_TOKEN]" in cleaned
 
     def test_redact_callback_secret(self) -> None:
         """Secrets assigned via key=value are redacted."""
         text = "secret=abc123def456 and then more text"
         cleaned = redact_text(text)
         assert cleaned is not None
-        assert "[REDACTED]" in cleaned
+        assert "[REDACTED:SECRET]" in cleaned
         assert "abc123def456" not in cleaned
 
     def test_redact_bearer_token(self) -> None:
@@ -319,22 +319,23 @@ class TestAuditRedaction:
         text = "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abcdefg.hijklmnop"
         cleaned = redact_text(text)
         assert cleaned is not None
-        assert "[REDACTED]" in cleaned
+        assert "[REDACTED:BEARER_TOKEN]" in cleaned
         assert "eyJhbGci" not in cleaned
 
     def test_redact_jwt(self) -> None:
-        """JWT tokens (eyJ... pattern) are redacted."""
+        """JWT tokens (eyJ... pattern) are redacted to [REDACTED:JWT]."""
         text = "Token is eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c used here"
         cleaned = redact_text(text)
         assert cleaned is not None
-        assert "[JWT]" in cleaned
+        assert "[REDACTED:JWT]" in cleaned
+        assert "SflKxwRJSMe" not in cleaned
 
     def test_redact_sk_prefix(self) -> None:
         """API keys with sk- prefix are redacted."""
         text = "Using sk-abcdefghijklmnopqrstuvwxyz123456 for request"
         cleaned = redact_text(text)
         assert cleaned is not None
-        assert "[REDACTED]" in cleaned
+        assert "[REDACTED:API_KEY]" in cleaned
 
     def test_redact_none_returns_none(self) -> None:
         """None input returns None."""

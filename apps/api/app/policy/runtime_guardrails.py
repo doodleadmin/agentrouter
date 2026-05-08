@@ -1,50 +1,21 @@
-"""Runtime guardrails policy (provider-agnostic)."""
+"""Runtime guardrails policy (provider-agnostic).
+
+SEC-03 Phase 2: redaction functions delegate to centralized module.
+"""
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
 
+from app.security.redaction import redact_mapping, redact_text  # centralized (SEC-03)  # noqa: F401
+
 ALLOWED_PLAN_ACTIONS = {"read", "search", "analyze", "plan"}
-
-_KV_SECRET_RE = re.compile(
-    r"(?i)\b(api[_-]?key|token|password|secret|authorization)\b\s*[:=]\s*([^\s,;]+)"
-)
-_BEARER_RE = re.compile(r"(?i)\bbearer\s+([a-z0-9\-._~+/]+=*)")
-_PRIVATE_KEY_RE = re.compile(
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----",
-    re.MULTILINE,
-)
-_ENV_ASSIGN_RE = re.compile(r"(?i)\b([A-Z0-9_]*(TOKEN|SECRET|PASSWORD|API_KEY)[A-Z0-9_]*)\s*=\s*([^\s]+)")
-
-
-def redact_text(value: str) -> str:
-    redacted = value
-    redacted = _PRIVATE_KEY_RE.sub("[REDACTED_PRIVATE_KEY]", redacted)
-    redacted = _BEARER_RE.sub("Bearer [REDACTED]", redacted)
-    redacted = _KV_SECRET_RE.sub(lambda m: f"{m.group(1)}=[REDACTED]", redacted)
-    redacted = _ENV_ASSIGN_RE.sub(lambda m: f"{m.group(1)}=[REDACTED]", redacted)
-    redacted = redacted.replace(".env", "[REDACTED_PATH]")
-    return redacted
-
-
-def _is_sensitive_key(key: str) -> bool:
-    k = key.lower()
-    return any(x in k for x in ("token", "secret", "password", "api_key", "authorization", "private_key"))
 
 
 def redact_payload(value: Any) -> Any:
-    if isinstance(value, str):
-        return redact_text(value)
-    if isinstance(value, list):
-        return [redact_payload(v) for v in value]
-    if isinstance(value, dict):
-        safe: dict[str, Any] = {}
-        for k, v in value.items():
-            safe[k] = "[REDACTED]" if _is_sensitive_key(k) else redact_payload(v)
-        return safe
-    return value
+    """Recursively redact secrets in payload — delegates to centralized redact_mapping."""
+    return redact_mapping(value)
 
 
 def ensure_path_confined(path_value: str, allowed_root: str) -> str:

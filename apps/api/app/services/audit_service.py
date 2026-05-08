@@ -1,4 +1,4 @@
-"""Security audit service — append-only trail with redaction helpers.
+"""Security audit service — append-only trail with centralized redaction.
 
 Never updates or deletes records. Best-effort recording available.
 """
@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import re
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -16,6 +15,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.security_audit import SecurityAuditEvent
+from app.security.redaction import (  # noqa: F401 — re‑export for callers
+    redact_text,
+    sanitize_metadata,
+)
 
 if TYPE_CHECKING:
     from app.security.permissions import PermissionContext, PermissionDecision
@@ -24,73 +27,6 @@ logger = logging.getLogger(__name__)
 
 # ── Valid decision values ────────────────────────────────────────────────────
 VALID_DECISIONS = frozenset({"allowed", "denied", "error"})
-
-# ── Redaction patterns ───────────────────────────────────────────────────────
-#
-# These patterns are applied to free-text fields (reason) to strip
-# known secret-like content before persisting to the audit table.
-
-_REDACTION_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    # Telegram bot token: 9-10 digits:35 alphanumeric chars
-    (re.compile(r"\b\d{9,10}:[A-Za-z0-9_-]{35}\b"), "[BOT_TOKEN]"),
-    # Bearer auth header
-    (re.compile(r"Bearer\s+\S+", re.IGNORECASE), "Bearer [REDACTED]"),
-    # Common secret assignment patterns
-    (
-        re.compile(
-            r'(password|passwd|token|secret|key)\s*[:=]\s*["\']?\S+["\']?',
-            re.IGNORECASE,
-        ),
-        r"\1=[REDACTED]",
-    ),
-    # JWT / base64-encoded tokens (eyJ...)
-    (re.compile(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]+"), "[JWT]"),
-    # API key patterns (sk-..., pk-..., etc.)
-    (re.compile(r"\b(sk|pk|api_key)[-_][A-Za-z0-9]{20,}\b"), r"\1-[REDACTED]"),
-]
-
-# Keys to strip from metadata before persisting
-_FORBIDDEN_METADATA_KEYS: frozenset[str] = frozenset({
-    "raw_callback_data",
-    "raw_body",
-    "raw_request",
-    "authorization",
-    "token",
-    "api_key",
-    "secret",
-})
-
-
-# ── Redaction helpers ────────────────────────────────────────────────────────
-
-
-def redact_text(value: str | None, extra_patterns: list[str] | None = None) -> str | None:
-    """Remove known secret-like content from reason text.
-
-    Returns cleaned text or ``None``.
-    """
-    if value is None:
-        return None
-    for pattern, replacement in _REDACTION_PATTERNS:
-        value = pattern.sub(replacement, value)
-    if extra_patterns:
-        for extra_re in extra_patterns:
-            try:
-                value = re.sub(extra_re, "[REDACTED]", value)
-            except re.error:
-                pass
-    return value
-
-
-def sanitize_metadata(metadata: dict) -> dict:
-    """Strip raw callback_data, full request body, raw endpoints, and secrets."""
-    if not metadata:
-        return {}
-    return {
-        k: v
-        for k, v in metadata.items()
-        if k not in _FORBIDDEN_METADATA_KEYS
-    }
 
 
 def hash_ip(ip: str | None) -> str | None:
