@@ -151,6 +151,9 @@ mkdir -p "$LOG_DIR" "$PID_DIR"
 
 # Clean runtime env overrides
 unset RUNTIME_PROVIDER OPENCODE_SERVER_URL RUNTIME_ALLOW_REAL_OPENCODE_HTTP API_TIMEOUT_SECONDS 2>/dev/null || true
+# DEBUG enables app debug behavior (FastAPI error detail etc).
+# SQL_ECHO intentionally remains unset/false — SQLAlchemy echo logs bind params.
+# For temporary local SQL debugging only, run with SQL_ECHO=true explicitly.
 export DEBUG="true"
 
 # ── source .env.local (process-scoped, never persisted) ──────────────────

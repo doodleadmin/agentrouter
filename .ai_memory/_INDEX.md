@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 65 |
+| **Task logs** | 66 |
 | **Шаблоны** | 5 |
 
 ---
@@ -131,6 +131,7 @@
 | [2026-05-08-task-sec02-phase4-live-smoke.md](tasks/2026-05-08-task-sec02-phase4-live-smoke.md) | SEC-02 Phase 4: Live Smoke — Audit Trail Validation |
 | [2026-05-08-task-sec03-secrets-redaction.md](tasks/2026-05-08-task-sec03-secrets-redaction.md) | SEC-03 Phase 2: Centralized Secrets Redaction |
 | [2026-05-08-task-sec03-phase3-live-redaction-smoke.md](tasks/2026-05-08-task-sec03-phase3-live-redaction-smoke.md) | SEC-03 Phase 3: Live Redaction Smoke |
+| [2026-05-08-task-sec03b-sqlalchemy-log-safety.md](tasks/2026-05-08-task-sec03b-sqlalchemy-log-safety.md) | SEC-03B Phase 2: SQLAlchemy Log Safety |
 
 ---
 

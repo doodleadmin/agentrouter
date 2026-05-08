@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Agent Mission Control API"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
+    SQL_ECHO: bool = False  # SQLAlchemy SQL/bind logging. Keep False — bind params may contain user text. Explicit opt-in only for local debug.
     COMMIT_SHA: str = "unknown"  # injected at build time
     BUILD_TIME: str = "unknown"  # injected at build time
 

@@ -182,6 +182,9 @@ fi
 export RUNTIME_PROVIDER="opencode_http"
 export OPENCODE_SERVER_URL="$OPENCODE_URL"
 export RUNTIME_ALLOW_REAL_OPENCODE_HTTP="true"
+# DEBUG enables app debug behavior (FastAPI error detail etc).
+# SQL_ECHO intentionally remains unset/false — SQLAlchemy echo logs bind params.
+# For temporary local SQL debugging only, run with SQL_ECHO=true explicitly.
 export DEBUG="true"
 
 log_info "Process-scoped env set:"
