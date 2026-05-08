@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 61 |
+| **Task logs** | 62 |
 | **Шаблоны** | 5 |
 
 ---
@@ -127,6 +127,7 @@
 | [2026-05-07-task-sec01-permission-engine.md](tasks/2026-05-07-task-sec01-permission-engine.md) | SEC-01 Phase 2: Permission Engine MVP |
 | [2026-05-08-task-sec01-phase3-live-smoke.md](tasks/2026-05-08-task-sec01-phase3-live-smoke.md) | SEC-01 Phase 3: Live Smoke — Admin Gate Validation |
 | [2026-05-08-task-sec02-phase2-audit-model-service.md](tasks/2026-05-08-task-sec02-phase2-audit-model-service.md) | SEC-02 Phase 2: Security Audit DB Model, Migration & Service |
+| [2026-05-08-task-sec02-phase3-audit-integration.md](tasks/2026-05-08-task-sec02-phase3-audit-integration.md) | SEC-02 Phase 3: Integrate P0 Security Audit Points |
 
 ---
 

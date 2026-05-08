@@ -1,4 +1,4 @@
-"""Approvals router — create request, approve, reject (SEC-01 wired)."""
+"""Approvals router — create request, approve, reject (SEC-01, SEC-02 wired)."""
 
 from uuid import UUID
 
@@ -8,11 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.enums import TaskStatus
 from app.db.session import get_async_session
+from app.models.security_audit import SecurityAuditEvent
 from app.schemas.approval import ApprovalCreate, ApprovalDecideIn, ApprovalRead
 from app.schemas.task import TaskStatusUpdate
 from app.security.context import context_for_telegram_user
 from app.security.permissions import PermissionAction, PermissionEngine
 from app.services.approval_service import ApprovalService
+from app.services.audit_service import SecurityAuditService, redact_text, sanitize_metadata
 from app.services.task_service import TaskService
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
@@ -67,6 +69,7 @@ async def get_approval(
 async def approve_approval(
     approval_id: UUID,
     body: ApprovalDecideIn | None = None,
+    session: AsyncSession = Depends(get_async_session),
     svc: ApprovalService = Depends(_svc),
     task_svc: TaskService = Depends(_task_svc),
 ) -> ApprovalRead:
@@ -80,6 +83,10 @@ async def approve_approval(
     )
     decision = engine.can_approve(ctx)
     if not decision.allowed:
+        # SEC-02: audit denied permission (ctx.task_id=approval uuid — suppress task FK)
+        await SecurityAuditService.audit_permission_decision(
+            session, decision, ctx, error_code="403", task_id_override=None,
+        )
         raise HTTPException(status_code=403, detail=decision.reason)
 
     try:
@@ -97,6 +104,32 @@ async def approve_approval(
     except (KeyError, ValueError):
         pass  # task already moved or not found — non-fatal
 
+    # SEC-02: audit allowed approve
+    task = await task_svc.get(obj.task_id)
+    audit_event = SecurityAuditEvent(
+        event_type="approval_decided",
+        actor_type="user",
+        actor_id=str(body.approved_by) if body and body.approved_by else None,
+        source="api",
+        action="approve",
+        decision="allowed",
+        audit_code=decision.audit_code or "SEC-APPROVAL-APPROVE-ALLOW",
+        reason=redact_text(body.reason) if body and body.reason else None,
+        task_id=str(obj.task_id),
+        approval_id=str(approval_id),
+        chat_id=task.telegram_chat_id if task else None,
+        thread_id=task.telegram_thread_id if task else None,
+        audit_metadata=sanitize_metadata({
+            "approval_status_before": "pending",
+            "approval_status_after": obj.status,
+            "task_status_before": "waiting_approval",
+            "task_status_after": TaskStatus.APPROVED.value,
+            "external_id": task.external_id if task else None,
+            "risk_level": task.risk_level if task else None,
+        }),
+    )
+    await SecurityAuditService.record_best_effort(session, audit_event)
+
     return ApprovalRead.model_validate(obj)
 
 
@@ -104,6 +137,7 @@ async def approve_approval(
 async def reject_approval(
     approval_id: UUID,
     body: ApprovalDecideIn | None = None,
+    session: AsyncSession = Depends(get_async_session),
     svc: ApprovalService = Depends(_svc),
     task_svc: TaskService = Depends(_task_svc),
 ) -> ApprovalRead:
@@ -117,6 +151,10 @@ async def reject_approval(
     )
     decision = engine.can_reject(ctx)
     if not decision.allowed:
+        # SEC-02: audit denied permission (ctx.task_id=approval uuid — suppress task FK)
+        await SecurityAuditService.audit_permission_decision(
+            session, decision, ctx, error_code="403", task_id_override=None,
+        )
         raise HTTPException(status_code=403, detail=decision.reason)
 
     try:
@@ -133,5 +171,31 @@ async def reject_approval(
         )
     except (KeyError, ValueError):
         pass  # task already moved or not found — non-fatal
+
+    # SEC-02: audit allowed reject
+    task = await task_svc.get(obj.task_id)
+    audit_event = SecurityAuditEvent(
+        event_type="approval_decided",
+        actor_type="user",
+        actor_id=str(body.approved_by) if body and body.approved_by else None,
+        source="api",
+        action="reject",
+        decision="allowed",
+        audit_code=decision.audit_code or "SEC-APPROVAL-REJECT-ALLOW",
+        reason=redact_text(body.reason) if body and body.reason else None,
+        task_id=str(obj.task_id),
+        approval_id=str(approval_id),
+        chat_id=task.telegram_chat_id if task else None,
+        thread_id=task.telegram_thread_id if task else None,
+        audit_metadata=sanitize_metadata({
+            "approval_status_before": "pending",
+            "approval_status_after": obj.status,
+            "task_status_before": "waiting_approval",
+            "task_status_after": TaskStatus.CANCELLED.value,
+            "external_id": task.external_id if task else None,
+            "risk_level": task.risk_level if task else None,
+        }),
+    )
+    await SecurityAuditService.record_best_effort(session, audit_event)
 
     return ApprovalRead.model_validate(obj)

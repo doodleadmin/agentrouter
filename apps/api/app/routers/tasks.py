@@ -1,4 +1,4 @@
-"""Tasks router — CRUD with status enforcement + plan pipeline trigger + SEC-01 permission checks."""
+"""Tasks router — CRUD with status enforcement + plan pipeline trigger + SEC-01/02 permission checks."""
 
 import hashlib
 import hmac
@@ -14,6 +14,7 @@ from app.config import settings
 from app.db.enums import ActorType, ApprovalStatus, RiskLevel, TaskStatus
 from app.db.session import get_async_session
 from app.integrations.queue import enqueue_agent_plan
+from app.models.security_audit import SecurityAuditEvent
 from app.schemas.task import (
     CallbackAnswerIn,
     CallbackAnswerRead,
@@ -26,6 +27,7 @@ from app.schemas.task import (
 from app.security.context import context_for_callback, context_for_system, context_for_telegram_user
 from app.security.permissions import PermissionAction, PermissionEngine
 from app.services.approval_service import ApprovalService
+from app.services.audit_service import SecurityAuditService, redact_text, sanitize_metadata
 from app.services.task_event_service import TaskEventService
 from app.services.task_service import TaskService
 
@@ -189,6 +191,40 @@ def _map_integrity_error(exc: IntegrityError) -> HTTPException:
     if code == "23505":  # unique_violation
         return HTTPException(status_code=409, detail="Task constraint conflict")
     return HTTPException(status_code=409, detail="Task integrity constraint violation")
+
+
+# ── SEC-02 callback audit helpers ────────────────────────────────────────
+
+
+async def _audit_callback_denied(
+    session: AsyncSession,
+    task_id: UUID,
+    error: str,
+    failure_type: str,
+    *,
+    protocol: str | None = None,
+    chat_id: int | None = None,
+    thread_id: int | None = None,
+) -> None:
+    """Best-effort security audit when callback validation fails (non-blocking)."""
+    event = SecurityAuditEvent(
+        event_type="callback_validated",
+        actor_type="system",
+        source="telegram",
+        action="callback_validate",
+        decision="denied",
+        audit_code="SEC-CALLBACK-DENY",
+        reason=redact_text(error),
+        error_code="400",
+        task_id=str(task_id),
+        chat_id=chat_id,
+        thread_id=thread_id,
+        audit_metadata=sanitize_metadata({
+            "failure_type": failure_type,
+            "callback_protocol": protocol,
+        }),
+    )
+    await SecurityAuditService.record_best_effort(session, event)
 
 
 @router.post("", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
@@ -374,6 +410,7 @@ async def get_task_plan(
 async def callback_answer(
     task_id: UUID,
     body: CallbackAnswerIn,
+    session: AsyncSession = Depends(get_async_session),
     svc: TaskService = Depends(_svc),
     esvc: TaskEventService = Depends(_event_svc),
     asvc: ApprovalService = Depends(_appr_svc),
@@ -384,16 +421,31 @@ async def callback_answer(
     Validation happens API-side for security.
     """
     # 1. Validate callback_data cryptographically
+    protocol: str | None = None
     try:
         fields = _validate_callback_data(body.callback_data)
+        protocol = fields.get("protocol")
     except ValueError as exc:
+        error_msg = str(exc)
+        # Determine protocol from the raw data for audit
+        detect_protocol = "compact" if body.callback_data.startswith(
+            f"{COMPACT_CALLBACK_VERSION}{COMPACT_CALLBACK_SEP}"
+        ) else ("legacy" if CALLBACK_FIELD_SEP in body.callback_data else None)
+        # SEC-02: audit denied callback
+        await _audit_callback_denied(
+            session, task_id, error_msg,
+            failure_type=SecurityAuditService._determine_callback_failure_type(error_msg),
+            protocol=detect_protocol,
+            chat_id=body.telegram_chat_id,
+            thread_id=body.telegram_thread_id,
+        )
         return CallbackAnswerRead(
             task_id=task_id,
             task_status="unknown",
             task_external_id="",
             action_valid=False,
             action="unknown",
-            error=str(exc),
+            error=error_msg,
         )
 
     action = fields["action"]
@@ -401,6 +453,14 @@ async def callback_answer(
     # 2. Load task
     task = await svc.get(task_id)
     if task is None:
+        # SEC-02: audit denied callback
+        await _audit_callback_denied(
+            session, task_id, "Task not found",
+            failure_type="not_found",
+            protocol=protocol,
+            chat_id=body.telegram_chat_id,
+            thread_id=body.telegram_thread_id,
+        )
         return CallbackAnswerRead(
             task_id=task_id,
             task_status="unknown",
@@ -412,6 +472,14 @@ async def callback_answer(
 
     # Compact callbacks bind to the short external_id; legacy callbacks bind to UUID.
     if fields.get("protocol") == "compact" and fields.get("task_external_id") != task.external_id:
+        # SEC-02: audit denied callback
+        await _audit_callback_denied(
+            session, task_id, "Task external_id mismatch",
+            failure_type="mismatch",
+            protocol=protocol,
+            chat_id=body.telegram_chat_id,
+            thread_id=body.telegram_thread_id,
+        )
         return CallbackAnswerRead(
             task_id=task_id,
             task_status=task.status,
@@ -421,6 +489,14 @@ async def callback_answer(
             error="Task external_id mismatch",
         )
     if fields.get("protocol") == "legacy" and fields.get("task_id") != str(task_id):
+        # SEC-02: audit denied callback
+        await _audit_callback_denied(
+            session, task_id, "Task id mismatch",
+            failure_type="mismatch",
+            protocol=protocol,
+            chat_id=body.telegram_chat_id,
+            thread_id=body.telegram_thread_id,
+        )
         return CallbackAnswerRead(
             task_id=task_id,
             task_status=task.status,
@@ -433,6 +509,14 @@ async def callback_answer(
     # 3. Validate chat/thread/user constraints if provided
     if body.telegram_chat_id is not None and task.telegram_chat_id is not None:
         if body.telegram_chat_id != task.telegram_chat_id:
+            # SEC-02: audit denied callback
+            await _audit_callback_denied(
+                session, task_id, "Chat mismatch",
+                failure_type="chat_mismatch",
+                protocol=protocol,
+                chat_id=body.telegram_chat_id,
+                thread_id=body.telegram_thread_id,
+            )
             return CallbackAnswerRead(
                 task_id=task_id,
                 task_status=task.status,
@@ -443,6 +527,14 @@ async def callback_answer(
             )
     if body.telegram_thread_id is not None and task.telegram_thread_id is not None:
         if body.telegram_thread_id != task.telegram_thread_id:
+            # SEC-02: audit denied callback
+            await _audit_callback_denied(
+                session, task_id, "Thread mismatch",
+                failure_type="thread_mismatch",
+                protocol=protocol,
+                chat_id=body.telegram_chat_id,
+                thread_id=body.telegram_thread_id,
+            )
             return CallbackAnswerRead(
                 task_id=task_id,
                 task_status=task.status,
@@ -468,6 +560,14 @@ async def callback_answer(
         if approval is not None:
             approval_status = approval.status
             if str(approval.task_id) != str(task_id):
+                # SEC-02: audit denied callback
+                await _audit_callback_denied(
+                    session, task_id, "Approval task mismatch",
+                    failure_type="approval_mismatch",
+                    protocol=protocol,
+                    chat_id=body.telegram_chat_id,
+                    thread_id=body.telegram_thread_id,
+                )
                 return CallbackAnswerRead(
                     task_id=task_id,
                     task_status=task.status,
@@ -486,6 +586,14 @@ async def callback_answer(
             if approval.status == ApprovalStatus.PENDING.value
         ]
         if not pending_approvals:
+            # SEC-02: audit denied callback
+            await _audit_callback_denied(
+                session, task_id, "No pending approval for task",
+                failure_type="no_pending_approval",
+                protocol=protocol,
+                chat_id=body.telegram_chat_id,
+                thread_id=body.telegram_thread_id,
+            )
             return CallbackAnswerRead(
                 task_id=task_id,
                 task_status=task.status,
@@ -513,9 +621,30 @@ async def callback_answer(
         )
         decision = engine.evaluate(ctx)
         if not decision.allowed:
+            # SEC-02: audit permission denied callback
+            deny_event = SecurityAuditEvent(
+                event_type="callback_validated",
+                actor_type="user",
+                actor_id=str(body.telegram_user_id),
+                source="telegram",
+                action=action,
+                decision="denied",
+                audit_code="SEC-CALLBACK-DENY",
+                reason=redact_text(decision.reason),
+                error_code="403",
+                task_id=str(task_id),
+                approval_id=str(approval_id) if approval_id else None,
+                chat_id=body.telegram_chat_id,
+                thread_id=body.telegram_thread_id,
+                audit_metadata=sanitize_metadata({
+                    "failure_type": "permission_denied",
+                    "callback_protocol": protocol,
+                }),
+            )
+            await SecurityAuditService.record_best_effort(session, deny_event)
             raise HTTPException(status_code=403, detail=decision.reason)
 
-    # 6. Audit event
+    # 6. Task event audit
     await esvc.create(
         task_id,
         "callback_received",
@@ -523,6 +652,27 @@ async def callback_answer(
         actor_id=str(body.telegram_user_id) if body.telegram_user_id else None,
         payload={"action": action},
     )
+
+    # SEC-02: audit successful callback validation for approve/reject actions
+    if action in {"approve", "reject"}:
+        success_event = SecurityAuditEvent(
+            event_type="callback_validated",
+            actor_type="user",
+            actor_id=str(body.telegram_user_id) if body.telegram_user_id else None,
+            source="telegram",
+            action=action,
+            decision="allowed",
+            task_id=str(task_id),
+            approval_id=str(approval_id) if approval_id else None,
+            chat_id=body.telegram_chat_id,
+            thread_id=body.telegram_thread_id,
+            audit_metadata=sanitize_metadata({
+                "callback_protocol": protocol or "legacy",
+                "action_alias": fields.get("alias") if protocol == "compact" else None,
+                "external_id": task.external_id,
+            }),
+        )
+        await SecurityAuditService.record_best_effort(session, success_event)
 
     return CallbackAnswerRead(
         task_id=task_id,

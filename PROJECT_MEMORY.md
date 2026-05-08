@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE.
+**Фаза:** Phase 1 — Telegram Routing (SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE.
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
@@ -35,6 +35,29 @@
 - **Verdict:** PASS — PermissionEngine admin gate validated for all 3 approval flows.
 - **Changed files:** None (memory-only update)
 - Task summary: [.ai_memory/tasks/2026-05-08-task-sec01-phase3-live-smoke.md](.ai_memory/tasks/2026-05-08-task-sec01-phase3-live-smoke.md)
+
+### 2026-05-08 — SEC-02 Phase 3: Integrate P0 Security Audit Points
+
+- **Агент:** security-engineer (implementation), knowledge-steward (memory recording)
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode.
+- **Цель:** Wire `SecurityAuditService` into the 4 P0 security-sensitive API endpoints: approve, reject, callback-answer, and trigger-plan permission decisions.
+- **Сделано:**
+  - **Approve endpoint:** `permission_denied` (non-admin → 403) + `approval_decided` (admin approve → 200)
+  - **Reject endpoint:** `permission_denied` (non-admin → 403) + `approval_decided` (admin reject → 200)
+  - **Callback-answer endpoint:** `callback_validated` denied (6 failure types: expired, tampered, malformed, unknown_action, external_id_mismatch, permission_denied) + `callback_validated` allowed (valid approve/reject)
+  - **Implementation helpers:** `audit_permission_decision()` async static, `_determine_callback_failure_type()`, `_audit_callback_denied()`
+- **Safety properties:**
+  - Best-effort writes (failure logs warning, never blocks primary flow)
+  - No raw callback_data in metadata
+  - Reason redacted (tokens, secrets, JWTs, API keys stripped)
+  - Task FK safety: denied permission audits use task_id_override=None
+- **Валидация:** API 347/347 (was 331, +16 integration tests), Bot 79/79, Worker 98/98, **Total: 524/524**, ruff clean, compileall clean.
+- **Migration NOT run** against any real database. No DB schema changes.
+- **Not done (deferred):** Worker-side audit events, agent-specific audit views, periodic cleanup, real-time alerting.
+- **Изменённые файлы (4):**
+  - MODIFIED: `apps/api/app/services/audit_service.py` (+57 lines), `apps/api/app/routers/approvals.py` (+66 lines), `apps/api/app/routers/tasks.py` (+156 lines)
+  - NEW: `apps/api/tests/test_security_audit_integration.py` (16 tests)
+- Task summary: [.ai_memory/tasks/2026-05-08-task-sec02-phase3-audit-integration.md](.ai_memory/tasks/2026-05-08-task-sec02-phase3-audit-integration.md)
 
 ### 2026-05-08 — SEC-02 Phase 2: Security Audit DB Model, Migration, and Service
 
@@ -248,6 +271,7 @@
 - [x] **MEM-04 Phase 2:** Soft mandatory memory checkpoints (AGENTS.md rule #7, runbook, template, docs)
 - [x] **SEC-01 Phase 2:** Permission Engine MVP (fail-closed, 14 actions, 5 endpoints wired, 297/297 tests)
 - [x] **SEC-02 Phase 2:** Security Audit DB model, migration, append-only service, redaction helpers (508/508 tests)
+- [x] **SEC-02 Phase 3:** P0 Security Audit integration into approve/reject/callback endpoints (524/524 tests)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация
@@ -263,8 +287,7 @@
 
 ## Следующие шаги
 
-1. **SEC-02 Phase 3:** Wire `SecurityAuditService` into approve/reject/permission/callback endpoints
-2. Memory retrieval tuning: ranking quality + scope heuristics
+1. Memory retrieval tuning: ranking quality + scope heuristics
 3. Полный план: [docs/mvp-backlog.md](docs/mvp-backlog.md)
 
 ### 2026-05-03 — WRK-04 Manual Local Backend Test Completed (WRK-04)

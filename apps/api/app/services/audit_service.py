@@ -9,12 +9,16 @@ import hashlib
 import logging
 import re
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.security_audit import SecurityAuditEvent
+
+if TYPE_CHECKING:
+    from app.security.permissions import PermissionContext, PermissionDecision
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +112,59 @@ class SecurityAuditService:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    # ── Convenience helpers ──────────────────────────────────────────────
+
+    @staticmethod
+    async def audit_permission_decision(
+        session: AsyncSession,
+        decision: "PermissionDecision",
+        ctx: "PermissionContext",
+        *,
+        error_code: str | None = None,
+        approval_id: str | None = None,
+        chat_id: int | None = None,
+        thread_id: int | None = None,
+        task_id_override: str | None = None,
+    ) -> None:
+        """Best-effort audit of a permission decision.
+
+        If *task_id_override* is provided, it is used instead of ctx.task_id.
+        Use None to suppress task_id when only an approval UUID is available.
+        """
+        event = SecurityAuditEvent(
+            event_type="permission_check" if decision.allowed else "permission_denied",
+            actor_type=ctx.actor_type.value if ctx.actor_type else "system",
+            actor_id=ctx.actor_id,
+            source=ctx.source or "api",
+            action=ctx.action.value if ctx.action else None,
+            decision="allowed" if decision.allowed else "denied",
+            audit_code=decision.audit_code,
+            reason=redact_text(decision.reason) if decision.reason else None,
+            task_id=task_id_override if task_id_override is not None else ctx.task_id,
+            approval_id=approval_id,
+            project_id=ctx.project_id,
+            agent_id=ctx.agent_id,
+            chat_id=chat_id,
+            thread_id=thread_id,
+            error_code=error_code,
+            audit_metadata=sanitize_metadata({}),
+        )
+        await SecurityAuditService.record_best_effort(session, event)
+
+    @staticmethod
+    def _determine_callback_failure_type(error_msg: str) -> str:
+        """Classify a callback validation error into a failure_type string."""
+        msg_lower = error_msg.lower()
+        if "expired" in msg_lower:
+            return "expired"
+        if "signature" in msg_lower:
+            return "tampered"
+        if "unknown" in msg_lower:
+            return "unknown_action"
+        if "format" in msg_lower:
+            return "malformed"
+        return "malformed"
 
     # ── Write methods ────────────────────────────────────────────────────
 
