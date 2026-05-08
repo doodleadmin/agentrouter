@@ -1,0 +1,29 @@
+[Unit]
+Description=Agent Mission Control — Celery Worker
+After=network-online.target redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agentmc
+Group=agentmc
+WorkingDirectory=/opt/agent-control/agentrouter/apps/worker
+EnvironmentFile=/opt/agent-control/agentrouter/.env
+ExecStart=/opt/agent-control/agentrouter/apps/worker/.venv/bin/celery -A app.celery_app worker --loglevel=info --pool=solo --queues=telegram_inbound,agent_plan,agent_execute,memory_index,deploy_staging,deploy_production,notifications
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/agent-control/agentrouter/logs
+ProtectHome=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agentrouter-worker
+
+[Install]
+WantedBy=multi-user.target

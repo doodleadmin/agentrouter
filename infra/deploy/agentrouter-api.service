@@ -1,0 +1,29 @@
+[Unit]
+Description=Agent Mission Control — API Server
+After=network-online.target postgresql.service redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agentmc
+Group=agentmc
+WorkingDirectory=/opt/agent-control/agentrouter/apps/api
+EnvironmentFile=/opt/agent-control/agentrouter/.env
+ExecStart=/opt/agent-control/agentrouter/apps/api/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/agent-control/agentrouter/logs
+ProtectHome=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agentrouter-api
+
+[Install]
+WantedBy=multi-user.target

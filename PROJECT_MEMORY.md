@@ -5,12 +5,32 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
+**Фаза:** Phase 1 — Telegram Routing (DOP-03 Phase 2 Production Runtime Templates + Enhanced Health Check COMPLETE + SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** DOP-03 Phase 2 Production Runtime Templates + Enhanced Health Check COMPLETE + SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
-### 2026-05-08 — SEC-03B Phase 2: Decouple SQLAlchemy Echo from DEBUG
+### 2026-05-08 — DOP-03 Phase 2: Production Runtime Templates + Enhanced Health Check
+
+- **Агент:** studio-orchestrator
+- **Контур:** local only; без deploy/migrations/.env/secrets/OpenCode/live Telegram.
+- **Цель:** Create production runtime templates and enhance /health endpoint with DB/Redis dependency checks.
+- **Сделано:**
+  - **Enhanced /health endpoint** — backward-compatible, adds `checks` dict (api, database, redis). Status `"ok"` or `"degraded"`. HTTP 200 always. DB: `SELECT 1` via AsyncSessionLocal. Redis: ping via redis.asyncio. No secrets exposed.
+  - **Caddyfile template** — `{$AGENTROUTER_DOMAIN}` / `{$AGENTROUTER_TLS_EMAIL}` placeholders, reverse proxy to 127.0.0.1:8000, gzip/zstd, JSON access logs with rotation, comments for future webhook/dashboard.
+  - **3 systemd unit templates** — agentrouter-api (127.0.0.1:8000, uvicorn), agentrouter-worker (celery -A app.celery_app worker), agentrouter-telegram-bot (python -m app.main). All: User=agentmc, NoNewPrivileges, PrivateTmp, ProtectSystem=strict, EnvironmentFile, journald logging. No inline secrets.
+  - **docker-compose.prod.yml** — postgres (pgvector/pg16), redis (7-alpine), api (127.0.0.1:8000 only), worker, telegram-bot. Internal network. Variable substitution from .env. DEBUG=false, SQL_ECHO=false, RUNTIME_PROVIDER=stub.
+  - **.env.example** — all required vars with CHANGE_ME placeholders, security comments, no real secrets.
+  - **validate-production-templates.sh** — 9 check categories (file existence, no real tokens, no SQL_ECHO=true, no DEBUG=true, 127.0.0.1 bind, no inline secrets, syntax, systemd-analyze, docker compose config). ALL CHECKS PASSED.
+  - **docs/deployment.md** — production architecture, two deployment modes (systemd bare-metal + Docker Compose), env setup, file permissions, startup order, health checks, rollback procedure.
+  - **docs/operations-runbook.md** — start/stop/restart commands, safe restart order, journalctl checks, health monitoring, database backup/restore, common troubleshooting, "What NOT to Do" table.
+  - **infra/deploy/README.md** — updated to document all deploy templates.
+- **Changed files (14):**
+  - MODIFIED: `apps/api/app/routers/health.py` (+48 lines), `infra/deploy/README.md` (+20 lines), `docs/deployment.md` (NEW)
+  - NEW: `apps/api/tests/test_health.py` (4 tests), `infra/deploy/Caddyfile`, `infra/deploy/agentrouter-api.service`, `infra/deploy/agentrouter-worker.service`, `infra/deploy/agentrouter-telegram-bot.service`, `infra/docker/docker-compose.prod.yml`, `.env.example`, `scripts/deploy/validate-production-templates.sh`, `docs/deployment.md`, `docs/operations-runbook.md`
+- **Validation:** API 401/401 (was 397, +4 health tests), Bot 79/79, Worker 98/98, **Total: 578/578**, ruff clean, compileall clean, deploy validation ALL CHECKS PASSED.
+- **Security:** No secrets in templates, no real tokens, no SQL_ECHO=true defaults, no DEBUG=true in production configs, API binds 127.0.0.1 only, no inline secrets in systemd units.
+- Task summary: [.ai_memory/tasks/2026-05-08-task-dop03-production-runtime-templates.md](.ai_memory/tasks/2026-05-08-task-dop03-production-runtime-templates.md)
 
 - **Агент:** security-engineer
 - **Контур:** local only; без deploy/migrations/environment/secrets/OpenCode.
@@ -362,6 +382,7 @@
 - [x] **SEC-03 Phase 2:** Centralized secrets redaction module (10 patterns, unified 4 systems, 570/570 tests)
 - [x] **SEC-03 Phase 3:** Live Redaction Smoke — verified redaction against fake-secret corpus in real flows (PASS)
 - [x] **SEC-03B Phase 2:** SQLAlchemy Log Safety — decoupled echo from DEBUG, added SQL_ECHO config (574/574 tests)
+- [x] **DOP-03 Phase 2:** Production Runtime Templates + Enhanced Health Check — Caddyfile, 3 systemd units, prod compose, .env.example, validation script, deployment.md, operations-runbook.md, enhanced /health (578/578 tests)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация

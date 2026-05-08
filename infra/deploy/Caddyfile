@@ -1,0 +1,41 @@
+# Agent Mission Control — Caddy reverse proxy template
+#
+# Usage:
+#   1. Replace {$AGENTROUTER_DOMAIN} with your real domain (e.g. mc.example.com)
+#   2. Replace {$AGENTROUTER_TLS_EMAIL} with your email for Let's Encrypt
+#   3. Install: sudo cp Caddyfile /etc/caddy/Caddyfile
+#   4. Reload:  sudo systemctl reload caddy
+#
+# Caddy auto-provisions TLS certificates via Let's Encrypt.
+# No manual cert management required.
+
+{$AGENTROUTER_DOMAIN} {
+    encode gzip zstd
+
+    # API + health endpoints
+    reverse_proxy /health       127.0.0.1:8000
+    reverse_proxy /version      127.0.0.1:8000
+    reverse_proxy /api/*        127.0.0.1:8000
+    reverse_proxy /tasks/*      127.0.0.1:8000
+    reverse_proxy /projects/*   127.0.0.1:8000
+    reverse_proxy /agents/*     127.0.0.1:8000
+    reverse_proxy /approvals/*  127.0.0.1:8000
+    # memory routes (read-only search + single doc read)
+    reverse_proxy /memory/*     127.0.0.1:8000
+
+    # Future: Telegram webhook endpoint (when switching from polling to webhook)
+    # reverse_proxy /telegram/webhook 127.0.0.1:8000
+
+    # Future: Web dashboard (React + Vite)
+    # reverse_proxy /*              127.0.0.1:3000
+
+    tls {$AGENTROUTER_TLS_EMAIL}
+
+    log {
+        output file /var/log/caddy/agentrouter-access.log {
+            roll_size 100mb
+            roll_keep 10
+        }
+        format json
+    }
+}

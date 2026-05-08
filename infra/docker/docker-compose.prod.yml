@@ -1,0 +1,127 @@
+# Agent Mission Control — Production Docker Compose
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Prerequisites:
+#   1. Copy .env.example to .env and replace all CHANGE_ME values
+#   2. chmod 600 .env
+#   3. Ensure Docker and Docker Compose v2 are installed
+#
+# This file is a TEMPLATE. Do NOT hardcode real credentials here.
+# All secrets come from .env via variable substitution.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agentrouter}
+      POSTGRES_USER: ${POSTGRES_USER:-agentmc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agentmc}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - amc_internal
+    # NOT exposed to host — access via internal network only
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - amc_internal
+    # NOT exposed to host
+
+  api:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      DEBUG: "false"
+      SQL_ECHO: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agentmc}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-agentrouter}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env}
+      TELEGRAM_ADMIN_USER_IDS: ${TELEGRAM_ADMIN_USER_IDS:?Set TELEGRAM_ADMIN_USER_IDS in .env}
+      CALLBACK_SECRET: ${CALLBACK_SECRET:?Set CALLBACK_SECRET in .env}
+      RUNTIME_PROVIDER: stub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - amc_internal
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  worker:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      DEBUG: "false"
+      SQL_ECHO: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agentmc}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-agentrouter}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      API_BASE_URL: http://api:8000
+      SANDBOX_RUNNER_MODE: fake
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - amc_internal
+
+  telegram-bot:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile.telegram-bot
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env}
+      TELEGRAM_ADMIN_USER_IDS: ${TELEGRAM_ADMIN_USER_IDS:?Set TELEGRAM_ADMIN_USER_IDS in .env}
+      CALLBACK_SECRET: ${CALLBACK_SECRET:?Set CALLBACK_SECRET in .env}
+      API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - amc_internal
+
+networks:
+  amc_internal:
+    driver: bridge
+    # internal: false — api needs outbound for Telegram polling and future webhook
+
+volumes:
+  postgres_data:
+  redis_data:
