@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 87 |
+| **Task logs** | 88 |
 | **Шаблоны** | 5 |
 
 ---
@@ -155,6 +155,7 @@
 | [2026-05-08-task-dop04-release-workflow.md](tasks/2026-05-08-task-dop04-release-workflow.md) | DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts + Memory Checkpoint |
 | [2026-05-08-task-dop04-phase3-dry-run-release-validation.md](tasks/2026-05-08-task-dop04-phase3-dry-run-release-validation.md) | DOP-04 Phase 3: Release Workflow Dry-run Validation |
 | [2026-05-09-task-backlog02-mvp-backlog-audit.md](tasks/2026-05-09-task-backlog02-mvp-backlog-audit.md) | BACKLOG-02: MVP Backlog Completion Audit + Roadmap Sync |
+| [2026-05-09-task-readme-github-polish.md](tasks/2026-05-09-task-readme-github-polish.md) | README-01: GitHub README Polish |
 
 ---
 

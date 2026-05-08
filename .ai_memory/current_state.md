@@ -1,13 +1,13 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (BACKLOG-02 Phase 2: MVP audit + docs sync) | Автор: studio-orchestrator
+Обновлено: 2026-05-09 (README-01: GitHub README polish) | Автор: studio-orchestrator
 
 ---
 
 ## Статус проекта
 
 **Current state:** MVP v1 COMPLETE
-**Latest stable commit:** `dd8590c` (before BACKLOG-02 Phase 2 changes)
+**Latest stable commit:** `7f51829` (pushed to `doodleadmin/agentrouter`)
 **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — Total 578/578 PASS
 **Production deploy:** NOT executed — requires explicit approval
 **Security chain:** SEC-01..SEC-03B — all PASS

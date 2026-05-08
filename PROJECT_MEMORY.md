@@ -6,7 +6,8 @@
 ## MVP v1 Complete Summary
 
 - **MVP v1 original backlog: 23/23 COMPLETE**
-- **Latest commit:** `dd8590c` (before BACKLOG-02 Phase 2 docs update)
+- **Latest commit:** `7f51829` (docs: sync MVP backlog completion status)
+- **Pushed to:** `doodleadmin/agentrouter` on GitHub
 - **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — **Total 578/578 PASS**
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
@@ -28,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 COMPLETE (Phase 0–4, Phase 6–7 dry-run validated)
-**Дата последнего обновления:** 2026-05-09 (BACKLOG-02 Phase 2)
+**Дата последнего обновления:** 2026-05-09 (README-01 GitHub README)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-08 — DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts (memory checkpoint)
