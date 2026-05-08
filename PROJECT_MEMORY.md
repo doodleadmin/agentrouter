@@ -10,6 +10,52 @@
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
+### 2026-05-08 — DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts (memory checkpoint)
+
+- **Агент:** knowledge-steward
+- **Контур:** local docs/scripts only; no deploy/migrations/.env/secrets/OpenCode/live Telegram.
+- **Цель:** Зафиксировать в памяти артефакты DOP-04 Phase 2 после появления code/doc changes по release workflow.
+- **Сделано (artifacts recorded):**
+  - **Новые scripts (safe-by-default):**
+    - `scripts/deploy/preflight.sh` — pre-deploy preflight checks, `DRY_RUN=true` by default, blocks `.env`/`.env.local` in scripted mode.
+    - `scripts/deploy/release.sh` — guarded release entrypoint; requires `RELEASE_COMMIT`, supports confirmation gates (`CONFIRM_PRODUCTION_DEPLOY`, `CONFIRM_MIGRATIONS`, `CONFIRM_SERVICE_RESTART`), default dry-run.
+    - `scripts/deploy/rollback.sh` — guarded rollback entrypoint; requires `ROLLBACK_COMMIT`, supports confirmation gates (`CONFIRM_ROLLBACK`, `CONFIRM_DB_ROLLBACK`, `CONFIRM_SERVICE_RESTART`), default dry-run.
+    - `scripts/deploy/smoke.sh` — health smoke with structured PASS/WARN/FAIL summary; optional journal scan (`CHECK_JOURNAL=true`), no Telegram live actions by default.
+  - **Новые docs:**
+    - `docs/release-workflow.md` — dry-run flow + explicit safety gates.
+    - `docs/deploy-checklist.md` — pre-deploy / release dry-run / rollback dry-run checklist.
+  - **Обновлённые docs:**
+    - `docs/deployment.md` — раздел `Safe Deploy Scripts (DOP-04 Phase 2)` с примерами dry-run.
+    - `docs/operations-runbook.md` — добавлены scripted release/rollback dry-run команды и безопасная проверка TELEGRAM_BOT_TOKEN presence без печати значения.
+    - `infra/deploy/README.md` — индекс deploy scripts + `DRY_RUN=true` default.
+  - **Approval gates implemented:**
+    - release: `CONFIRM_PRODUCTION_DEPLOY`, `CONFIRM_MIGRATIONS`, `CONFIRM_SERVICE_RESTART`;
+    - rollback: `CONFIRM_ROLLBACK`, `CONFIRM_DB_ROLLBACK`, `CONFIRM_SERVICE_RESTART`;
+    - `RELEASE_COMMIT` / `ROLLBACK_COMMIT` mandatory inputs;
+    - default `DRY_RUN=true` for all scripts.
+  - **Dry-run behavior:** all four scripts default to simulation mode and emit deterministic audit-friendly logs.
+- **Validation/Test status:**
+  - `bash -n` on `preflight.sh`, `release.sh`, `rollback.sh`, `smoke.sh`, `validate-production-templates.sh` — PASS.
+  - `bash scripts/deploy/validate-production-templates.sh` — ALL CHECKS PASSED.
+  - Dry-run runs passed:
+    - `DRY_RUN=true ENV_FILE=.env.example PROJECT_ROOT="$PWD" scripts/deploy/preflight.sh`
+    - `DRY_RUN=true HEALTH_URL=http://127.0.0.1:8000/health scripts/deploy/smoke.sh`
+    - `DRY_RUN=true RELEASE_COMMIT="$(git rev-parse HEAD)" scripts/deploy/release.sh`
+    - `DRY_RUN=true ROLLBACK_COMMIT="$(git rev-parse HEAD)" scripts/deploy/rollback.sh`
+  - Regression tests:
+    - API: 401/401 PASS
+    - Telegram-bot: 79/79 PASS
+    - Worker: 98/98 PASS
+    - Total: 578/578 PASS
+- **Security confirmation:**
+  - No `.env`/secrets/tokens/credentials added to memory.
+  - No deploy execution claimed.
+  - No production/staging actions recorded.
+- **Out-of-scope / deferred:**
+  - Real deploy automation execution remains out of scope for this memory update.
+  - CI/CD wiring details and live environment procedures remain controlled by approval policy.
+- Task summary: [.ai_memory/tasks/2026-05-08-task-dop04-release-workflow.md](.ai_memory/tasks/2026-05-08-task-dop04-release-workflow.md)
+
 ### 2026-05-08 — DOP-03 Phase 3: Production Templates Dry-run Validation
 
 - **Агент:** studio-orchestrator

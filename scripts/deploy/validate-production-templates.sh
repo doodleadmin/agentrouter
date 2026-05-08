@@ -32,6 +32,10 @@ for f in \
     infra/deploy/agentrouter-telegram-bot.service \
     infra/docker/docker-compose.prod.yml \
     .env.example \
+    scripts/deploy/preflight.sh \
+    scripts/deploy/release.sh \
+    scripts/deploy/rollback.sh \
+    scripts/deploy/smoke.sh \
 ; do
     check "$f"
     if [[ -f "$REPO_ROOT/$f" ]]; then pass; else fail "missing"; fi
@@ -87,17 +91,89 @@ for f in infra/deploy/*.service; do
     else pass; fi
 done
 
-# ---- 7. Syntax check this script ----
+# ---- 7. Deploy scripts safety defaults ----
 echo ""
-echo "7. Syntax check this script"
-check "bash -n validate-production-templates.sh"
-if bash -n "$REPO_ROOT/scripts/deploy/validate-production-templates.sh" 2>/dev/null; then
-    pass
-else fail "syntax error"; fi
+echo "7. Deploy scripts safety defaults"
+for f in scripts/deploy/preflight.sh scripts/deploy/release.sh scripts/deploy/rollback.sh scripts/deploy/smoke.sh; do
+    check "$(basename $f) defines DRY_RUN default"
+    if grep -q 'DRY_RUN="${DRY_RUN:-true}"' "$REPO_ROOT/$f" 2>/dev/null; then
+        pass
+    else
+        fail "missing DRY_RUN safe default"
+    fi
+done
 
-# ---- 8. systemd-analyze (if available) ----
+check "preflight blocks .env/.env.local"
+if grep -q 'refusing to run against' "$REPO_ROOT/scripts/deploy/preflight.sh" 2>/dev/null; then
+    pass
+else
+    fail "preflight .env/.env.local block not found"
+fi
+
+check "deploy scripts do not cat .env"
+if grep -qE 'cat\s+.*\.env' "$REPO_ROOT/scripts/deploy/preflight.sh" "$REPO_ROOT/scripts/deploy/release.sh" "$REPO_ROOT/scripts/deploy/rollback.sh" "$REPO_ROOT/scripts/deploy/smoke.sh" 2>/dev/null; then
+    fail "found forbidden 'cat .env' usage"
+else
+    pass
+fi
+
+check "release has CONFIRM_PRODUCTION_DEPLOY"
+if grep -q 'CONFIRM_PRODUCTION_DEPLOY' "$REPO_ROOT/scripts/deploy/release.sh" 2>/dev/null; then pass; else fail "missing CONFIRM_PRODUCTION_DEPLOY"; fi
+
+check "release has CONFIRM_MIGRATIONS"
+if grep -q 'CONFIRM_MIGRATIONS' "$REPO_ROOT/scripts/deploy/release.sh" 2>/dev/null; then pass; else fail "missing CONFIRM_MIGRATIONS"; fi
+
+check "release has CONFIRM_SERVICE_RESTART"
+if grep -q 'CONFIRM_SERVICE_RESTART' "$REPO_ROOT/scripts/deploy/release.sh" 2>/dev/null; then pass; else fail "missing CONFIRM_SERVICE_RESTART"; fi
+
+check "rollback has CONFIRM_ROLLBACK"
+if grep -q 'CONFIRM_ROLLBACK' "$REPO_ROOT/scripts/deploy/rollback.sh" 2>/dev/null; then pass; else fail "missing CONFIRM_ROLLBACK"; fi
+
+check "rollback has CONFIRM_DB_ROLLBACK"
+if grep -q 'CONFIRM_DB_ROLLBACK' "$REPO_ROOT/scripts/deploy/rollback.sh" 2>/dev/null; then pass; else fail "missing CONFIRM_DB_ROLLBACK"; fi
+
+check "smoke has no Telegram live actions"
+if grep -qiE 'sendMessage|botfather|telegram\.org|start_polling|python -m app\.main' "$REPO_ROOT/scripts/deploy/smoke.sh" 2>/dev/null; then
+    fail "smoke script appears to perform Telegram live actions"
+else
+    pass
+fi
+
+check "deploy scripts contain no SQL_ECHO=true"
+if grep -q 'SQL_ECHO=true' "$REPO_ROOT/scripts/deploy/preflight.sh" "$REPO_ROOT/scripts/deploy/release.sh" "$REPO_ROOT/scripts/deploy/rollback.sh" "$REPO_ROOT/scripts/deploy/smoke.sh" 2>/dev/null; then
+    fail "found SQL_ECHO=true in deploy scripts"
+else
+    pass
+fi
+
+check "deploy scripts contain no DEBUG=true"
+if grep -q 'DEBUG=true' "$REPO_ROOT/scripts/deploy/preflight.sh" "$REPO_ROOT/scripts/deploy/release.sh" "$REPO_ROOT/scripts/deploy/rollback.sh" "$REPO_ROOT/scripts/deploy/smoke.sh" 2>/dev/null; then
+    fail "found DEBUG=true in deploy scripts"
+else
+    pass
+fi
+
+# ---- 8. Syntax check deploy scripts ----
 echo ""
-echo "8. systemd unit validation (if systemd-analyze available)"
+echo "8. Syntax check deploy scripts"
+for f in \
+    scripts/deploy/validate-production-templates.sh \
+    scripts/deploy/preflight.sh \
+    scripts/deploy/release.sh \
+    scripts/deploy/rollback.sh \
+    scripts/deploy/smoke.sh \
+; do
+    check "bash -n $(basename $f)"
+    if bash -n "$REPO_ROOT/$f" 2>/dev/null; then
+        pass
+    else
+        fail "syntax error"
+    fi
+done
+
+# ---- 9. systemd-analyze (if available) ----
+echo ""
+echo "9. systemd unit validation (if systemd-analyze available)"
 if command -v systemd-analyze &>/dev/null; then
     for f in infra/deploy/*.service; do
         check "systemd-analyze verify $(basename $f)"
@@ -109,9 +185,9 @@ else
     echo "  SKIP: systemd-analyze not available"
 fi
 
-# ---- 9. docker compose config check (if available) ----
+# ---- 10. docker compose config check (if available) ----
 echo ""
-echo "9. Docker Compose config check (if docker compose available)"
+echo "10. Docker Compose config check (if docker compose available)"
 if command -v docker &>/dev/null && docker compose version &>/dev/null; then
     check "docker compose config on prod compose"
     if docker compose -f "$REPO_ROOT/infra/docker/docker-compose.prod.yml" config --quiet 2>/dev/null; then

@@ -222,6 +222,28 @@ This checks:
 - No inline secrets in systemd units
 - Script syntax validity
 
+## Safe Deploy Scripts (DOP-04 Phase 2)
+
+The repository includes guarded deploy scripts in `scripts/deploy/`.
+
+- `preflight.sh` — validates repository state and production templates.
+- `release.sh` — release workflow entrypoint (dry-run only by default).
+- `rollback.sh` — rollback workflow entrypoint (dry-run only by default).
+- `smoke.sh` — health endpoint smoke check.
+
+Example dry-run usage:
+
+```bash
+DRY_RUN=true ENV_FILE=.env.example PROJECT_ROOT="$PWD" scripts/deploy/preflight.sh
+DRY_RUN=true RELEASE_COMMIT="$(git rev-parse HEAD)" scripts/deploy/release.sh
+DRY_RUN=true ROLLBACK_COMMIT="$(git rev-parse HEAD)" scripts/deploy/rollback.sh
+DRY_RUN=true HEALTH_URL=http://127.0.0.1:8000/health scripts/deploy/smoke.sh
+```
+
+See also:
+- [docs/release-workflow.md](release-workflow.md)
+- [docs/deploy-checklist.md](deploy-checklist.md)
+
 ## Rollback Procedure
 
 ### systemd rollback

@@ -229,9 +229,8 @@ journalctl -u agentrouter-telegram-bot -n 50 --no-pager
 # Verify API is reachable from bot's perspective
 curl -sf http://127.0.0.1:8000/health
 
-# Check token is set
-grep TELEGRAM_BOT_TOKEN /opt/agent-control/agentrouter/.env
-# Should NOT be empty
+# Check token key is set (do not print value)
+grep -q '^TELEGRAM_BOT_TOKEN=' /opt/agent-control/agentrouter/.env && echo "TELEGRAM_BOT_TOKEN: set" || echo "TELEGRAM_BOT_TOKEN: missing"
 
 # Ensure only ONE bot instance is running
 ps aux | grep 'app.main' | grep telegram
@@ -248,6 +247,21 @@ ps aux | grep 'app.main' | grep telegram
 | Put secrets in `.service` files | systemd units may be world-readable |
 | Bind API to `0.0.0.0` | Exposes API directly to internet, bypassing Caddy |
 | Run multiple bot instances | Causes duplicate Telegram message processing |
+
+## Scripted release/rollback operations
+
+Use guarded scripts for reproducible operator actions:
+
+```bash
+DRY_RUN=true ENV_FILE=.env.example PROJECT_ROOT="$PWD" scripts/deploy/preflight.sh
+DRY_RUN=true RELEASE_COMMIT="$(git rev-parse HEAD)" scripts/deploy/release.sh
+DRY_RUN=true ROLLBACK_COMMIT="$(git rev-parse HEAD)" scripts/deploy/rollback.sh
+DRY_RUN=true HEALTH_URL=http://127.0.0.1:8000/health scripts/deploy/smoke.sh
+```
+
+Notes:
+- scripts are **safe by default** (`DRY_RUN=true` unless overridden);
+- live deploy and live rollback are intentionally blocked inside scripts and must be performed only through approved CI/CD or manual approved runbook.
 | Deploy directly to `main` branch | Must go through PR + approval workflow |
 | `rm -rf` outside project directory | Destructive and irreversible |
 | Force push to `main` | Destroys history and audit trail |

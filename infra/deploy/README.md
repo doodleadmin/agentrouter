@@ -24,3 +24,14 @@ All files are **templates** with placeholders. Before deploying:
 - [Operations runbook](../../docs/operations-runbook.md) — start/stop/logs/troubleshooting
 - [Deployment policy](../../docs/deployment-policy.md) — approval workflow and safety rules
 - [Production Docker Compose](../docker/docker-compose.prod.yml) — containerized deploy mode
+
+## Deploy scripts (DOP-04 Phase 2)
+
+Repository-level deploy helper scripts:
+
+- `scripts/deploy/preflight.sh`
+- `scripts/deploy/release.sh`
+- `scripts/deploy/rollback.sh`
+- `scripts/deploy/smoke.sh`
+
+All scripts default to `DRY_RUN=true` and are intended for safe validation-first operations.
