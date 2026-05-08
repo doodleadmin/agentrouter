@@ -5,8 +5,8 @@
 
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
+**Фаза:** Phase 1 — Telegram Routing (SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
+**Статус:** SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
 **Дата последнего обновления:** 2026-05-08
 **Project root:** `F:\dev\agentrouter`
 
@@ -107,6 +107,30 @@
   - NEW: `apps/api/app/security/redaction.py`, `apps/api/tests/test_security_redaction.py` (46 tests)
   - MODIFIED: `apps/api/app/security/__init__.py`, `apps/api/app/services/audit_service.py`, `apps/api/app/policy/runtime_guardrails.py`, `apps/api/app/services/task_event_service.py`, `apps/worker/app/services/redaction.py`, `apps/worker/app/tasks/agent_plan.py`, `apps/api/tests/test_security_audit.py`, `apps/api/tests/test_runtime_be04.py`, `apps/worker/tests/test_execute_security.py`, `apps/worker/tests/test_execute_e2e_fake.py`
 - Task summary: [.ai_memory/tasks/2026-05-08-task-sec03-secrets-redaction.md](.ai_memory/tasks/2026-05-08-task-sec03-secrets-redaction.md)
+
+### 2026-05-08 — SEC-03 Phase 3: Live Redaction Smoke
+
+- **Агент:** security-engineer (execution), knowledge-steward (memory recording)
+- **Контур:** live WSL2 Ubuntu 22.04; Docker PostgreSQL + Redis; commit 5025168.
+- **Цель:** Verify centralized redaction (SEC-03 Phase 2) against a controlled secret corpus injected into real task/approval/audit flows.
+- **Test Setup:**
+  - DB re-initialized (Alembic 0001+0002 applied)
+  - Seed restored
+  - API, Worker, Bot started
+  - Fake-secret corpus (8 real-looking patterns) embedded in task raw_text
+- **Test Execution:**
+  - Task `dfee2c8f` (external `task-0001`, medium risk) created → plan → `waiting_approval`
+  - User approved via `/approve` in Telegram → task `approved`, approval `approved_by=1113930428`
+- **Redaction Verification Results:**
+  - `security_audit_events.metadata` — no fake secrets PASS
+  - `security_audit_events.reason` — no fake secrets PASS
+  - Worker log — 0 fake secret occurrences PASS
+  - Bot log — 0 fake secret occurrences PASS
+  - `task_events` payload — minimal operational metadata only PASS
+- **Noted (expected):** SQLAlchemy engine logger shows INSERT bind parameters for `tasks.raw_text` — this is the user's original message stored in the task record. Redaction protects event/audit payloads. Worker log has 8 pre-existing `[REDACTED]` markers from prior sessions (not this test).
+- **Verdict:** PASS — centralized redaction correctly protects audit metadata, audit reason, worker logs, bot logs, and task event payloads. No secrets leak in auditable surfaces. No code changes.
+- **Changed files:** None (memory-only update)
+- Task summary: [.ai_memory/tasks/2026-05-08-task-sec03-phase3-live-redaction-smoke.md](.ai_memory/tasks/2026-05-08-task-sec03-phase3-live-redaction-smoke.md)
 
 ### 2026-05-08 — SEC-02 Phase 2: Security Audit DB Model, Migration, and Service
 
@@ -323,6 +347,7 @@
 - [x] **SEC-02 Phase 3:** P0 Security Audit integration into approve/reject/callback endpoints (524/524 tests)
 - [x] **SEC-02 Phase 4:** Audit Trail Live Smoke — validated against real Telegram /approve flow (PASS)
 - [x] **SEC-03 Phase 2:** Centralized secrets redaction module (10 patterns, unified 4 systems, 570/570 tests)
+- [x] **SEC-03 Phase 3:** Live Redaction Smoke — verified redaction against fake-secret corpus in real flows (PASS)
 - [ ] Frontend код (React)
 - [x] Docker Compose конфигурация (dev)
 - [ ] `.env` конфигурация
