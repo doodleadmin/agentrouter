@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 70 |
+| **Task logs** | 87 |
 | **Шаблоны** | 5 |
 
 ---
@@ -72,7 +72,7 @@
 | [2026-05-03-task-fnd03-db-foundation.md](tasks/2026-05-03-task-fnd03-db-foundation.md) | FND-03 |
 | [2026-05-03-task-fnd03-fix.md](tasks/2026-05-03-task-fnd03-fix.md) | FND-03 fix |
 | [2026-05-03-task-dop01-dev-docker-compose.md](tasks/2026-05-03-task-dop01-dev-docker-compose.md) | DOP-01 |
-| [2026-05-03-task-dop01-check.md](tasks/2026-05-03-task-dop01-check.md) | DOP-01 check |
+| [2026-05-03-task-dop01-safe-local-check.md](tasks/2026-05-03-task-dop01-safe-local-check.md) | DOP-01 safe local check |
 | [2026-05-03-task-be01-crud.md](tasks/2026-05-03-task-be01-crud.md) | BE-01 |
 | [2026-05-03-task-be02-approvals.md](tasks/2026-05-03-task-be02-approvals.md) | BE-02 |
 | [2026-05-03-task-tg01-telegram-gateway.md](tasks/2026-05-03-task-tg01-telegram-gateway.md) | TG-01 |
@@ -98,6 +98,8 @@
 | [2026-05-04-task-be04-transport-hardening.md](tasks/2026-05-04-task-be04-transport-hardening.md) | BE-04 transport hardening |
 | [2026-05-04-task-be05-transport-gap-closures.md](tasks/2026-05-04-task-be05-transport-gap-closures.md) | BE-05 RealOpenCodeHttpTransport + gaps |
 | [2026-05-04-task-be05-hardening-b1-m1-m2-m3.md](tasks/2026-05-04-task-be05-hardening-b1-m1-m2-m3.md) | BE-05 hardening (B-1 + M-1/M-2/M-3) |
+| [2026-05-04-task-be05-hardening-phase1.md](tasks/2026-05-04-task-be05-hardening-phase1.md) | BE-05 Phase 1 hardening (B-1+M-1/M-2/M-3) |
+| [2026-05-04-devops-opencode-smoke-test-plan.md](tasks/2026-05-04-devops-opencode-smoke-test-plan.md) | DevOps OpenCode smoke test plan |
 | [2026-05-04-task-be06-controlled-smoke-test-plan.md](tasks/2026-05-04-task-be06-controlled-smoke-test-plan.md) | BE-06 controlled OpenCode smoke test plan/preflight |
 | [2026-05-04-task-be06-smoke-docs-fix.md](tasks/2026-05-04-task-be06-smoke-docs-fix.md) | BE-06 smoke docs fix (no .env edits) |
 | [2026-05-04-task-be06-rerun-plan-after-step-b-abort.md](tasks/2026-05-04-task-be06-rerun-plan-after-step-b-abort.md) | BE-06 rerun plan after Step-B abort |
@@ -119,8 +121,24 @@
 | [2026-05-06-task-dev-linux-01-runtime-scripts.md](tasks/2026-05-06-task-dev-linux-01-runtime-scripts.md) | DEV-LINUX-01: Ubuntu 22.04 Runtime Scripts |
 | [2026-05-06-task-dev-linux-01b-dryrun-fix.md](tasks/2026-05-06-task-dev-linux-01b-dryrun-fix.md) | DEV-LINUX-01B: Dry-Run Precondition Fix |
 | [2026-05-06-task-dev-linux-01c-real-stub-contour.md](tasks/2026-05-06-task-dev-linux-01c-real-stub-contour.md) | DEV-LINUX-01C: Real Stub Contour Validation |
+| [2026-05-06-task-dev-linux-01d-real-opencode-contour.md](tasks/2026-05-06-task-dev-linux-01d-real-opencode-contour.md) | DEV-LINUX-01D: Real OpenCode Runtime Contour |
+| [2026-05-06-task-tg03-telegram-approvals-ux.md](tasks/2026-05-06-task-tg03-telegram-approvals-ux.md) | TG-03: Telegram Approvals + Task Status UX |
+| [2026-05-06-task-tg04-live-integration-phase1.md](tasks/2026-05-06-task-tg04-live-integration-phase1.md) | TG-04 Phase 1: Live Integration Security Prereqs |
+| [2026-05-06-task-tg04-aiogram-message-thread-fix.md](tasks/2026-05-06-task-tg04-aiogram-message-thread-fix.md) | TG-04: aiogram 3.15 message_thread_id compatibility fix |
+| [2026-05-06-task-tg04-html-placeholder-fix.md](tasks/2026-05-06-task-tg04-html-placeholder-fix.md) | TG-04: HTML placeholder fix (TelegramBadRequest) |
+| [2026-05-06-task-tg04-private-chat-wording-fix.md](tasks/2026-05-06-task-tg04-private-chat-wording-fix.md) | TG-04: Private chat wording fix |
+| [2026-05-06-task-tg04-private-chat-binding-support.md](tasks/2026-05-06-task-tg04-private-chat-binding-support.md) | TG-04: Private chat binding support |
+| [2026-05-06-task-tg-04-phase5-live-e2e.md](tasks/2026-05-06-task-tg-04-phase5-live-e2e.md) | TG-04 Phase 5: Live Private Chat E2E |
+| [2026-05-06-task-tg05-live-notifications-admin-gate.md](tasks/2026-05-06-task-tg05-live-notifications-admin-gate.md) | TG-05 Phase 1: Live Notifications + Admin Gate |
+| [2026-05-06-task-worker-linux-01-celery-sighup-fix.md](tasks/2026-05-06-task-worker-linux-01-celery-sighup-fix.md) | WORKER-LINUX-01: Celery SIGHUP Restart Fix |
 | [2026-05-07-task-tg06-phase2-compact-callbacks.md](tasks/2026-05-07-task-tg06-phase2-compact-callbacks.md) | TG-06 Phase 2: Compact Telegram Callback Protocol |
 | [2026-05-07-task-tg06-phase3-live-test.md](tasks/2026-05-07-task-tg06-phase3-live-test.md) | TG-06 Phase 3: Live Compact Callback E2E |
+| [2026-05-07-task-tg05-phase2-live-notification-smoke.md](tasks/2026-05-07-task-tg05-phase2-live-notification-smoke.md) | TG-05 Phase 2: Live Notification Smoke |
+| [2026-05-07-task-tg05-phase3-admin-approval-flow.md](tasks/2026-05-07-task-tg05-phase3-admin-approval-flow.md) | TG-05 Phase 3: Admin Approval Flow |
+| [2026-05-07-task-tg05-phase4-admin-reject-flow.md](tasks/2026-05-07-task-tg05-phase4-admin-reject-flow.md) | TG-05 Phase 4: Admin Reject Flow |
+| [2026-05-07-task-tg05-closeout.md](tasks/2026-05-07-task-tg05-closeout.md) | TG-05: Closeout |
+| [2026-05-07-task-ci-01-phase1-local-validation.md](tasks/2026-05-07-task-ci-01-phase1-local-validation.md) | CI-01 Phase 1: Local Validation Pipeline |
+| [2026-05-07-task-ci-02-local-validation-fixes.md](tasks/2026-05-07-task-ci-02-local-validation-fixes.md) | CI-02: Local Validation Fixes |
 | [2026-05-07-task-infra-01-dev-runtime-config.md](tasks/2026-05-07-task-infra-01-dev-runtime-config.md) | INFRA-01: Dev Runtime Config Drift Fix |
 | [2026-05-07-task-infra-02-tg06-regression-live-smoke.md](tasks/2026-05-07-task-infra-02-tg06-regression-live-smoke.md) | INFRA-02: TG-06 Regression Live Smoke |
 | [2026-05-07-task-mem04-memory-checkpoints.md](tasks/2026-05-07-task-mem04-memory-checkpoints.md) | MEM-04 Phase 2: Soft Mandatory Memory Checkpoints |
@@ -136,6 +154,7 @@
 | [2026-05-08-task-dop03-phase3-dry-run-validation.md](tasks/2026-05-08-task-dop03-phase3-dry-run-validation.md) | DOP-03 Phase 3: Production Templates Dry-run Validation |
 | [2026-05-08-task-dop04-release-workflow.md](tasks/2026-05-08-task-dop04-release-workflow.md) | DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts + Memory Checkpoint |
 | [2026-05-08-task-dop04-phase3-dry-run-release-validation.md](tasks/2026-05-08-task-dop04-phase3-dry-run-release-validation.md) | DOP-04 Phase 3: Release Workflow Dry-run Validation |
+| [2026-05-09-task-backlog02-mvp-backlog-audit.md](tasks/2026-05-09-task-backlog02-mvp-backlog-audit.md) | BACKLOG-02: MVP Backlog Completion Audit + Roadmap Sync |
 
 ---
 

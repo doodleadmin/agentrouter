@@ -1,14 +1,21 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-08 (DOP-04 Phase 3 Release Workflow Dry-run Validation PASS) | Автор: studio-orchestrator
+Обновлено: 2026-05-09 (BACKLOG-02 Phase 2: MVP audit + docs sync) | Автор: studio-orchestrator
 
 ---
 
 ## Статус проекта
 
-**Фаза:** Phase 1 — Telegram Routing (DOP-04 Phase 3 Release Workflow Dry-run Validation PASS + DOP-03 Phase 3 Production Templates Dry-run Validation PASS + DOP-03 Phase 2 Production Runtime Templates + Enhanced Health Check COMPLETE + SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Состояние:** FND-01..03, DOP-01, BE-01, BE-02, TG-01, TG-02, BE-03, WRK-01, WRK-02, MEM-01..04, DOP-02, WRK-03, WRK-03-hardening, WRK-03-fake-e2e, WRK-04, WRK-04-polish, WRK-04-manual-local-test, WRK-04-real-docker-smoke-test, WRK-04-manual-test-hardening, BE-04-review-fixes, BE-04-transport-hardening, BE-05-transport-gap-closures, BE-05-hardening-phase1, BE-06-task-creation-fix, BE-06-final-execution, BE-07-payload-contract-alignment, BE-07-plus-native-contract-alignment, DEV-DB-01-alembic-async-fix, BE-08-session-traceability-timeout, BE-08-real-opencode-smoke-success, BE-09-phase1-worker-timeout, BE-09-phase2-real-opencode-e2e-success, BE-10-runtime-reliability-hardening, BE-10-real-opencode-regression-smoke, BE-11-runtime-runbook-automation, BE-11-scripts-final-repair, BE-12-opencode-read-timeout-alignment, TG-03-telegram-approvals-ux, TG-04-live-integration-phase1, TG-04-aiogram-message-thread-fix, TG-04-html-placeholder-fix, TG-04-private-chat-wording-fix, TG-04-private-chat-binding-support, DEV-LINUX-01-ubuntu-runtime-scripts, DEV-LINUX-01b-dryrun-fix, DEV-LINUX-01c-real-stub-contour, DEV-LINUX-01d-real-opencode-contour, WORKER-LINUX-01-celery-sighup-fix, TG-04-phase5-live-private-chat-e2e, TG-05-phase1-notifications-admin-gate, TG-05-phase2-live-notification-smoke, TG-05-phase3-admin-approval-flow, TG-05-phase4-admin-reject-flow, TG-05-closeout, CI-02-local-validation-fixes, TG-06-phase2-compact-callbacks, TG-06-phase3-live-callback-e2e, INFRA-01-dev-runtime-config-drift-fix, INFRA-02-tg06-regression-live-smoke, MEM-04-phase2-soft-mandatory-memory-checkpoints, SEC-01-phase2-permission-engine-mvp, SEC-01-phase3-live-smoke-admin-gate, SEC-02-phase2-audit-model-migration-service, SEC-02-phase3-p0-audit-integration, SEC-03-phase2-centralized-secrets-redaction, SEC-03-phase3-live-redaction-smoke, SEC-03B-phase2-sqlalchemy-log-safety, DOP-03-phase2-production-runtime-templates выполнены. CRITICAL/HIGH закрыты.
-**Блокеры:** Нет (BE-04 security+architecture review blockers закрыты)
+**Current state:** MVP v1 COMPLETE
+**Latest stable commit:** `dd8590c` (before BACKLOG-02 Phase 2 changes)
+**Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — Total 578/578 PASS
+**Production deploy:** NOT executed — requires explicit approval
+**Security chain:** SEC-01..SEC-03B — all PASS
+**Deploy readiness:** DOP-03 + DOP-04 — dry-run validated
+
+**Фаза:** MVP v1 complete (Phase 0–4, Phase 6–7 dry-run validated)
+**Состояние:** FND-01..03, DOP-01..04, BE-01..12, TG-01..06, MEM-01..04, WRK-01..04, SEC-01..03B, CI-01..02, INFRA-01..02, DEV-LINUX-01..01D, WORKER-LINUX-01, DEV-DB-01 выполнены. All CRITICAL/HIGH closed. 87 task logs.
+**Блокеры:** Нет (all original blockers resolved)
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
@@ -186,8 +193,11 @@
 
 ## Следующие шаги
 
-1. Memory retrieval tuning: ranking quality + scope heuristics
-3. Полный план: [../docs/mvp-backlog.md](../docs/mvp-backlog.md)
+1. Real production deploy (requires explicit approval)
+2. PR automation (GitHub/GitLab integration)
+3. Frontend dashboard (React + Vite + shadcn/ui)
+4. Memory retrieval tuning: ranking quality + scope heuristics
+5. Full backlog: [../docs/mvp-backlog.md](../docs/mvp-backlog.md)
 
 ## Кодовая база (новое)
 
@@ -218,5 +228,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 70 |
+| **Task logs** | 87 |
 | Проекты | 0 |

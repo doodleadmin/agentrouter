@@ -3,11 +3,32 @@
 > **Это краткая сводка.** Полная память проекта — в `.ai_memory/` (Obsidian-like vault, подключён к MCP).
 > Навигация по vault: [.ai_memory/_INDEX.md](.ai_memory/_INDEX.md)
 
+## MVP v1 Complete Summary
+
+- **MVP v1 original backlog: 23/23 COMPLETE**
+- **Latest commit:** `dd8590c` (before BACKLOG-02 Phase 2 docs update)
+- **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — **Total 578/578 PASS**
+- **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
+- **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
+- **Real production deploy: NOT executed** — requires explicit approval
+- **Task logs:** 87 files in `.ai_memory/tasks/`
+
+### Next recommended options
+
+1. Real production deploy (requires explicit approval)
+2. PR automation (GitHub/GitLab integration)
+3. Frontend dashboard (React + Vite + shadcn/ui)
+4. Memory retrieval tuning
+5. Telegram webhook mode
+6. CI/CD remote pipeline
+7. Observability stack
+
+---
+
 ## Текущий статус
 
-**Фаза:** Phase 1 — Telegram Routing (DOP-04 Phase 3 Release Workflow Dry-run Validation PASS + DOP-03 Phase 3 Dry-run Validation PASS + DOP-03 Phase 2 Production Runtime Templates + Enhanced Health Check COMPLETE + SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + SEC-02 Phase 4 Live Smoke PASS + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 2 Audit Model+Service COMPLETE + SEC-01 Phase 3 Live Smoke PASS + SEC-01 Phase 2 Permission Engine MVP COMPLETE)
-**Статус:** DOP-04 Phase 3 Release Workflow Dry-run Validation PASS + DOP-03 Phase 3 Production Templates Dry-run Validation PASS + DOP-03 Phase 2 Production Runtime Templates + Enhanced Health Check COMPLETE + SEC-03B Phase 2 SQLAlchemy Log Safety COMPLETE + SEC-03 Phase 3 Live Redaction Smoke PASS + SEC-03 Phase 2 Centralized Secrets Redaction COMPLETE + BE-10 Runtime Reliability Hardening COMPLETE + BE-11 Runtime Runbook Scripts & Docs COMPLETE + BE-11C scripts parser/encoding hardening complete (local scripts only) + BE-12 OpenCode read-timeout alignment COMPLETE + TG-03 Telegram Approvals + Task Status UX COMPLETE + TG-04 Live Integration Phase 1 (security prerequisites) COMPLETE + TG-04 aiogram 3.15 message_thread_id compatibility fix COMPLETE + TG-04 HTML placeholder fix COMPLETE + TG-04 private chat wording fix COMPLETE + TG-04 private chat binding support COMPLETE + DEV-LINUX-01 Ubuntu 22.04 runtime scripts COMPLETE + DEV-LINUX-01B dry-run precondition fix COMPLETE + DEV-LINUX-01C real stub contour validation COMPLETE + DEV-LINUX-01D real OpenCode runtime contour COMPLETE + WORKER-LINUX-01 Celery SIGHUP restart crash fix COMPLETE + TG-04 Phase 5 Live Private Chat E2E COMPLETE + TG-05 Phase 1 Live Notifications + Admin Gate COMPLETE + CI-01 Phase 1 Local Validation COMPLETE + TG-05 Phase 2 Live Notification Smoke PASS + TG-05 Phase 3 Admin Approval Flow PASS (2 bug fixes) + TG-05 Phase 4 Admin Reject Flow PASS + TG-05 CLOSEOUT PASS + CI-02 Local Validation Fixes PASS + TG-06 Phase 2 Compact Telegram Callback Protocol COMPLETE + TG-06 Phase 3 Live Callback E2E COMPLETE + INFRA-01 Dev Runtime Config Drift Fix COMPLETE + INFRA-02 TG-06 Regression Live Smoke PASS + MEM-04 Phase 2 Soft Mandatory Memory Checkpoints COMPLETE + SEC-01 Phase 2 Permission Engine MVP COMPLETE + SEC-01 Phase 3 Live Smoke: PermissionEngine admin gate PASS + SEC-02 Phase 2 Audit Model, Migration & Service COMPLETE + SEC-02 Phase 3 P0 Audit Integration COMPLETE + SEC-02 Phase 4 Audit Trail Live Smoke PASS.
-**Дата последнего обновления:** 2026-05-08
+**Фаза:** MVP v1 COMPLETE (Phase 0–4, Phase 6–7 dry-run validated)
+**Дата последнего обновления:** 2026-05-09 (BACKLOG-02 Phase 2)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-08 — DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts (memory checkpoint)
@@ -446,32 +467,18 @@
 - [x] **FND-02:** FastAPI skeleton (main.py, config.py, /health, pyproject.toml)
 - [x] **DOP-01:** dev docker-compose (`infra/docker/docker-compose.yml`)
 
-## Что не сделано
+## Что не сделано (deferred / post-MVP)
 
-- [x] **FND-03:** SQLAlchemy модели + Alembic baseline миграция (не применялась)
-- [x] **BE-01:** CRUD /projects, /agents, /telegram_topics с мягким удалением
-- [x] **BE-02:** Tasks + Approvals domain (task lifecycle, approval flow, event audit)
-- [x] **TG-01:** Telegram bot gateway (aiogram 3.x, commands + topic-aware task creation)
-- [x] **TG-02:** Topic binding + routing bridge (`/bind_topic`, `/unbind_topic`, `/topic_status`)
-- [x] **WRK-01:** Celery worker skeleton (7 queues, healthcheck, stubs, retry/backoff)
-- [x] **WRK-02:** Plan pipeline (trigger-plan endpoint, agent_plan + notifications tasks, notifier adapter)
-- [x] **MEM-01:** Memory provisioning (service, schemas, 5 templates, docs, forbidden content detection)
-- [x] **MEM-02:** Memory CRUD API (6 endpoints, policy service, access tiers, secrets guard)
-- [x] **DOP-02:** Dockerfiles + sandbox compose (sandbox isolation, non-root, no-new-privileges, limits)
-- [x] Worker execute pipeline (WRK-03)
-- [x] Memory indexing + retrieval (MEM-03)
-- [x] **MEM-04 Phase 2:** Soft mandatory memory checkpoints (AGENTS.md rule #7, runbook, template, docs)
-- [x] **SEC-01 Phase 2:** Permission Engine MVP (fail-closed, 14 actions, 5 endpoints wired, 297/297 tests)
-- [x] **SEC-02 Phase 2:** Security Audit DB model, migration, append-only service, redaction helpers (508/508 tests)
-- [x] **SEC-02 Phase 3:** P0 Security Audit integration into approve/reject/callback endpoints (524/524 tests)
-- [x] **SEC-02 Phase 4:** Audit Trail Live Smoke — validated against real Telegram /approve flow (PASS)
-- [x] **SEC-03 Phase 2:** Centralized secrets redaction module (10 patterns, unified 4 systems, 570/570 tests)
-- [x] **SEC-03 Phase 3:** Live Redaction Smoke — verified redaction against fake-secret corpus in real flows (PASS)
-- [x] **SEC-03B Phase 2:** SQLAlchemy Log Safety — decoupled echo from DEBUG, added SQL_ECHO config (574/574 tests)
-- [x] **DOP-03 Phase 2:** Production Runtime Templates + Enhanced Health Check — Caddyfile, 3 systemd units, prod compose, .env.example, validation script, deployment.md, operations-runbook.md, enhanced /health (578/578 tests)
-- [ ] Frontend код (React)
-- [x] Docker Compose конфигурация (dev)
-- [ ] `.env` конфигурация
+- [ ] Frontend код (React) — v2
+- [ ] Real production deploy — requires explicit approval
+- [ ] `.env` конфигурация with real credentials — requires approval
+- [ ] PR automation (GitHub/GitLab integration)
+- [ ] Telegram webhook mode (currently long-polling)
+- [ ] CI/CD remote pipeline (GitHub Actions / GitLab CI)
+- [ ] Observability stack (Sentry / Grafana / Prometheus / log rotation)
+- [ ] Qdrant migration (from pgvector)
+- [ ] Agent permissions JSONB Phase 3 (API-level enforcement)
+- [ ] Memory retrieval tuning (ranking quality + scope heuristics)
 
 ## Ключевые решения
 
