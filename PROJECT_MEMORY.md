@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Real production deploy: NOT executed** — requires explicit approval
-- **Task logs:** 87 files in `.ai_memory/tasks/`
+- **Task logs:** 89 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,47 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 COMPLETE (Phase 0–4, Phase 6–7 dry-run validated)
-**Дата последнего обновления:** 2026-05-09 (README-01 GitHub README)
+**Дата последнего обновления:** 2026-05-09 (VPS-02 Base Server Setup)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-03A: SSH hardening + swap + repo bootstrap (45.130.213.12)
+
+- **Агент:** devops-automator
+- **Контур:** VPS 45.130.213.12, real server changes with explicit gate `CONFIRM_VPS03A=yes`
+- **Сделано:**
+  - root SSH connectivity verified ✅
+  - 2G swap added and persisted (`/swapfile`, `/etc/fstab`) ✅
+  - `agentmc` SSH authorized_keys provisioned from root key and permissions fixed ✅
+  - `agentmc` key login + docker access verified before hardening ✅
+  - SSH hardening drop-in applied (`PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `PermitRootLogin prohibit-password`, `PubkeyAuthentication yes`) ✅
+  - `sshd -t` validation and SSH reload successful ✅
+  - post-hardening checks passed for `agentmc` and root key fallback ✅
+  - repo cloned to `/opt/agent-control/agentrouter`, ownership set to `agentmc:agentmc` ✅
+  - repo verified on `main`, latest commit `6530db3` (expected `6530db3`/`7f51829`) ✅
+  - `.env` not created, no app containers, no `agentrouter` services ✅
+  - firewall unchanged: only OpenSSH 22/tcp allowed inbound ✅
+- **Production deploy:** NOT executed
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps03a-ssh-swap-repo-bootstrap.md](.ai_memory/tasks/2026-05-09-task-vps03a-ssh-swap-repo-bootstrap.md)
+
+### 2026-05-09 — VPS-02: Base Server Setup (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, root SSH, key-based auth. Server modifications only. No app deploy.
+- **Сделано:**
+  - SSH connectivity confirmed ✅
+  - OS: Ubuntu 24.04.4 LTS, 2 vCPU, 3.8 GiB RAM, 40 GB disk (36 GB free) ✅
+  - Package index updated (`apt-get update`) ✅
+  - Base packages verified: git, curl, gnupg, jq, ufw, htop, unzip, lsb-release ✅
+  - Docker Engine 29.4.3 + Compose v5.1.3 + buildx 0.33.0 installed from official Docker repo ✅
+  - Docker enabled (`systemctl enable --now docker`), active ✅
+  - System user `agentmc` created (UID 999, docker group) ✅
+  - Directories created: `/opt/agent-control`, `/var/log/agentrouter`, `/var/lib/agentrouter` (agentmc:agentmc, mode 750) ✅
+  - UFW firewall enabled, OpenSSH (22/tcp) allowed, default deny incoming ✅
+  - HTTP/HTTPS ports NOT opened (no domain/Caddy yet) ✅
+  - Verified: repo NOT cloned, .env NOT created, 0 containers, app NOT deployed ✅
+- **Production deploy: NOT executed**
+- **Warnings:** no swap (deferred), root login enabled (deferred), password auth ambiguous (deferred)
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps02-base-server-setup.md](.ai_memory/tasks/2026-05-09-task-vps02-base-server-setup.md)
 
 ### 2026-05-08 — DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts (memory checkpoint)
 

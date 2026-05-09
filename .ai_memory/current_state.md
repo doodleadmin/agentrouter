@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (README-01: GitHub README polish) | Автор: studio-orchestrator
+Обновлено: 2026-05-09 (VPS-03A: SSH hardening + swap + repo bootstrap) | Автор: devops-automator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-03A (devops-automator): на VPS `45.130.213.12` выполнены hardening/bootstrapping шаги — добавлен swap 2G (`/swapfile` + fstab), подготовлен `agentmc` SSH key login, применён safe SSH hardening (`PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `PermitRootLogin prohibit-password`, `PubkeyAuthentication yes`) с проверкой `sshd -t` и post-check для `agentmc` + root key fallback; репозиторий `agentrouter` клонирован в `/opt/agent-control/agentrouter`; подтверждено отсутствие `.env`, app containers и agentrouter services; firewall остаётся с inbound только 22/tcp.
 
 - FND-01 (git-workflow-master): .gitignore, CHANGELOG, CONTRIBUTING созданы
 - FND-02 (backend-architect): FastAPI app, /health, pydantic-settings config созданы
@@ -135,6 +137,8 @@
 | DOP-03 Phase 3: Production Templates Dry-run Validation | ✅ Выполнена | studio-orchestrator |
 | DOP-04 Phase 2: Safe Release/Rollback Workflow Artifacts (memory) | ✅ Выполнена | knowledge-steward |
 | DOP-04 Phase 3: Release Workflow Dry-run Validation | ✅ Выполнена | studio-orchestrator |
+| VPS-01: Server Preflight Inspection (45.130.213.12) | ✅ Выполнена | studio-orchestrator |
+| VPS-02: Base Server Setup (45.130.213.12) | ✅ Выполнена | studio-orchestrator |
 
 - **SEC-03B Phase 2 SQLAlchemy Log Safety (security-engineer):** Decoupled SQLAlchemy `echo` from `DEBUG` config. Root cause from SEC-03 Phase 3 live smoke: `session.py` used `echo=settings.DEBUG`, dev scripts always set `DEBUG=true`, causing SQLAlchemy engine logger to emit all SQL + bind params (including `tasks.raw_text`) into `api-stub.log`. Fix: added `SQL_ECHO: bool = False` to config (independent of DEBUG), changed `session.py` to use `echo=settings.SQL_ECHO`, updated 2 dev-linux scripts with opt-in comments. Design: DEBUG can remain true in dev (FastAPI error detail), SQL_ECHO defaults to false (no bind param logging), SQL echo requires explicit `SQL_ECHO=true`. Validation: API 397/397 (was 393, +4 config tests), Bot 79/79, Worker 98/98, Total 574/574, ruff clean, compileall clean. 5 files changed (4 modified + 1 new).
 
@@ -191,6 +195,27 @@
 
 - **TG-04 Phase 5 Live Private Chat E2E (studio-orchestrator):** Full live Telegram private chat E2E validated. Components: API stub (PID 12328), Celery worker (PID 13000, SIGHUP fix active), Telegram bot @agentrouters_bot (PID 13087). User sent "TG-04 final live smoke" in private chat. Bot received → created task-0010 (5d16fe1e) → triggered plan → worker picked up → runtime plan → approved → notification dispatched (StubNotifier). Processing: 0.125s worker + 1.49s bot handler. 11/11 validation checks PASS: task_created, plan_triggered, runtime_session_created (stub-session), plan_generated=1, status=approved, no runtime_error, no policy_blocked, notification dispatched, worker alive, bot alive, no feedback loop (10 tasks total, 0 after task-0010). Observations: TelegramConflictError transient conflicts (recovered), StubNotifier used (worker env lacks token), no runtime_session_created event in task_events (in payload). Cleanup: all processes stopped, API restarted stub, ports clean.
 
+## VPS Server State (45.130.213.12)
+
+| Component | Status |
+|-----------|--------|
+| OS | Ubuntu 24.04.4 LTS, kernel 6.8.0-106-generic, systemd v255 |
+| CPU | 2 vCPU |
+| RAM | 3.8 GiB |
+| Disk | 40 GB (36 GB free) |
+| Swap | 0 B ⚠️ (deferred) |
+| Docker Engine | 29.4.3 active |
+| Docker Compose | v5.1.3 |
+| User agentmc | UID 999, docker group |
+| /opt/agent-control | agentmc:agentmc 750 ✅ |
+| /var/log/agentrouter | agentmc:agentmc 750 ✅ |
+| /var/lib/agentrouter | agentmc:agentmc 750 ✅ |
+| UFW | active, SSH (22/tcp) only |
+| HTTP/HTTPS | NOT opened (no domain) |
+| Repo cloned | ❌ NO |
+| .env created | ❌ NO |
+| App deployed | ❌ NO |
+
 ## Следующие шаги
 
 1. Real production deploy (requires explicit approval)
@@ -228,5 +253,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 87 |
+| **Task logs** | 89 |
 | Проекты | 0 |

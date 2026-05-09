@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 88 |
+| **Task logs** | 90 |
 | **Шаблоны** | 5 |
 
 ---
@@ -69,6 +69,7 @@
 | Файл | Задача |
 |------|--------|
 | [2026-05-03-task-fnd01-fnd02.md](tasks/2026-05-03-task-fnd01-fnd02.md) | FND-01 + FND-02 |
+| [2026-05-09-task-vps03a-ssh-swap-repo-bootstrap.md](tasks/2026-05-09-task-vps03a-ssh-swap-repo-bootstrap.md) | VPS-03A |
 | [2026-05-03-task-fnd03-db-foundation.md](tasks/2026-05-03-task-fnd03-db-foundation.md) | FND-03 |
 | [2026-05-03-task-fnd03-fix.md](tasks/2026-05-03-task-fnd03-fix.md) | FND-03 fix |
 | [2026-05-03-task-dop01-dev-docker-compose.md](tasks/2026-05-03-task-dop01-dev-docker-compose.md) | DOP-01 |
@@ -156,6 +157,8 @@
 | [2026-05-08-task-dop04-phase3-dry-run-release-validation.md](tasks/2026-05-08-task-dop04-phase3-dry-run-release-validation.md) | DOP-04 Phase 3: Release Workflow Dry-run Validation |
 | [2026-05-09-task-backlog02-mvp-backlog-audit.md](tasks/2026-05-09-task-backlog02-mvp-backlog-audit.md) | BACKLOG-02: MVP Backlog Completion Audit + Roadmap Sync |
 | [2026-05-09-task-readme-github-polish.md](tasks/2026-05-09-task-readme-github-polish.md) | README-01: GitHub README Polish |
+| [2026-05-09-task-vps01-server-preflight.md](tasks/2026-05-09-task-vps01-server-preflight.md) | VPS-01: Server Preflight Inspection |
+| [2026-05-09-task-vps02-base-server-setup.md](tasks/2026-05-09-task-vps02-base-server-setup.md) | VPS-02: Base Server Setup (45.130.213.12) |
 
 ---
 
