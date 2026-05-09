@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (VPS-03A: SSH hardening + swap + repo bootstrap) | Автор: devops-automator
+Обновлено: 2026-05-09 (VPS-03B: env + DB/Redis bootstrap only) | Автор: devops-automator
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Что происходит сейчас
 
-- VPS-03A (devops-automator): на VPS `45.130.213.12` выполнены hardening/bootstrapping шаги — добавлен swap 2G (`/swapfile` + fstab), подготовлен `agentmc` SSH key login, применён safe SSH hardening (`PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `PermitRootLogin prohibit-password`, `PubkeyAuthentication yes`) с проверкой `sshd -t` и post-check для `agentmc` + root key fallback; репозиторий `agentrouter` клонирован в `/opt/agent-control/agentrouter`; подтверждено отсутствие `.env`, app containers и agentrouter services; firewall остаётся с inbound только 22/tcp.
+- VPS-03B (devops-automator): на VPS `45.130.213.12` выполнен безопасный bootstrap только для infra-зависимостей — создан production `.env` из `.env.example` (бывш. absent), сгенерированы `POSTGRES_PASSWORD` + `CALLBACK_SECRET` (значения не выводились), права `.env` `600` owner `agentmc`; `docker compose config` (prod) PASS и рендер в `/tmp/agentrouter-compose-rendered.yml`; запущены только `postgres` и `redis`, readiness PASS (`pg_isready`, `PONG`); подтверждено отсутствие запуска `api/worker/telegram-bot`, отсутствие deploy/migrations/OpenCode, порт 8000 не слушается, 80/443 закрыты, UFW без изменений (только 22/tcp).
 
 - FND-01 (git-workflow-master): .gitignore, CHANGELOG, CONTRIBUTING созданы
 - FND-02 (backend-architect): FastAPI app, /health, pydantic-settings config созданы
@@ -203,7 +203,7 @@
 | CPU | 2 vCPU |
 | RAM | 3.8 GiB |
 | Disk | 40 GB (36 GB free) |
-| Swap | 0 B ⚠️ (deferred) |
+| Swap | 2.0 GiB configured, 0 B used |
 | Docker Engine | 29.4.3 active |
 | Docker Compose | v5.1.3 |
 | User agentmc | UID 999, docker group |
@@ -212,8 +212,8 @@
 | /var/lib/agentrouter | agentmc:agentmc 750 ✅ |
 | UFW | active, SSH (22/tcp) only |
 | HTTP/HTTPS | NOT opened (no domain) |
-| Repo cloned | ❌ NO |
-| .env created | ❌ NO |
+| Repo cloned | ✅ YES (`/opt/agent-control/agentrouter`) |
+| .env created | ✅ YES (mode 600, owner agentmc; values hidden) |
 | App deployed | ❌ NO |
 
 ## Следующие шаги

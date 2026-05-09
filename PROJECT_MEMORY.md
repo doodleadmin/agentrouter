@@ -29,8 +29,27 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 COMPLETE (Phase 0–4, Phase 6–7 dry-run validated)
-**Дата последнего обновления:** 2026-05-09 (VPS-02 Base Server Setup)
+**Дата последнего обновления:** 2026-05-09 (VPS-03B env + DB/Redis bootstrap only)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-03B: prod .env + DB/Redis bootstrap only (45.130.213.12)
+
+- **Агент:** devops-automator
+- **Контур:** VPS 45.130.213.12, strict safety execution, report-only
+- **Gate:** `CONFIRM_VPS03B=yes` treated as granted per task instruction
+- **Сделано:**
+  - local guard PASS: clean tree, HEAD `a533ec8` ✅
+  - SSH checks PASS (`agentmc`, root fallback), swap/docker/ufw baseline captured ✅
+  - server repo inspected without pull (`/opt/agent-control/agentrouter`, branch `main`, HEAD `6530db3`) ✅
+  - `.env.example` and `infra/docker/docker-compose.prod.yml` presence verified ✅
+  - production `.env` created from template (was absent), `POSTGRES_PASSWORD` and `CALLBACK_SECRET` generated, mode `600`, owner `agentmc` ✅
+  - env validation completed without value disclosure (required keys set; `DEBUG=false`, `SQL_ECHO=false`; Telegram placeholders still CHANGE_ME) ✅
+  - compose render PASS to `/tmp/agentrouter-compose-rendered.yml` (`COMPOSE_CONFIG_OK`), services discovered: postgres, redis, api, telegram-bot, worker ✅
+  - started **only** `postgres` + `redis` services; api/worker/telegram-bot not started ✅
+  - readiness PASS: postgres `pg_isready`, redis `PONG` ✅
+  - no app deploy verified: only DB/Redis containers running; no agentrouter systemd units; no listeners on 8000/80/443; UFW still only 22/tcp ✅
+- **Not done by design:** no deploy, no migrations, no API/Worker/Bot start, no OpenCode.
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps03b-env-db-redis-bootstrap.md](.ai_memory/tasks/2026-05-09-task-vps03b-env-db-redis-bootstrap.md)
 
 ### 2026-05-09 — VPS-03A: SSH hardening + swap + repo bootstrap (45.130.213.12)
 

@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 90 |
+| **Task logs** | 91 |
 | **Шаблоны** | 5 |
 
 ---
@@ -159,6 +159,7 @@
 | [2026-05-09-task-readme-github-polish.md](tasks/2026-05-09-task-readme-github-polish.md) | README-01: GitHub README Polish |
 | [2026-05-09-task-vps01-server-preflight.md](tasks/2026-05-09-task-vps01-server-preflight.md) | VPS-01: Server Preflight Inspection |
 | [2026-05-09-task-vps02-base-server-setup.md](tasks/2026-05-09-task-vps02-base-server-setup.md) | VPS-02: Base Server Setup (45.130.213.12) |
+| [2026-05-09-task-vps03b-env-db-redis-bootstrap.md](tasks/2026-05-09-task-vps03b-env-db-redis-bootstrap.md) | VPS-03B: .env + DB/Redis bootstrap only (45.130.213.12) |
 
 ---
 
