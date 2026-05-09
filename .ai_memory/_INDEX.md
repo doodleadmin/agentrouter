@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 94 |
+| **Task logs** | 95 |
 | **Шаблоны** | 5 |
 
 ---
@@ -163,6 +163,7 @@
 | [2026-05-09-task-vps03c-telegram-secrets-preflight.md](tasks/2026-05-09-task-vps03c-telegram-secrets-preflight.md) | VPS-03C: Telegram secrets verification + preflight dry-run |
 | [2026-05-09-task-vps04-controlled-migration-app-start.md](tasks/2026-05-09-task-vps04-controlled-migration-app-start.md) | VPS-04: Controlled Migration + App Start |
 | [2026-05-09-task-vps05a-polling-runtime-smoke.md](tasks/2026-05-09-task-vps05a-polling-runtime-smoke.md) | VPS-05A: Polling Runtime Smoke |
+| [2026-05-09-task-vps05b-domain-caddy-https.md](tasks/2026-05-09-task-vps05b-domain-caddy-https.md) | VPS-05B: Domain + Caddy + HTTPS Verification |
 
 ---
 

@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 94 files in `.ai_memory/tasks/`
+- **Task logs:** 95 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-05A: Polling Runtime Smoke)
+**Дата последнего обновления:** 2026-05-09 (VPS-05B: Domain + Caddy + HTTPS)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-09 — VPS-05A: Polling Runtime Smoke (45.130.213.12)
@@ -50,6 +50,27 @@
 - **Telegram manual smoke:** PASS (user confirmed @agentrouters_bot responded)
 - **Next step:** VPS-05B: DNS fix + Caddy + HTTPS
 - Task summary: [.ai_memory/tasks/2026-05-09-task-vps05a-polling-runtime-smoke.md](.ai_memory/tasks/2026-05-09-task-vps05a-polling-runtime-smoke.md)
+
+### 2026-05-09 — VPS-05B: Domain + Caddy + HTTPS Verification (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, Caddy install + firewall changes + HTTPS exposure
+- **Сделано:**
+  - DNS verified: `polyrouter.ru → 45.130.213.12` (local + Google DNS + VPS) ✅
+  - Caddy 2.6.2 installed and enabled ✅
+  - Caddyfile configured: `https://polyrouter.ru → http://127.0.0.1:8000` with gzip/zstd ✅
+  - Caddy config validated: `Valid configuration` ✅
+  - UFW ports opened: 80/tcp, 443/tcp (now: 22+80+443 allowed) ✅
+  - Let's Encrypt certificate: obtained successfully (http-01 challenge) ✅
+  - HTTPS health: `https://polyrouter.ru/health` → `{"status":"ok","checks":{"api":"ok","database":"ok","redis":"ok"}}` ✅
+  - All 5 containers: healthy throughout ✅
+  - Telegram manual smoke: PASS ✅
+  - Migrations NOT run (already applied in VPS-04) ✅
+  - OpenCode NOT started ✅
+  - Secrets NOT printed ✅
+- **Production exposure now:** API health publicly accessible via HTTPS at `polyrouter.ru/health`
+- **Next step:** VPS-06: monitoring, backups, runtime operations
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps05b-domain-caddy-https.md](.ai_memory/tasks/2026-05-09-task-vps05b-domain-caddy-https.md)
 
 ### 2026-05-09 — VPS-04: Controlled Migration + App Start (45.130.213.12)
 
