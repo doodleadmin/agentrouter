@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 93 files in `.ai_memory/tasks/`
+- **Task logs:** 94 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,27 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-04: Controlled Migration + App Start)
+**Дата последнего обновления:** 2026-05-09 (VPS-05A: Polling Runtime Smoke)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-05A: Polling Runtime Smoke (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, read-only verification, no server changes
+- **Сделано:**
+  - API local health: `/health` → status ok, api ok, database ok, redis ok ✅
+  - PostgreSQL: accepting connections ✅
+  - Redis: PONG ✅
+  - Worker: healthy, Celery v5.6.3, 8 tasks registered, broker Redis ✅
+  - Telegram bot: healthy, @agentrouters_bot polling active, no errors ✅
+  - All 5 containers healthy: api, postgres, redis, worker, telegram-bot ✅
+  - Caddy: NOT installed ✅
+  - 80/443: NOT opened ✅
+  - UFW: SSH-only ✅
+  - API: 127.0.0.1:8000 only (no public exposure) ✅
+- **Telegram manual smoke:** PASS (user confirmed @agentrouters_bot responded)
+- **Next step:** VPS-05B: DNS fix + Caddy + HTTPS
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps05a-polling-runtime-smoke.md](.ai_memory/tasks/2026-05-09-task-vps05a-polling-runtime-smoke.md)
 
 ### 2026-05-09 — VPS-04: Controlled Migration + App Start (45.130.213.12)
 
@@ -55,7 +74,7 @@
   - Caddy: NOT installed ✅
   - OpenCode: NOT started ✅
 - **Примечание:** `POSTGRES_USER=CHANGE_ME` (placeholder became actual username during postgres init in VPS-03B) — non-critical but should be noted
-- **Telegram manual smoke:** pending user confirmation
+- **Telegram manual smoke:** PASS (user confirmed @agentrouters_bot responded)
 - Task summary: [.ai_memory/tasks/2026-05-09-task-vps04-controlled-migration-app-start.md](.ai_memory/tasks/2026-05-09-task-vps04-controlled-migration-app-start.md)
 
 ### 2026-05-09 — VPS-03C: Telegram secrets verification + preflight dry-run (45.130.213.12)

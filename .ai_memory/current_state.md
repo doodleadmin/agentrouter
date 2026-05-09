@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (VPS-04: Controlled Migration + App Start) | Автор: studio-orchestrator
+Обновлено: 2026-05-09 (VPS-05A: Polling Runtime Smoke) | Автор: studio-orchestrator
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Что происходит сейчас
 
-- VPS-04 (studio-orchestrator): на VPS `45.130.213.12` выполнен production deploy — серверный repo обновлён до `f456c2a` (ff-only), `.env` проверен, DB backup создан (`pre-vps04-20260509-174325.sql`), Alembic миграции `0001` + `0002` → head, Docker images собраны, API запущен (healthy, `127.0.0.1:8000`), Worker запущен (healthy, celery ready, 8 tasks), Telegram bot запущен (healthy, @agentrouters_bot polling), все 5 контейнеров healthy, 80/443 закрыты, UFW SSH-only, Caddy не установлен, OpenCode не запущен. `POSTGRES_USER=CHANGE_ME` (placeholder стал реальным username при init).
+- VPS-05A (studio-orchestrator): на VPS `45.130.213.12` выполнен read-only runtime smoke — API `/health` ok (api/database/redis), Worker healthy (Celery v5.6.3, 8 tasks), Bot healthy (@agentrouters_bot polling), все 5 контейнеров healthy, Caddy не установлен, 80/443 закрыты, UFW SSH-only. Telegram manual smoke PASS (user confirmed).
 
 - VPS-03B (devops-automator): на VPS `45.130.213.12` выполнен безопасный bootstrap только для infra-зависимостей — создан production `.env` из `.env.example` (бывш. absent), сгенерированы `POSTGRES_PASSWORD` + `CALLBACK_SECRET` (значения не выводились), права `.env` `600` owner `agentmc`; `docker compose config` (prod) PASS и рендер в `/tmp/agentrouter-compose-rendered.yml`; запущены только `postgres` и `redis`, readiness PASS (`pg_isready`, `PONG`); подтверждено отсутствие запуска `api/worker/telegram-bot`, отсутствие deploy/migrations/OpenCode, порт 8000 не слушается, 80/443 закрыты, UFW без изменений (только 22/tcp).
 
@@ -269,5 +269,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 93 |
+| **Task logs** | 94 |
 | Проекты | 0 |
