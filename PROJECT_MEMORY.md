@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 97 files in `.ai_memory/tasks/`
+- **Task logs:** 98 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,26 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-06B: Log Rotation + Backup Verification)
+**Дата последнего обновления:** 2026-05-09 (VPS-06C: Offsite Backup Sync to Beget S3)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-06C: Offsite Backup Sync to Beget S3 (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, rclone S3 sync + systemd timer, no app restart, no migrations
+- **Сделано:**
+  - Beget S3 credentials configured ✅
+  - rclone remote `agentrouter-s3` verified: auth + read/write access ✅
+  - Offsite sync script installed: `/usr/local/sbin/agentrouter-offsite-sync.sh` (root:root, 750) ✅
+  - Systemd timer `agentrouter-offsite-sync.timer` enabled: daily at 05:00 UTC ✅
+  - Manual offsite sync: `agentrouter-20260509-190435.sql` (19677 bytes) synced to S3 ✅
+  - All 4 timers active: healthcheck (5min), db-backup (03:20), backup-verify (04:00), offsite-sync (05:00) ✅
+  - App containers NOT restarted, uptime preserved (api/worker/bot ~5h, postgres/redis ~15h) ✅
+  - Caddy config NOT changed, UFW unchanged (22/80/443) ✅
+  - Migrations NOT run, OpenCode NOT started, secrets NOT printed ✅
+- **Production deploy:** running, healthy
+- **Warnings:** S3 access key/secret key on VPS (required for sync); bucket depends on Beget panel (no S3 API bucket creation)
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps06c-offsite-s3-sync.md](.ai_memory/tasks/2026-05-09-task-vps06c-offsite-s3-sync.md)
 
 ### 2026-05-09 — VPS-06B: Log Rotation + Backup Verification (45.130.213.12)
 
