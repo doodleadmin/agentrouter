@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (VPS-05B: Domain + Caddy + HTTPS) | Автор: studio-orchestrator
+Обновлено: 2026-05-09 (VPS-06A: Backups + Health Monitoring) | Автор: studio-orchestrator
 
 ---
 
@@ -148,6 +148,7 @@
 | VPS-04: Controlled Migration + App Start | ✅ Выполнена | studio-orchestrator |
 | VPS-05A: Polling Runtime Smoke | ✅ Выполнена | studio-orchestrator |
 | VPS-05B: Domain + Caddy + HTTPS Verification | ✅ Выполнена | studio-orchestrator |
+| VPS-06A: Backups + Health Monitoring Baseline | ✅ Выполнена | studio-orchestrator |
 
 - **SEC-03B Phase 2 SQLAlchemy Log Safety (security-engineer):** Decoupled SQLAlchemy `echo` from `DEBUG` config. Root cause from SEC-03 Phase 3 live smoke: `session.py` used `echo=settings.DEBUG`, dev scripts always set `DEBUG=true`, causing SQLAlchemy engine logger to emit all SQL + bind params (including `tasks.raw_text`) into `api-stub.log`. Fix: added `SQL_ECHO: bool = False` to config (independent of DEBUG), changed `session.py` to use `echo=settings.SQL_ECHO`, updated 2 dev-linux scripts with opt-in comments. Design: DEBUG can remain true in dev (FastAPI error detail), SQL_ECHO defaults to false (no bind param logging), SQL echo requires explicit `SQL_ECHO=true`. Validation: API 397/397 (was 393, +4 config tests), Bot 79/79, Worker 98/98, Total 574/574, ruff clean, compileall clean. 5 files changed (4 modified + 1 new).
 
@@ -234,6 +235,10 @@
 | API | ✅ healthy, 127.0.0.1:8000 (internal) + https://polyrouter.ru (public) |
 | Worker | ✅ healthy, celery ready, 8 tasks |
 | Telegram bot | ✅ healthy, @agentrouters_bot polling |
+| DB Backup | ✅ daily timer (03:20 UTC), manual OK: 19677 bytes |
+| Healthcheck | ✅ every 5 min, latest: local=OK https=OK postgres=OK redis=OK |
+| Telegram smoke | ✅ PASS (user confirmed bot responds) |
+| OpenCode | ❌ NOT started |
 | DB backup | ✅ pre-vps04-20260509-174325.sql |
 | Port 8000 public | ❌ NO (127.0.0.1 only, Caddy reverse proxy handles HTTPS) |
 
@@ -274,5 +279,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 95 |
+| **Task logs** | 96 |
 | Проекты | 0 |

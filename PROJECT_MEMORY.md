@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 95 files in `.ai_memory/tasks/`
+- **Task logs:** 96 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,26 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-05B: Domain + Caddy + HTTPS)
+**Дата последнего обновления:** 2026-05-09 (VPS-06A: Backups + Health Monitoring)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-06A: Backups + Health Monitoring Baseline (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, systemd timer setup, no app restart, no migrations
+- **Сделано:**
+  - DB backup script installed: `/usr/local/sbin/agentrouter-db-backup.sh` (root:root, 750) ✅
+  - Backup systemd timer: daily at 03:20 UTC, retention 14 days, randomized 15min delay ✅
+  - Manual backup: `agentrouter-20260509-190435.sql`, 19677 bytes ✅
+  - Healthcheck script installed: `/usr/local/sbin/agentrouter-healthcheck.sh` (root:root, 750) ✅
+  - Healthcheck systemd timer: every 5 minutes, logs to `/var/log/agentrouter/healthcheck.log` ✅
+  - Manual healthcheck: `local=OK https=OK postgres=OK redis=OK` ✅
+  - App containers NOT restarted, uptime preserved (~1h api/worker/bot, ~12h postgres/redis) ✅
+  - Migrations NOT run, OpenCode NOT started ✅
+  - UFW unchanged (22/80/443), secrets NOT printed ✅
+- **Production deploy:** running, healthy
+- **Warnings:** no off-server backup (recommend scp/S3 sync in VPS-06B), healthcheck log rotation not configured
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps06a-backups-health-monitoring.md](.ai_memory/tasks/2026-05-09-task-vps06a-backups-health-monitoring.md)
 
 ### 2026-05-09 — VPS-05A: Polling Runtime Smoke (45.130.213.12)
 
