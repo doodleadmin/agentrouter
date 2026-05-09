@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (VPS-03C: Telegram secrets + preflight) | Автор: devops-automator
+Обновлено: 2026-05-09 (VPS-04: Controlled Migration + App Start) | Автор: studio-orchestrator
 
 ---
 
@@ -9,7 +9,7 @@
 **Current state:** MVP v1 COMPLETE
 **Latest stable commit:** `7f51829` (pushed to `doodleadmin/agentrouter`)
 **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — Total 578/578 PASS
-**Production deploy:** NOT executed — requires explicit approval
+**Production deploy:** EXECUTED 2026-05-09 — API/Worker/Bot running on VPS 45.130.213.12
 **Security chain:** SEC-01..SEC-03B — all PASS
 **Deploy readiness:** DOP-03 + DOP-04 — dry-run validated
 
@@ -20,7 +20,7 @@
 
 ## Что происходит сейчас
 
-- VPS-03C (devops-automator): на VPS `45.130.213.12` проверена корректность Telegram secrets (TELEGRAM_BOT_TOKEN + TELEGRAM_ADMIN_USER_IDS) — placeholders заменены, формат валиден; все 9 required env keys set; .env owner/mode `agentmc:agentmc 600`; compose config PASS (рендер OK, 5 services); PostgreSQL accepting connections, Redis PONG; preflight dry-run: 30 PASS / 1 WARN (caddy not installed) / 0 FAIL; только postgres+redis контейнеры, API/Worker/Bot НЕ запущены, migrations НЕ запущены, 80/443 закрыты, UFW SSH-only.
+- VPS-04 (studio-orchestrator): на VPS `45.130.213.12` выполнен production deploy — серверный repo обновлён до `f456c2a` (ff-only), `.env` проверен, DB backup создан (`pre-vps04-20260509-174325.sql`), Alembic миграции `0001` + `0002` → head, Docker images собраны, API запущен (healthy, `127.0.0.1:8000`), Worker запущен (healthy, celery ready, 8 tasks), Telegram bot запущен (healthy, @agentrouters_bot polling), все 5 контейнеров healthy, 80/443 закрыты, UFW SSH-only, Caddy не установлен, OpenCode не запущен. `POSTGRES_USER=CHANGE_ME` (placeholder стал реальным username при init).
 
 - VPS-03B (devops-automator): на VPS `45.130.213.12` выполнен безопасный bootstrap только для infra-зависимостей — создан production `.env` из `.env.example` (бывш. absent), сгенерированы `POSTGRES_PASSWORD` + `CALLBACK_SECRET` (значения не выводились), права `.env` `600` owner `agentmc`; `docker compose config` (prod) PASS и рендер в `/tmp/agentrouter-compose-rendered.yml`; запущены только `postgres` и `redis`, readiness PASS (`pg_isready`, `PONG`); подтверждено отсутствие запуска `api/worker/telegram-bot`, отсутствие deploy/migrations/OpenCode, порт 8000 не слушается, 80/443 закрыты, UFW без изменений (только 22/tcp).
 
@@ -143,6 +143,7 @@
 | VPS-02: Base Server Setup (45.130.213.12) | ✅ Выполнена | studio-orchestrator |
 | VPS-03B: .env + DB/Redis bootstrap | ✅ Выполнена | devops-automator |
 | VPS-03C: Telegram secrets + preflight dry-run | ✅ Выполнена | devops-automator |
+| VPS-04: Controlled Migration + App Start | ✅ Выполнена | studio-orchestrator |
 
 - **SEC-03B Phase 2 SQLAlchemy Log Safety (security-engineer):** Decoupled SQLAlchemy `echo` from `DEBUG` config. Root cause from SEC-03 Phase 3 live smoke: `session.py` used `echo=settings.DEBUG`, dev scripts always set `DEBUG=true`, causing SQLAlchemy engine logger to emit all SQL + bind params (including `tasks.raw_text`) into `api-stub.log`. Fix: added `SQL_ECHO: bool = False` to config (independent of DEBUG), changed `session.py` to use `echo=settings.SQL_ECHO`, updated 2 dev-linux scripts with opt-in comments. Design: DEBUG can remain true in dev (FastAPI error detail), SQL_ECHO defaults to false (no bind param logging), SQL echo requires explicit `SQL_ECHO=true`. Validation: API 397/397 (was 393, +4 config tests), Bot 79/79, Worker 98/98, Total 574/574, ruff clean, compileall clean. 5 files changed (4 modified + 1 new).
 
@@ -216,13 +217,20 @@
 | /var/lib/agentrouter | agentmc:agentmc 750 ✅ |
 | UFW | active, SSH (22/tcp) only |
 | HTTP/HTTPS | NOT opened (no domain) |
-| Repo cloned | ✅ YES (`/opt/agent-control/agentrouter`, commit `7494931`) |
-| .env created | ✅ YES (mode 600, owner agentmc; Telegram secrets set) |
+| Repo cloned | ✅ YES (`/opt/agent-control/agentrouter`, commit `f456c2a`) |
+| .env created | ✅ YES (mode 600, owner agentmc; all secrets set) |
 | Telegram secrets | ✅ verified (format OK, placeholders cleared) |
 | DB/Redis running | ✅ (postgres healthy, redis PONG) |
 | Preflight dry-run | ✅ (30 PASS / 1 WARN / 0 FAIL) |
-| Migrations | ❌ NOT run |
-| App deployed | ❌ NO |
+| Migrations | ✅ RUN (0001 + 0002 → head) |
+| App deployed | ✅ YES (API/Worker/Bot healthy) |
+| API | ✅ healthy, 127.0.0.1:8000 |
+| Worker | ✅ healthy, celery ready, 8 tasks |
+| Telegram bot | ✅ healthy, @agentrouters_bot polling |
+| DB backup | ✅ pre-vps04-20260509-174325.sql |
+| Port 8000 public | ❌ NO (127.0.0.1 only) |
+| HTTP/HTTPS | ❌ NOT opened (no domain/Caddy) |
+| Caddy | ❌ NOT installed |
 
 ## Следующие шаги
 
@@ -261,5 +269,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 92 |
+| **Task logs** | 93 |
 | Проекты | 0 |

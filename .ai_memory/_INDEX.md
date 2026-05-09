@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 92 |
+| **Task logs** | 93 |
 | **Шаблоны** | 5 |
 
 ---
@@ -161,6 +161,7 @@
 | [2026-05-09-task-vps02-base-server-setup.md](tasks/2026-05-09-task-vps02-base-server-setup.md) | VPS-02: Base Server Setup (45.130.213.12) |
 | [2026-05-09-task-vps03b-env-db-redis-bootstrap.md](tasks/2026-05-09-task-vps03b-env-db-redis-bootstrap.md) | VPS-03B: .env + DB/Redis bootstrap only (45.130.213.12) |
 | [2026-05-09-task-vps03c-telegram-secrets-preflight.md](tasks/2026-05-09-task-vps03c-telegram-secrets-preflight.md) | VPS-03C: Telegram secrets verification + preflight dry-run |
+| [2026-05-09-task-vps04-controlled-migration-app-start.md](tasks/2026-05-09-task-vps04-controlled-migration-app-start.md) | VPS-04: Controlled Migration + App Start |
 
 ---
 

@@ -11,8 +11,8 @@
 - **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — **Total 578/578 PASS**
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
-- **Real production deploy: NOT executed** — requires explicit approval
-- **Task logs:** 92 files in `.ai_memory/tasks/`
+- **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
+- **Task logs:** 93 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -28,9 +28,35 @@
 
 ## Текущий статус
 
-**Фаза:** MVP v1 COMPLETE (Phase 0–4, Phase 6–7 dry-run validated)
-**Дата последнего обновления:** 2026-05-09 (VPS-03C: Telegram secrets + preflight dry-run)
+**Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
+**Дата последнего обновления:** 2026-05-09 (VPS-04: Controlled Migration + App Start)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-04: Controlled Migration + App Start (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, real production deploy with 3 explicit approval gates
+- **Сделано:**
+  - Local baseline verified: clean tree, HEAD `f456c2a`, synced with origin ✅
+  - Server repo fast-forwarded from `7494931` to `f456c2a` (ff-only) ✅
+  - `.env` verified: agentmc:agentmc 600, all keys set, Telegram placeholders cleared, formats valid ✅
+  - DEBUG=false, SQL_ECHO=false ✅
+  - DB backup created: `pre-vps04-20260509-174325.sql` (695 bytes, empty DB) ✅
+  - Alembic migrations run: `0001_initial_all_tables` + `0002_add_security_audit_events` → head ✅
+  - Docker images built: api, worker, telegram-bot ✅
+  - API started: healthy, bound to `127.0.0.1:8000` only ✅
+  - `/health` check: `status: ok`, api ok, database ok, redis ok ✅
+  - Worker started: healthy, celery ready, 8 tasks registered ✅
+  - Telegram bot started: healthy, polling as @agentrouters_bot (ID: 8749078276) ✅
+  - All 5 containers healthy (api, postgres, redis, worker, telegram-bot) ✅
+  - Port 8000: `127.0.0.1` only (not public) ✅
+  - Ports 80/443: NOT opened ✅
+  - UFW: SSH-only (22/tcp) ✅
+  - Caddy: NOT installed ✅
+  - OpenCode: NOT started ✅
+- **Примечание:** `POSTGRES_USER=CHANGE_ME` (placeholder became actual username during postgres init in VPS-03B) — non-critical but should be noted
+- **Telegram manual smoke:** pending user confirmation
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps04-controlled-migration-app-start.md](.ai_memory/tasks/2026-05-09-task-vps04-controlled-migration-app-start.md)
 
 ### 2026-05-09 — VPS-03C: Telegram secrets verification + preflight dry-run (45.130.213.12)
 
