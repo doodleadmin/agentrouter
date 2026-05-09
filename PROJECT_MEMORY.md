@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 96 files in `.ai_memory/tasks/`
+- **Task logs:** 97 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,28 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-06A: Backups + Health Monitoring)
+**Дата последнего обновления:** 2026-05-09 (VPS-06B: Log Rotation + Backup Verification)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-06B: Log Rotation + Backup Verification (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, logrotate config + backup verify timer, no app restart, no migrations
+- **Сделано:**
+  - Logrotate config installed: `/etc/logrotate.d/agentrouter` (daily, 14-day retention, compress) ✅
+  - Logrotate dry-run: PASS ✅
+  - Backup verification script installed: `/usr/local/sbin/agentrouter-backup-verify.sh` (root:root, 750) ✅
+  - Backup verify systemd timer enabled: daily at 04:00 UTC ✅
+  - Manual backup verify: `BACKUP_VERIFY_OK agentrouter-20260509-190435.sql 19677 bytes` ✅
+  - All 3 timers active: healthcheck (5min), db-backup (daily 03:20 UTC), backup-verify (daily 04:00 UTC) ✅
+  - Backup verify checks header/footer only, no restore to production DB ✅
+  - App containers NOT restarted, uptime preserved ✅
+  - Docker daemon NOT restarted ✅
+  - Caddy config NOT changed, UFW unchanged (22/80/443) ✅
+  - Migrations NOT run, OpenCode NOT started, secrets NOT printed ✅
+- **Production deploy:** running, healthy
+- **Warnings:** no off-server backup configured yet (recommend scp/S3 in VPS-06C), no healthcheck log rotation (handled by logrotate)
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps06b-logrotate-backup-verify.md](.ai_memory/tasks/2026-05-09-task-vps06b-logrotate-backup-verify.md)
 
 ### 2026-05-09 — VPS-06A: Backups + Health Monitoring Baseline (45.130.213.12)
 
