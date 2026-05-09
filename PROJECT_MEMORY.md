@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Real production deploy: NOT executed** — requires explicit approval
-- **Task logs:** 89 files in `.ai_memory/tasks/`
+- **Task logs:** 92 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,31 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 COMPLETE (Phase 0–4, Phase 6–7 dry-run validated)
-**Дата последнего обновления:** 2026-05-09 (VPS-03B env + DB/Redis bootstrap only)
+**Дата последнего обновления:** 2026-05-09 (VPS-03C: Telegram secrets + preflight dry-run)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-03C: Telegram secrets verification + preflight dry-run (45.130.213.12)
+
+- **Агент:** devops-automator
+- **Контур:** VPS 45.130.213.12
+- **Сделано:**
+  - Telegram secrets verified (placeholders replaced, format OK) ✅
+  - .env owner/mode: agentmc:agentmc 600 ✅
+  - All required env keys set ✅
+  - DEBUG=false, SQL_ECHO=false ✅
+  - Compose config rendered OK ✅
+  - PostgreSQL accepting connections ✅
+  - Redis PONG ✅
+  - Preflight dry-run executed ✅ (30 PASS / 1 WARN / 0 FAIL)
+- **НЕ сделано:**
+  - API NOT started
+  - Worker NOT started
+  - Telegram bot NOT started
+  - Migrations NOT run
+  - OpenCode NOT started
+  - 80/443 NOT opened
+- **Production deploy: NOT executed**
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps03c-telegram-secrets-preflight.md](.ai_memory/tasks/2026-05-09-task-vps03c-telegram-secrets-preflight.md)
 
 ### 2026-05-09 — VPS-03B: prod .env + DB/Redis bootstrap only (45.130.213.12)
 

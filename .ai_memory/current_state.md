@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (VPS-03B: env + DB/Redis bootstrap only) | Автор: devops-automator
+Обновлено: 2026-05-09 (VPS-03C: Telegram secrets + preflight) | Автор: devops-automator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-03C (devops-automator): на VPS `45.130.213.12` проверена корректность Telegram secrets (TELEGRAM_BOT_TOKEN + TELEGRAM_ADMIN_USER_IDS) — placeholders заменены, формат валиден; все 9 required env keys set; .env owner/mode `agentmc:agentmc 600`; compose config PASS (рендер OK, 5 services); PostgreSQL accepting connections, Redis PONG; preflight dry-run: 30 PASS / 1 WARN (caddy not installed) / 0 FAIL; только postgres+redis контейнеры, API/Worker/Bot НЕ запущены, migrations НЕ запущены, 80/443 закрыты, UFW SSH-only.
 
 - VPS-03B (devops-automator): на VPS `45.130.213.12` выполнен безопасный bootstrap только для infra-зависимостей — создан production `.env` из `.env.example` (бывш. absent), сгенерированы `POSTGRES_PASSWORD` + `CALLBACK_SECRET` (значения не выводились), права `.env` `600` owner `agentmc`; `docker compose config` (prod) PASS и рендер в `/tmp/agentrouter-compose-rendered.yml`; запущены только `postgres` и `redis`, readiness PASS (`pg_isready`, `PONG`); подтверждено отсутствие запуска `api/worker/telegram-bot`, отсутствие deploy/migrations/OpenCode, порт 8000 не слушается, 80/443 закрыты, UFW без изменений (только 22/tcp).
 
@@ -139,6 +141,8 @@
 | DOP-04 Phase 3: Release Workflow Dry-run Validation | ✅ Выполнена | studio-orchestrator |
 | VPS-01: Server Preflight Inspection (45.130.213.12) | ✅ Выполнена | studio-orchestrator |
 | VPS-02: Base Server Setup (45.130.213.12) | ✅ Выполнена | studio-orchestrator |
+| VPS-03B: .env + DB/Redis bootstrap | ✅ Выполнена | devops-automator |
+| VPS-03C: Telegram secrets + preflight dry-run | ✅ Выполнена | devops-automator |
 
 - **SEC-03B Phase 2 SQLAlchemy Log Safety (security-engineer):** Decoupled SQLAlchemy `echo` from `DEBUG` config. Root cause from SEC-03 Phase 3 live smoke: `session.py` used `echo=settings.DEBUG`, dev scripts always set `DEBUG=true`, causing SQLAlchemy engine logger to emit all SQL + bind params (including `tasks.raw_text`) into `api-stub.log`. Fix: added `SQL_ECHO: bool = False` to config (independent of DEBUG), changed `session.py` to use `echo=settings.SQL_ECHO`, updated 2 dev-linux scripts with opt-in comments. Design: DEBUG can remain true in dev (FastAPI error detail), SQL_ECHO defaults to false (no bind param logging), SQL echo requires explicit `SQL_ECHO=true`. Validation: API 397/397 (was 393, +4 config tests), Bot 79/79, Worker 98/98, Total 574/574, ruff clean, compileall clean. 5 files changed (4 modified + 1 new).
 
@@ -212,8 +216,12 @@
 | /var/lib/agentrouter | agentmc:agentmc 750 ✅ |
 | UFW | active, SSH (22/tcp) only |
 | HTTP/HTTPS | NOT opened (no domain) |
-| Repo cloned | ✅ YES (`/opt/agent-control/agentrouter`) |
-| .env created | ✅ YES (mode 600, owner agentmc; values hidden) |
+| Repo cloned | ✅ YES (`/opt/agent-control/agentrouter`, commit `7494931`) |
+| .env created | ✅ YES (mode 600, owner agentmc; Telegram secrets set) |
+| Telegram secrets | ✅ verified (format OK, placeholders cleared) |
+| DB/Redis running | ✅ (postgres healthy, redis PONG) |
+| Preflight dry-run | ✅ (30 PASS / 1 WARN / 0 FAIL) |
+| Migrations | ❌ NOT run |
 | App deployed | ❌ NO |
 
 ## Следующие шаги
@@ -253,5 +261,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 89 |
+| **Task logs** | 92 |
 | Проекты | 0 |
