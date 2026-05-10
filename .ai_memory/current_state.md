@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-08A: Controlled OpenCode Readiness Audit) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-08B: Mini App + Topics Architecture Audit) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-08B (studio-orchestrator): выполнен read-only аудит готовности целевой архитектуры Telegram Mini App + Forum Topics. Runtime baseline на VPS PASS (5/5 healthy, HTTPS OK, 4 timers active, UFW unchanged). Deployed server repo отстаёт от local/origin main (зафиксировано как blocker, без pull). В коде есть backend foundations: agents/tasks/approvals/events API, topic bindings `/telegram/topics`, bot parsing `message_thread_id`, persistence `telegram_thread_id/message_thread_id`. При этом полноценный Mini App отсутствует (в `apps/web` только README-плейсхолдер), Telegram WebApp SDK/auth (`initData`) не реализованы, dedicated General/Approvals/System Logs topic orchestration policy не формализована. OpenCode не запускался, реальные задачи не выполнялись, БД не модифицировалась, сервисы не перезапускались, миграции не запускались, секреты не выводились.
 
 - VPS-08A (studio-orchestrator): выполнен read-only аудит готовности controlled OpenCode активации на VPS `45.130.213.12`. Baseline runtime PASS (5 контейнеров healthy, HTTPS OK, 4 timers active, UFW unchanged). Обнаружено: OpenCode integration в коде присутствует (API runtime factory/transport/service, worker plan/execute pipeline, Telegram/API task surfaces), но на сервере `opencode` CLI не найден в PATH (`agentmc`/`root`), активных OpenCode процессов и systemd unit нет. Логи API/worker/bot не содержат признаков активного OpenCode execution. Итог: готовность частичная — нужна controlled VPS-08B dry-run activation procedure с явным gate и проверкой no-op поведения. Next recommended step: Telegram Forum / Topics Orchestration Audit before OpenCode dry-run. В этом этапе OpenCode НЕ запускался, реальные задачи НЕ выполнялись, БД НЕ модифицировалась, сервисы НЕ перезапускались, миграции НЕ запускались, секреты НЕ выводились.
 

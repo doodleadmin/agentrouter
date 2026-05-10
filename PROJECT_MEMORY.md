@@ -29,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-08A: Controlled OpenCode Readiness Audit)
+**Дата последнего обновления:** 2026-05-10 (VPS-08B: Telegram Mini App + Forum Topics Architecture Audit)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-10 — VPS-07C: Healthcheck Interval Adjustment + Ops Review (45.130.213.12)
@@ -103,6 +103,29 @@
 - **Статус:** readiness audit complete; server requires OpenCode CLI/runtime presence + controlled gating procedure before any activation
 - **Next recommended step:** Telegram Forum / Topics Orchestration Audit before OpenCode dry-run.
 - Task summary: [.ai_memory/tasks/2026-05-10-task-vps08a-opencode-readiness-audit.md](.ai_memory/tasks/2026-05-10-task-vps08a-opencode-readiness-audit.md)
+
+### 2026-05-10 — VPS-08B: Telegram Mini App + Forum Topics Architecture Audit (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** read-only architecture audit (Mini App + Telegram Forum Topics), no runtime mutations
+- **Сделано:**
+  - Local precondition PASS: `main...origin/main`, clean tree, VPS-08A checkpoint pushed ✅
+  - Production runtime baseline PASS: SSH OK, 5/5 containers healthy, HTTPS `/health` OK, 4 timers active, UFW unchanged ✅
+  - Server repo divergence noted: deployed repo on older commit chain than local/origin main (read-only audit continued, no pull) ⚠️
+  - Frontend discovery: only `apps/web/README.md` planning stub; no actual React/Vite/Next code, no package/tooling files for web app ✅
+  - Telegram Mini App discovery: no `WebAppInfo`, `KeyboardButton(web_app=...)`, `window.Telegram`, `Telegram.WebApp`, `initData` usage found ✅
+  - Backend API inventory confirms CRUD for agents/tasks/topic bindings + approvals/events; no dedicated Mini App auth/initData validation endpoint ✅
+  - Telegram Topics support present in bot/API/DB:
+    - bot parses `message_thread_id`
+    - DB persists `telegram_thread_id` in tasks and `message_thread_id` in telegram_topics
+    - topic↔agent/project mapping exists via `/telegram/topics` + bot `/bind_topic` flow ✅
+  - Missing topology semantics: no explicit enforced General/Approvals/System-Logs topic classification logic beyond free-form `kind` field ⚠️
+  - Read-only DB schema audit completed (table/column names + counts only, no row-data dump): key orchestration tables exist, currently zero business rows on deployed DB ✅
+  - Log audit: no Mini App activity, no explicit forum-topic routing traffic, worker queues registered (`telegram_inbound`, `agent_plan`, `agent_execute`) ✅
+  - Safety confirmed: no Telegram messages sent, no topics created, OpenCode not started, real tasks not run, DB not modified, services not restarted, migrations not run ✅
+- **Статус:** architecture gap identified; backend/topic foundations partially ready, Mini App layer absent
+- **Рекомендация:** VPS-08C = **Option A (Mini App foundation implementation)** with parallel backlog for topic semantics hardening (General/Approvals/Logs) before full smoke
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps08b-miniapp-topics-audit.md](.ai_memory/tasks/2026-05-10-task-vps08b-miniapp-topics-audit.md)
 
 ### 2026-05-09 — VPS-07B: Healthchecks.io Ping Integration (45.130.213.12)
 

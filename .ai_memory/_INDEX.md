@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 102 |
+| **Task logs** | 103 |
 | **Шаблоны** | 5 |
 
 ---
@@ -168,6 +168,7 @@
 | [2026-05-10-task-vps07c-healthcheck-interval-ops-review.md](tasks/2026-05-10-task-vps07c-healthcheck-interval-ops-review.md) | VPS-07C: Interval Adjustment + Ops Review |
 | [2026-05-10-task-vps07d-restore-drill.md](tasks/2026-05-10-task-vps07d-restore-drill.md) | VPS-07D: Offsite Backup Restore Drill |
 | [2026-05-10-task-vps08a-opencode-readiness-audit.md](tasks/2026-05-10-task-vps08a-opencode-readiness-audit.md) | VPS-08A: Controlled OpenCode Readiness Audit |
+| [2026-05-10-task-vps08b-miniapp-topics-audit.md](tasks/2026-05-10-task-vps08b-miniapp-topics-audit.md) | VPS-08B: Telegram Mini App + Forum Topics Architecture Audit |
 | [2026-05-09-task-vps07b-healthchecks-ping.md](tasks/2026-05-09-task-vps07b-healthchecks-ping.md) | VPS-07B: Healthchecks.io Ping Integration |
 | [2026-05-09-task-vps06b-logrotate-backup-verify.md](tasks/2026-05-09-task-vps06b-logrotate-backup-verify.md) | VPS-06B: Log Rotation + Backup Verification |
 | [2026-05-09-task-vps06a-backups-health-monitoring.md](tasks/2026-05-09-task-vps06a-backups-health-monitoring.md) | VPS-06A: Backups + Health Monitoring Baseline |
