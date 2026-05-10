@@ -29,8 +29,35 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (DEV-08F: Mini App Deploy Readiness)
+**Дата последнего обновления:** 2026-05-10 (VPS-08G: Controlled Mini App Deploy)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-08G: Controlled Mini App Deploy (`/app/`)
+
+- **Агент:** studio-orchestrator
+- **Контур:** production deploy (controlled), no migrations, no DB data changes
+- **Precondition:** DEV-08F pushed (`96a227b`) ✅
+- **Artifact:** `miniapp-dist-20260510-214207.zip` (SHA256: `d8b9da1b1bdad3bfcc131c17859de1824353ee272e033cd2fb90b94b8f265e68`) ✅
+- **Server repo:** fast-forward `f456c2a -> 96a227b`, clean tree ✅
+- **Static release:** `/var/www/agentrouter-web/releases/20260510-174338` + symlink `/var/www/agentrouter-web/current` ✅
+- **Caddy live update:** added `/app/*` static serving + preserved API reverse proxy via fallback `handle` ✅
+- **Env update (safe keys only):**
+  - `TELEGRAM_WEBAPP_URL` set
+  - `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS` set to `300`
+  - no secrets printed ✅
+- **Services rebuilt/recreated:** `api`, `telegram-bot` only (`--no-deps`); `postgres/redis/worker` not intentionally restarted ✅
+- **Validation:**
+  - `https://polyrouter.ru/health` OK
+  - `https://polyrouter.ru/app/` HTTP 200
+  - index contains `/app/assets/...` + `<div id="root">`
+  - `POST /telegram/webapp/auth` empty payload -> `422` (safe-fail, not 500)
+  - containers healthy, caddy active, timers active, UFW unchanged ✅
+- **Rollback assets:**
+  - `/etc/caddy/Caddyfile.bak.20260510-174411`
+  - `/opt/agent-control/agentrouter/.env.bak.vps08g.20260510-174504`
+  - previous/static releases list available under `/var/www/agentrouter-web/releases`
+- **Safety:** no migrations, production DB untouched, docker daemon not restarted, OpenCode not started, manual Telegram messages not sent, topics not created.
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps08g-miniapp-controlled-deploy.md](.ai_memory/tasks/2026-05-10-task-vps08g-miniapp-controlled-deploy.md)
 
 ### 2026-05-10 — DEV-08F: Mini App Deploy Readiness
 

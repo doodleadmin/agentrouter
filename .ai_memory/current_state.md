@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (DEV-08F: Mini App Deploy Readiness) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-08G: Controlled Mini App Deploy) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-08G (studio-orchestrator): выполнен controlled production deploy Telegram Mini App под `https://polyrouter.ru/app/` без миграций и без изменения DB data. Local build `npm run build:prod` PASS, artifact `miniapp-dist-20260510-214207.zip`, SHA256 `d8b9da1b1bdad3bfcc131c17859de1824353ee272e033cd2fb90b94b8f265e68`. Server repo `/opt/agent-control/agentrouter` fast-forward до `96a227b` (clean). Static release развёрнут в `/var/www/agentrouter-web/releases/20260510-174338`, symlink `current` переключен atomically. Live Caddy обновлён: добавлен `redir /app -> /app/` + `handle_path /app/*` static serving, fallback API reverse proxy сохранён через `handle { reverse_proxy 127.0.0.1:8000 }`. `/health` остаётся OK. Production `.env` обновлён только безопасными ключами: `TELEGRAM_WEBAPP_URL` и `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS=300` (values не выводились). Пересобраны/перезапущены только `api` и `telegram-bot`; `postgres/redis/worker` не перезапускались намеренно. Валидация: `/health` OK, `/app/` 200 + содержит `/app/assets` и `<div id="root">`, `/telegram/webapp/auth` на пустой payload возвращает `422` (safe-fail, не 500). Caddy active, timers active (4), UFW unchanged (22/80/443). OpenCode не запускался, Telegram messages вручную не отправлялись, topics не создавались.
 
 - DEV-08F (studio-orchestrator): выполнен локальный этап готовности Mini App к controlled deploy. Выбрана стратегия Option B (`/app/`) для минимального риска: `/health` и API-маршруты остаются неизменными. Добавлен production build path readiness: `vite.config.ts` поддерживает `VITE_BASE_PATH`, `package.json` получил `build:prod` (`vite build --base /app/`). API client поддерживает `VITE_API_BASE_URL` override (default `/api`). Добавлена документация `docs/miniapp-deploy.md` с безопасным runbook (build/copy/symlink/Caddy patch/rollback/validation), template-only `infra/deploy/Caddyfile.miniapp`, helper script `scripts/build-miniapp.sh`, обновлён `apps/web/README.md`, в `.env.example` добавлен `TELEGRAM_WEBAPP_URL` (без секретов). Локальные проверки: `npm run build` PASS, `npm run build:prod` PASS, `dist` не staged. Deploy не выполнялся, SSH/VPS изменения не делались, live Caddy/UFW не менялись, сервисы не перезапускались.
 
