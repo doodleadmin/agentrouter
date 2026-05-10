@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-08G: Controlled Mini App Deploy) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-08H1A: Compose WebApp Env Pass-through Patch) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-08H1A (studio-orchestrator): выполнен локальный patch compose env pass-through для исправления причины отсутствия кнопки Mini App в `/start`. Диагностикой VPS-08H подтверждено: в host `.env` `TELEGRAM_WEBAPP_URL` set, но внутри `telegram-bot` контейнера `TELEGRAM_WEBAPP_URL` missing, поэтому `settings.TELEGRAM_WEBAPP_URL` пустой и start handler не добавляет кнопку. В `infra/docker/docker-compose.prod.yml` добавлены переменные для `telegram-bot`: `TELEGRAM_WEBAPP_URL` и `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS` (default 300), а также `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS` для `api` для консистентности auth-политики. Локальная проверка: `docker compose ... --env-file .env.example config --quiet` PASS. Deploy/VPS changes не выполнялись, сервисы не перезапускались, `.env` не менялся, миграции не запускались.
 
 - VPS-08G (studio-orchestrator): выполнен controlled production deploy Telegram Mini App под `https://polyrouter.ru/app/` без миграций и без изменения DB data. Local build `npm run build:prod` PASS, artifact `miniapp-dist-20260510-214207.zip`, SHA256 `d8b9da1b1bdad3bfcc131c17859de1824353ee272e033cd2fb90b94b8f265e68`. Server repo `/opt/agent-control/agentrouter` fast-forward до `96a227b` (clean). Static release развёрнут в `/var/www/agentrouter-web/releases/20260510-174338`, symlink `current` переключен atomically. Live Caddy обновлён: добавлен `redir /app -> /app/` + `handle_path /app/*` static serving, fallback API reverse proxy сохранён через `handle { reverse_proxy 127.0.0.1:8000 }`. `/health` остаётся OK. Production `.env` обновлён только безопасными ключами: `TELEGRAM_WEBAPP_URL` и `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS=300` (values не выводились). Пересобраны/перезапущены только `api` и `telegram-bot`; `postgres/redis/worker` не перезапускались намеренно. Валидация: `/health` OK, `/app/` 200 + содержит `/app/assets` и `<div id="root">`, `/telegram/webapp/auth` на пустой payload возвращает `422` (safe-fail, не 500). Caddy active, timers active (4), UFW unchanged (22/80/443). OpenCode не запускался, Telegram messages вручную не отправлялись, topics не создавались.
 

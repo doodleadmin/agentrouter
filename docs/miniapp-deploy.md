@@ -116,6 +116,15 @@ curl -sI https://polyrouter.ru/app/assets/
 | `TELEGRAM_BOT_TOKEN` | Yes | `123456:ABC-DEF...` | Telegram bot token (existing) |
 | `CORS_ORIGINS` | No | `["https://polyrouter.ru"]` | Add production origin for CORS if needed |
 
+### Compose pass-through requirement
+
+In `infra/docker/docker-compose.prod.yml`, the `telegram-bot` service must explicitly pass through:
+
+- `TELEGRAM_WEBAPP_URL`
+- `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS`
+
+If `TELEGRAM_WEBAPP_URL` is set on host `.env` but not passed into the container, `/start` will not show the **"Открыть AI Office"** button.
+
 ### Frontend (build time, via VITE_ env vars)
 
 | Variable | Build | Default | Description |

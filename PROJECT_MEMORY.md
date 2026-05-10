@@ -29,8 +29,24 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-08G: Controlled Mini App Deploy)
+**Дата последнего обновления:** 2026-05-10 (VPS-08H1A: Compose WebApp Env Pass-through Patch)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-08H1A: Compose WebApp Env Pass-through Patch (local)
+
+- **Агент:** studio-orchestrator
+- **Контур:** local config/docs/memory only, no deploy, no VPS changes
+- **Подтверждённая причина:** host `.env` имеет `TELEGRAM_WEBAPP_URL`, но `telegram-bot` контейнер не получает его через compose env pass-through, поэтому `/start` не показывает кнопку `Открыть AI Office`.
+- **Patch в `infra/docker/docker-compose.prod.yml`:**
+  - `telegram-bot`:
+    - `TELEGRAM_WEBAPP_URL: ${TELEGRAM_WEBAPP_URL:-}`
+    - `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS: ${TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS:-300}`
+  - `api`:
+    - `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS: ${TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS:-300}` (consistency)
+- **Validation:** `docker compose -f infra/docker/docker-compose.prod.yml --env-file .env.example config --quiet` PASS
+- **Docs:** `docs/miniapp-deploy.md` updated with compose pass-through requirement note
+- **Safety:** no deploy, no `.env` changes, no service restarts, no migrations, no Telegram sends, no topics, no OpenCode.
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps08h1a-compose-webapp-env-patch.md](.ai_memory/tasks/2026-05-10-task-vps08h1a-compose-webapp-env-patch.md)
 
 ### 2026-05-10 — VPS-08G: Controlled Mini App Deploy (`/app/`)
 
