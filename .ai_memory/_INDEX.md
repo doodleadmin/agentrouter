@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 111 |
+| **Task logs** | 112 |
 | **Шаблоны** | 5 |
 
 ---
@@ -172,6 +172,7 @@
 | [2026-05-10-task-dev-08c-frontend-foundation.md](tasks/2026-05-10-task-dev-08c-frontend-foundation.md) | DEV-08C: Frontend Foundation (apps/web) |
 | [2026-05-10-task-dev08c-backend-bot-safe-stubs.md](tasks/2026-05-10-task-dev08c-backend-bot-safe-stubs.md) | DEV-08C: Backend/Bot safe stubs (WebApp auth + launch) |
 | [2026-05-10-task-dev08c-miniapp-foundation.md](tasks/2026-05-10-task-dev08c-miniapp-foundation.md) | DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation |
+| [2026-05-10-task-vps08i-webapp-auth-smoke.md](tasks/2026-05-10-task-vps08i-webapp-auth-smoke.md) | VPS-08I: Focused WebApp Auth Smoke |
 | [2026-05-10-task-vps08h1b-apply-bot-webapp-env-fix.md](tasks/2026-05-10-task-vps08h1b-apply-bot-webapp-env-fix.md) | VPS-08H1B: Apply Bot WebApp Env Fix |
 | [2026-05-10-task-vps08h1a-compose-webapp-env-patch.md](tasks/2026-05-10-task-vps08h1a-compose-webapp-env-patch.md) | VPS-08H1A: Compose WebApp Env Pass-through Patch |
 | [2026-05-10-task-vps08g-miniapp-controlled-deploy.md](tasks/2026-05-10-task-vps08g-miniapp-controlled-deploy.md) | VPS-08G: Controlled Mini App Deploy |

@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-08H1B: Apply Bot WebApp Env Fix) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-08I: Focused WebApp Auth Smoke) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-08I (studio-orchestrator): выполнен focused production smoke WebApp auth + read-only Mini App API validation. Baseline healthy: `/health` OK, `/app/` 200, containers/Caddy/timers/UFW OK. Host env/status checks без значений: `TELEGRAM_WEBAPP_URL` set, bot settings видит `TELEGRAM_WEBAPP_URL`, `can_build_webapp_button=yes`. Пользователь подтвердил smoke PASS: `/start` кнопка есть, Mini App открывается, страницы Home/Agents/Tasks/More/Topic Bindings работают. Read-only API checks: `/agents`, `/tasks`, `/events`, `/telegram/topics` -> HTTP 200. Логи bot/api без traceback/500. Никакие записи не создавались, initData/session_token не выводились.
 
 - VPS-08H1B (studio-orchestrator): применён production minimal fix через fast-forward server repo до `66846fc` и recreate только `telegram-bot` (`--no-deps`). Baseline перед изменениями: runtime healthy, `/health` OK, `/app/` 200, Caddy active. Compose config validated (`COMPOSE_CONFIG_OK`). После recreate внутри контейнера `TELEGRAM_WEBAPP_URL=set`, `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS=set`; settings видит `TELEGRAM_WEBAPP_URL=set`, `can_build_webapp_button=yes`. Пользователь подтвердил: кнопка `/start` появилась, Mini App открывается, навигация работает. Логи без traceback/500, финальный health green, timers active, UFW unchanged. `.env`/Caddy/migrations не менялись.
 

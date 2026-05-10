@@ -29,8 +29,24 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-08H1B: Apply Bot WebApp Env Fix)
+**Дата последнего обновления:** 2026-05-10 (VPS-08I: Focused WebApp Auth Smoke)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-08I: Focused WebApp Auth Smoke + Safe Mini App API Validation
+
+- **Агент:** studio-orchestrator
+- **Контур:** production read-only smoke + user-assisted Telegram UX (без изменений)
+- **Сделано:**
+  - local preflight PASS (`main...origin/main`, clean) ✅
+  - production baseline PASS (`/health` OK, `/app/` 200, containers/Caddy/timers/UFW healthy) ✅
+  - host/container settings status checks (values hidden):
+    - host: `TELEGRAM_WEBAPP_URL=set`, `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS=set`
+    - bot settings: `settings.TELEGRAM_WEBAPP_URL=set`, `can_build_webapp_button=yes`
+  - user-assisted smoke PASS: `/start` кнопка есть, Mini App открывается, Home/Agents/Tasks/More/Topic Bindings работают ✅
+  - read-only API checks: `/agents`, `/tasks`, `/events`, `/telegram/topics` → HTTP 200 ✅
+  - logs check: bot/api без traceback и без 500 по webapp auth path ✅
+- **Safety:** no deploy, no code/config changes, no `.env`/Caddy changes, no restarts, no migrations, no Telegram topic/data creation, no OpenCode, no secrets printed
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps08i-webapp-auth-smoke.md](.ai_memory/tasks/2026-05-10-task-vps08i-webapp-auth-smoke.md)
 
 ### 2026-05-10 — VPS-08H1B: Apply WebApp Env Pass-through Fix to telegram-bot
 
