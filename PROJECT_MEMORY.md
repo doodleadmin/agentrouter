@@ -29,8 +29,27 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-08H1A: Compose WebApp Env Pass-through Patch)
+**Дата последнего обновления:** 2026-05-10 (VPS-08H1B: Apply Bot WebApp Env Fix)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-08H1B: Apply WebApp Env Pass-through Fix to telegram-bot
+
+- **Агент:** studio-orchestrator
+- **Контур:** production minimal touch (server fast-forward + recreate telegram-bot only)
+- **Сделано:**
+  - server repo fast-forward до `66846fc` ✅
+  - compose config check PASS (`COMPOSE_CONFIG_OK`) ✅
+  - recreate только `telegram-bot` (`--no-deps`) ✅
+  - внутри контейнера после recreate:
+    - `TELEGRAM_WEBAPP_URL=set`
+    - `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS=set`
+  - settings check:
+    - `settings.TELEGRAM_WEBAPP_URL=set`
+    - `can_build_webapp_button=yes` ✅
+  - user retest: “Все работает и открывается” ✅
+- **Валидация:** `/health` OK, `/app/` 200, containers healthy, caddy active, timers active, UFW unchanged
+- **Safety:** `.env` не менялся, Caddy не менялся, миграции не запускались, Docker daemon не перезапускался, api/worker/postgres/redis не перезапускались намеренно
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps08h1b-apply-bot-webapp-env-fix.md](.ai_memory/tasks/2026-05-10-task-vps08h1b-apply-bot-webapp-env-fix.md)
 
 ### 2026-05-10 — VPS-08H1A: Compose WebApp Env Pass-through Patch (local)
 

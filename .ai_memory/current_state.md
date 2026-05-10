@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-08H1A: Compose WebApp Env Pass-through Patch) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-08H1B: Apply Bot WebApp Env Fix) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-08H1B (studio-orchestrator): применён production minimal fix через fast-forward server repo до `66846fc` и recreate только `telegram-bot` (`--no-deps`). Baseline перед изменениями: runtime healthy, `/health` OK, `/app/` 200, Caddy active. Compose config validated (`COMPOSE_CONFIG_OK`). После recreate внутри контейнера `TELEGRAM_WEBAPP_URL=set`, `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS=set`; settings видит `TELEGRAM_WEBAPP_URL=set`, `can_build_webapp_button=yes`. Пользователь подтвердил: кнопка `/start` появилась, Mini App открывается, навигация работает. Логи без traceback/500, финальный health green, timers active, UFW unchanged. `.env`/Caddy/migrations не менялись.
 
 - VPS-08H1A (studio-orchestrator): выполнен локальный patch compose env pass-through для исправления причины отсутствия кнопки Mini App в `/start`. Диагностикой VPS-08H подтверждено: в host `.env` `TELEGRAM_WEBAPP_URL` set, но внутри `telegram-bot` контейнера `TELEGRAM_WEBAPP_URL` missing, поэтому `settings.TELEGRAM_WEBAPP_URL` пустой и start handler не добавляет кнопку. В `infra/docker/docker-compose.prod.yml` добавлены переменные для `telegram-bot`: `TELEGRAM_WEBAPP_URL` и `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS` (default 300), а также `TELEGRAM_WEBAPP_AUTH_MAX_AGE_SECONDS` для `api` для консистентности auth-политики. Локальная проверка: `docker compose ... --env-file .env.example config --quiet` PASS. Deploy/VPS changes не выполнялись, сервисы не перезапускались, `.env` не менялся, миграции не запускались.
 
