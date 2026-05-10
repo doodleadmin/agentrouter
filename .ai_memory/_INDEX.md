@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 114 |
+| **Task logs** | 115 |
 | **Шаблоны** | 5 |
 
 ---
@@ -173,6 +173,7 @@
 | [2026-05-10-task-dev08c-backend-bot-safe-stubs.md](tasks/2026-05-10-task-dev08c-backend-bot-safe-stubs.md) | DEV-08C: Backend/Bot safe stubs (WebApp auth + launch) |
 | [2026-05-10-task-dev08c-miniapp-foundation.md](tasks/2026-05-10-task-dev08c-miniapp-foundation.md) | DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation |
 | [2026-05-10-task-vps08i-webapp-auth-smoke.md](tasks/2026-05-10-task-vps08i-webapp-auth-smoke.md) | VPS-08I: Focused WebApp Auth Smoke |
+| [2026-05-10-task-vps09b-post-deploy-monitoring-snapshot.md](tasks/2026-05-10-task-vps09b-post-deploy-monitoring-snapshot.md) | VPS-09B: Post-deploy Monitoring Snapshot |
 | [2026-05-10-task-vps09a-miniapp-ux-polish-deploy.md](tasks/2026-05-10-task-vps09a-miniapp-ux-polish-deploy.md) | VPS-09A: Mini App UX Polish Deploy |
 | [2026-05-10-task-dev09a-miniapp-production-ux-polish.md](tasks/2026-05-10-task-dev09a-miniapp-production-ux-polish.md) | DEV-09A: Mini App Production UX Polish |
 | [2026-05-10-task-vps08h1b-apply-bot-webapp-env-fix.md](tasks/2026-05-10-task-vps08h1b-apply-bot-webapp-env-fix.md) | VPS-08H1B: Apply Bot WebApp Env Fix |

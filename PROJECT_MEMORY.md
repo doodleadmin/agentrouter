@@ -29,8 +29,24 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-09A: Mini App UX Polish Deploy)
+**Дата последнего обновления:** 2026-05-10 (VPS-09B: Post-deploy Monitoring Snapshot)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-09B: Post-deploy Monitoring Snapshot
+
+- **Агент:** studio-orchestrator
+- **Контур:** read-only production snapshot (без изменений)
+- **Сделано:**
+  - SSH OK, repo clean `c81cb07`, all 5 containers healthy ✅
+  - `/health` OK (api/db/redis all ok), `/app/` 200 with `<div id="root">` + assets ✅
+  - API read-only: `/agents`, `/tasks`, `/events`, `/telegram/topics` → 200 ✅
+  - Static release: `20260510-212126` active, `20260510-174338` preserved ✅
+  - Caddy active, 4 timers active, UFW 22/80/443 unchanged ✅
+  - API logs clean (no 500/traceback), bot polling healthy, worker ready ✅
+  - Healthcheck 4/4 PASS, offsite sync OK ✅
+  - backup-verify.log not found (timer active, likely not yet run) ⚠️ info only
+- **Safety:** no deploy, no code/config changes, no .env/Caddy/UFW changes, no restarts, no migrations, no Telegram/data/topic creation, no OpenCode, no real tasks, secrets not printed
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps09b-post-deploy-monitoring-snapshot.md](.ai_memory/tasks/2026-05-10-task-vps09b-post-deploy-monitoring-snapshot.md)
 
 ### 2026-05-10 — VPS-09A: Controlled Mini App UX Polish Deploy
 
