@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-09 (VPS-06C: Offsite Backup Sync to Beget S3) | Автор: studio-orchestrator
+Обновлено: 2026-05-09 (VPS-07B: Healthchecks.io Ping Integration) | Автор: studio-orchestrator
 
 ---
 
@@ -149,6 +149,7 @@
 | VPS-05A: Polling Runtime Smoke | ✅ Выполнена | studio-orchestrator |
 | VPS-05B: Domain + Caddy + HTTPS Verification | ✅ Выполнена | studio-orchestrator |
 | VPS-06C: Offsite Backup Sync to Beget S3 | ✅ Выполнена | studio-orchestrator |
+| VPS-07B: Healthchecks.io Ping Integration | ✅ Выполнена | studio-orchestrator |
 | VPS-06B: Log Rotation + Backup Verification | ✅ Выполнена | studio-orchestrator |
 | VPS-06A: Backups + Health Monitoring Baseline | ✅ Выполнена | studio-orchestrator |
 
@@ -281,5 +282,5 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 97 |
+| **Task logs** | 99 |
 | Проекты | 0 |

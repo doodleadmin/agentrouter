@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 98 files in `.ai_memory/tasks/`
+- **Task logs:** 99 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,28 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-06C: Offsite Backup Sync to Beget S3)
+**Дата последнего обновления:** 2026-05-09 (VPS-07B: Healthchecks.io Ping Integration)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-09 — VPS-07B: Healthchecks.io Ping Integration (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, healthcheck script + env-file, no app restart, no migrations
+- **Сделано:**
+  - VPS-07B gate CONFIRM_VPS07B_HEALTHCHECKS ✅
+  - Healthchecks.io UUID configured via `/root/.config/agentrouter/healthchecks.env` (root:root, 600) ✅
+  - Healthcheck script v2 installed: `/usr/local/sbin/agentrouter-healthcheck.sh` ✅
+  - Script now sends ping to Healthchecks.io (`/fail` or empty on success) with user-agent `agentrouter-healthcheck/v2` ✅
+  - Ping uses silent mode (output redirected to /dev/null, fail-open on curl error) ✅
+  - Fixed `set -e` compat: replaced `((PASS++))` with `PASS=$((PASS+1))` ✅
+  - Manual test: all 4 checks OK (local=OK https=OK postgres=OK redis=OK) + healthchecks_ping=PASS ✅
+  - Healthcheck log: timestamped, path echo OK, no UUID exposed in log ✅
+  - Timer still active (every 5 minutes), no duplicate script execution ✅
+  - App containers NOT restarted, uptime preserved (API 7h, DB 17h) ✅
+  - Migrations NOT run, OpenCode NOT started, secrets NOT printed ✅
+- **Production deploy:** running, healthy, externally monitored via Healthchecks.io
+- **Warnings:** Healthchecks.io free tier has 100/day limit (288 pings/day at 5min would exceed free; recommend 15-min interval or paid)
+- Task summary: [.ai_memory/tasks/2026-05-09-task-vps07b-healthchecks-ping.md](.ai_memory/tasks/2026-05-09-task-vps07b-healthchecks-ping.md)
 
 ### 2026-05-09 — VPS-06C: Offsite Backup Sync to Beget S3 (45.130.213.12)
 
