@@ -29,7 +29,10 @@ import type {
   TelegramTopicRead,
 } from '../types';
 
-const API_BASE = '/api';
+// API base URL. In production under /app/, API is at same origin.
+// In local dev, Vite proxy or direct connection.
+// VITE_API_BASE_URL can override for custom setups.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // ── Session management ──────────────────────────────────────────────
 

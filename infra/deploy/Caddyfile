@@ -26,6 +26,13 @@
     # Future: Telegram webhook endpoint (when switching from polling to webhook)
     # reverse_proxy /telegram/webhook 127.0.0.1:8000
 
+    # Mini App static files — see Caddyfile.miniapp for full template
+    # handle_path /app/* {
+    #     root * /var/www/agentrouter-web/current
+    #     try_files {path} /index.html
+    #     file_server
+    # }
+
     # Future: Web dashboard (React + Vite)
     # reverse_proxy /*              127.0.0.1:3000
 

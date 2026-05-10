@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (DEV-08E: Create Agent/Task Flows + Topic Binding UX) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (DEV-08F: Mini App Deploy Readiness) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-08F (studio-orchestrator): выполнен локальный этап готовности Mini App к controlled deploy. Выбрана стратегия Option B (`/app/`) для минимального риска: `/health` и API-маршруты остаются неизменными. Добавлен production build path readiness: `vite.config.ts` поддерживает `VITE_BASE_PATH`, `package.json` получил `build:prod` (`vite build --base /app/`). API client поддерживает `VITE_API_BASE_URL` override (default `/api`). Добавлена документация `docs/miniapp-deploy.md` с безопасным runbook (build/copy/symlink/Caddy patch/rollback/validation), template-only `infra/deploy/Caddyfile.miniapp`, helper script `scripts/build-miniapp.sh`, обновлён `apps/web/README.md`, в `.env.example` добавлен `TELEGRAM_WEBAPP_URL` (без секретов). Локальные проверки: `npm run build` PASS, `npm run build:prod` PASS, `dist` не staged. Deploy не выполнялся, SSH/VPS изменения не делались, live Caddy/UFW не менялись, сервисы не перезапускались.
 
 - DEV-08E (studio-orchestrator): добавлены create-agent, create-task и topic-binding UX flows в Mini App. Созданы формы (AgentForm, TaskForm, TopicBindingForm) и страницы (CreateAgentPage, CreateTaskPage, TopicsPage). API client расширен методами createAgent/createTask/getTelegramTopics/createTelegramTopic. Все формы поддерживают real API + mock fallback + loading/error/success states. Topic Binding UX показывает существующие маппинги, имеет форму регистрации с disclaimer "не создаёт топик в Telegram". Навигация обновлена: quick actions на HomePage, кнопки на AgentsPage/TasksPage/AgentDetailPage, Topics доступен через MorePage. Frontend build PASS, backend tests 37/37 PASS, bot 83/83, worker 98/98. Deploy не выполнялся, production не затрагивался.
 

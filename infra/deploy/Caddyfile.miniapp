@@ -1,0 +1,33 @@
+# Agent Mission Control — Caddy Mini App snippet
+#
+# This is a DOCUMENTATION TEMPLATE only.
+# Do NOT apply directly to production without controlled deploy.
+#
+# Add this handle_path block BEFORE the general reverse_proxy handle
+# in the main Caddyfile (infra/deploy/Caddyfile).
+#
+# The /app/ path serves the Telegram Mini App static files.
+# All other paths continue to proxy to the API backend.
+
+# ── Mini App static files ─────────────────────────────────────────
+# Serve React SPA from /var/www/agentrouter-web/current
+# try_files falls back to index.html for client-side routing.
+
+handle_path /app/* {
+    root * /var/www/agentrouter-web/current
+    try_files {path} /index.html
+    file_server
+
+    # Cache static assets aggressively
+    @static path *.js *.css *.svg *.png *.jpg *.ico *.woff2
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # No-cache for index.html (always serve fresh version)
+    header /index.html Cache-Control "no-cache, no-store, must-revalidate"
+}
+
+# ── Existing API proxy (unchanged) ────────────────────────────────
+# reverse_proxy /health       127.0.0.1:8000
+# reverse_proxy /version      127.0.0.1:8000
+# reverse_proxy /api/*        127.0.0.1:8000
+# ... (rest of existing Caddyfile)

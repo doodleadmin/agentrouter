@@ -1,36 +1,68 @@
-# apps/web — DEV-08C Frontend Foundation
+# apps/web — Telegram Mini App
 
-This folder now contains a real **Vite + React + TypeScript** frontend foundation for Agent Mission Control.
+Vite + React + TypeScript frontend for Agent Mission Control.
 
-## Implemented
-
-- Vite app scaffold (`index.html`, `vite.config.ts`, `tsconfig*`, `src/*`)
-- Mobile-first, iOS-like light UI baseline (rounded cards, soft shadows, sticky bottom nav)
-- App routes:
-  - `/`
-  - `/agents`
-  - `/agents/:id`
-  - `/tasks`
-  - `/more`
-- Required UI components:
-  - `AppShell`, `BottomNav`, `Header`, `StatusCard`, `AgentCard`, `QuickActionCard`
-  - `ActivityItem`, `AgentListItem`, `AgentDetailCard`, `StatusPill`, `PageContainer`
-- Telegram WebApp utility with safe browser fallback:
-  - Detects `window.Telegram?.WebApp`
-  - Calls `ready()` and `expand()` when available
-  - Reads `initData` and `initDataUnsafe` safely
-- API client layer with local mock fallback for preview/dev
-
-## Scripts
+## Local Development
 
 ```bash
 npm install
-npm run dev
-npm run build
-npm run preview
+npm run dev        # http://localhost:5173
 ```
 
-## Notes
+The app works in browser preview mode without a backend — all API calls fall back to mock data.
 
-- No secrets are used or required for the local UI foundation.
-- API methods fall back to mock data when backend endpoints are unavailable.
+## Production Build
+
+```bash
+npm ci
+npm run build:prod
+```
+
+Output: `dist/` with `/app/` base path for deployment under `https://domain/app/`.
+
+Build script: `../../scripts/build-miniapp.sh`
+
+**Do NOT commit `dist/` to git.**
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Local dev server (port 5173) |
+| `npm run build` | Build with default base `/` |
+| `npm run build:prod` | Build with `VITE_BASE_PATH=/app/` |
+| `npm run preview` | Preview production build locally |
+
+## Environment Variables (build time)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_BASE_PATH` | `/` | Base path for assets. Set `/app/` for production. |
+| `VITE_API_BASE_URL` | `/api` | Backend API base URL. Default works when served from same origin. |
+
+No secrets required at build time.
+
+## Pages
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | HomePage | Dashboard overview |
+| `/agents` | AgentsPage | All registered agents |
+| `/agents/new` | CreateAgentPage | Register new agent form |
+| `/agents/:id` | AgentDetailPage | Agent details |
+| `/tasks` | TasksPage | Task queue and status |
+| `/tasks/new` | CreateTaskPage | Create task form |
+| `/topics` | TopicsPage | Telegram topic bindings |
+| `/more` | MorePage | Environment info |
+
+## Deployment
+
+See [docs/miniapp-deploy.md](../../docs/miniapp-deploy.md) for full deployment guide.
+
+## Features
+
+- Mobile-first iOS-like UI (rounded cards, bottom nav)
+- Real backend API integration with mock fallback
+- Telegram WebApp SDK integration (initData auth, ready/expand)
+- Loading/error/empty/success states on all pages
+- Create agent, create task, topic binding forms

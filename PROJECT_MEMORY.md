@@ -29,8 +29,26 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (DEV-08E: Create Agent/Task Flows + Topic Binding UX)
+**Дата последнего обновления:** 2026-05-10 (DEV-08F: Mini App Deploy Readiness)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — DEV-08F: Mini App Deploy Readiness
+
+- **Агент:** studio-orchestrator
+- **Контур:** local code/config/docs only, no deploy, no VPS changes, no secrets edits
+- **Стратегия:** Option B (`/app/`) — безопаснее, т.к. сохраняет `/health` и текущие API routes без изменений
+- **Сделано:**
+  - `vite.config.ts`: поддержка `VITE_BASE_PATH` (default `/`) для корректных asset paths под `/app/` ✅
+  - `apps/web/package.json`: `build:prod` через `vite build --base /app/` (cross-platform) ✅
+  - `apps/web/src/api/client.ts`: `VITE_API_BASE_URL` override (default `/api`) ✅
+  - `.env.example`: добавлен `TELEGRAM_WEBAPP_URL` с безопасными комментариями ✅
+  - `docs/miniapp-deploy.md`: полный runbook (build, static path, Caddy strategy, rollback, validation) ✅
+  - `infra/deploy/Caddyfile.miniapp`: template-only snippet для `/app/*` static serving ✅
+  - `infra/deploy/Caddyfile`: добавлены comments о future `/app/*` block (not active) ✅
+  - `scripts/build-miniapp.sh`: local-only helper script, без SSH/deploy ✅
+  - `apps/web/README.md`: обновлён раздел deploy readiness / env vars / routes ✅
+- **Validation:** `npm run build` PASS, `npm run build:prod` PASS, `apps/web/dist` not staged
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev08f-miniapp-deploy-readiness.md](.ai_memory/tasks/2026-05-10-task-dev08f-miniapp-deploy-readiness.md)
 
 ### 2026-05-10 — DEV-08E: Create Agent/Task Flows + Topic Binding UX
 
