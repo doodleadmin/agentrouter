@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (DEV-09A: Mini App Production UX Polish) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-09A: Mini App UX Polish Deploy) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-09A (studio-orchestrator): выполнен controlled production deploy Mini App UX polish (DEV-09A). Server fast-forward `c81cb07`, static release `/var/www/agentrouter-web/releases/20260510-212126`, atomic symlink switch. User smoke PASS: все страницы работают, Settings показывает только safe auth/session статусы, raw token/initData не видны. User: "All good, looks great without secrets". Logs clean, API endpoints 200, runtime healthy. .env/Caddy/services не менялись, миграции не запускались.
 
 - DEV-09A (studio-orchestrator): выполнено локальное улучшение production UX Mini App. Убраны критические риски отображения raw session_token/initData из MorePage. HomePage улучшена: mode indicator, грид статистики, улучшенные состояния. Read-only страницы (Agents/Tasks/Topics) улучшены: счётчики, ErrorState с retry, production safety подсказки. Формы создания получили предупреждения о реальных записях. Build validation: `npm run build` PASS, `npm run build:prod` PASS. 0 errors. Safety grep чистый. Deploy не выполнялся, production не затрагивался.
 

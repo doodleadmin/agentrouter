@@ -29,8 +29,29 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (DEV-09A: Mini App Production UX Polish)
+**Дата последнего обновления:** 2026-05-10 (VPS-09A: Mini App UX Polish Deploy)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-09A: Controlled Mini App UX Polish Deploy
+
+- **Агент:** studio-orchestrator
+- **Контур:** production static frontend deploy only, no backend/infrastructure changes
+- **Сделано:**
+  - server repo fast-forward `66846fc..c81cb07` (clean, ff-only) ✅
+  - local build `npm run build:prod` PASS (61 modules, 0 errors) ✅
+  - artifact `miniapp-ux-polish-20260511-012032.zip` SHA256 `b6eac4e3...` (63639 bytes) ✅
+  - new release `/var/www/agentrouter-web/releases/20260510-212126` + atomic symlink switch ✅
+  - previous release preserved: `/var/www/agentrouter-web/releases/20260510-174338` ✅
+  - permissions: `root:www-data`, dirs 755, files 644 ✅
+  - `/health` OK, `/app/` 200, `<div id="root">` + assets present ✅
+  - user smoke: all pages PASS, Settings shows safe auth/session only, no raw token/initData ✅
+  - user report: "All good, looks great without secrets" ✅
+  - read-only API: `/agents`, `/tasks`, `/events`, `/topics` → 200 ✅
+  - logs: API clean (no 500/traceback), bot healthy (polling active) ✅
+  - final runtime: all 5 containers healthy, Caddy active, 4 timers active, UFW unchanged ✅
+- **Safety:** no .env changes, no Caddy changes, no restarts, no migrations, no Telegram API sends, no topics/data created, no OpenCode, no real tasks, secrets not printed, raw initData/session_token not printed
+- **Rollback:** `ln -sfn /var/www/agentrouter-web/releases/20260510-174338 /var/www/agentrouter-web/current` — static only, no infra changes needed
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps09a-miniapp-ux-polish-deploy.md](.ai_memory/tasks/2026-05-10-task-vps09a-miniapp-ux-polish-deploy.md)
 
 ### 2026-05-10 — DEV-09A: Mini App Production UX Polish + Safe Read-only Dashboards
 
