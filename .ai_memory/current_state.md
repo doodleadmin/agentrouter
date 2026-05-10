@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-07D: Offsite Backup Restore Drill) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-08A: Controlled OpenCode Readiness Audit) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-08A (studio-orchestrator): выполнен read-only аудит готовности controlled OpenCode активации на VPS `45.130.213.12`. Baseline runtime PASS (5 контейнеров healthy, HTTPS OK, 4 timers active, UFW unchanged). Обнаружено: OpenCode integration в коде присутствует (API runtime factory/transport/service, worker plan/execute pipeline, Telegram/API task surfaces), но на сервере `opencode` CLI не найден в PATH (`agentmc`/`root`), активных OpenCode процессов и systemd unit нет. Логи API/worker/bot не содержат признаков активного OpenCode execution. Итог: готовность частичная — нужна controlled VPS-08B dry-run activation procedure с явным gate и проверкой no-op поведения. Next recommended step: Telegram Forum / Topics Orchestration Audit before OpenCode dry-run. В этом этапе OpenCode НЕ запускался, реальные задачи НЕ выполнялись, БД НЕ модифицировалась, сервисы НЕ перезапускались, миграции НЕ запускались, секреты НЕ выводились.
 
 - VPS-07D (studio-orchestrator): initial safe-fail `rclone_target_env_missing` и retry safe-fail `backup_not_found_in_s3` закрыты через VPS-07D.1 path alignment. Root-level `agentrouter-*.sql` копированы в canonical `agentrouter/backups/` (без удаления исходных объектов), `/usr/local/sbin/agentrouter-offsite-sync.sh` обновлён на canonical path (backup + syntax PASS), manual offsite sync PASS, final restore drill PASS: `RESTORE_DRILL_OK backup=agentrouter-20260510-050111.sql source=s3 size=19677 table_count=10 alembic_version=0002_add_security_audit_events`. Cleanup PASS, final runtime PASS (5 контейнеров healthy, HTTPS OK, 4 timers active, UFW unchanged). Production DB не затрагивалась, рестартов контейнеров/daemon не было, миграции не запускались, OpenCode не запускался, секреты не выводились.
 

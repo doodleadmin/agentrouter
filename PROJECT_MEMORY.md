@@ -29,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-07D: Offsite Backup Restore Drill)
+**Дата последнего обновления:** 2026-05-10 (VPS-08A: Controlled OpenCode Readiness Audit)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-10 — VPS-07C: Healthcheck Interval Adjustment + Ops Review (45.130.213.12)
@@ -85,6 +85,24 @@
   - Post-run cleanup PASS and final runtime PASS (5/5 healthy, HTTPS OK, 4 timers active, UFW unchanged) ✅
 - **Статус:** VPS-07D completed successfully after path alignment; production runtime healthy
 - Task summary: [.ai_memory/tasks/2026-05-10-task-vps07d-restore-drill.md](.ai_memory/tasks/2026-05-10-task-vps07d-restore-drill.md)
+
+### 2026-05-10 — VPS-08A: Controlled OpenCode Readiness Audit (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** read-only audit only (no OpenCode start, no real task execution, no DB writes, no restarts)
+- **Сделано:**
+  - Local baseline PASS: clean tree, `main...origin/main`, latest commit `d54b4e8` ✅
+  - Production baseline PASS: 5/5 containers healthy, HTTPS `/health` OK, 4 timers active, UFW unchanged ✅
+  - Remote repo state captured: server repo is on older commit chain (`main...origin/main` there), runtime healthy ✅
+  - OpenCode integration discovery completed (API transport/factory/runtime service, worker plan/execute pipeline, Telegram command surfaces) ✅
+  - Process audit: no active OpenCode runtime process detected; no opencode systemd unit; `opencode` binary not found in PATH for `agentmc`/`root` ✅
+  - Logs audit (redacted/read-only): no active OpenCode execution evidence in API/worker/bot runtime logs ✅
+  - Safe test discovery done (candidates listed), tests not run to keep strict read-only audit scope ✅
+  - VPS-08B dry-run activation plan prepared (single admin-only plan-generation smoke, explicit gate, timeout, log verification, cleanup) ✅
+  - OpenCode NOT started, real tasks NOT run, production DB NOT modified, services NOT restarted, migrations NOT run, secrets NOT printed ✅
+- **Статус:** readiness audit complete; server requires OpenCode CLI/runtime presence + controlled gating procedure before any activation
+- **Next recommended step:** Telegram Forum / Topics Orchestration Audit before OpenCode dry-run.
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps08a-opencode-readiness-audit.md](.ai_memory/tasks/2026-05-10-task-vps08a-opencode-readiness-audit.md)
 
 ### 2026-05-09 — VPS-07B: Healthchecks.io Ping Integration (45.130.213.12)
 
