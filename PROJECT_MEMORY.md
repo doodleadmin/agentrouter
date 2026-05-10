@@ -29,8 +29,17 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-09B: Post-deploy Monitoring Snapshot)
+**Дата последнего обновления:** 2026-05-10 (VPS-09C: Backup Verify Log Sanity)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-09C: Backup Verify Log Sanity Check
+
+- **Агент:** studio-orchestrator
+- **Контур:** read-only inspection (без изменений)
+- **Результат:** VPS-09B warning был false alarm. Таймер и сервис backup-verify **работают корректно**: timer active/enabled, service ran twice with exit 0/SUCCESS (`BACKUP_VERIFY_OK 19677 bytes`). Скрипт пишет только в stdout/stderr → journald, **не создаёт** `/var/log/agentrouter/backup-verify.log`. Отсутствие файла — expected behaviour, не баг. Journal подтверждает 2 успешных запуска.
+- **Классификация:** B — Script writes only to journald, no file log by design
+- **Safety:** read-only, no VPS changes, no manual runs, no timer/service restarts, no .env changes, no migrations, no secrets printed
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps09c-backup-verify-log-sanity.md](.ai_memory/tasks/2026-05-10-task-vps09c-backup-verify-log-sanity.md)
 
 ### 2026-05-10 — VPS-09B: Post-deploy Monitoring Snapshot
 

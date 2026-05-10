@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-09B: Post-deploy Monitoring Snapshot) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-09C: Backup Verify Log Sanity) | Автор: studio-orchestrator
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Что происходит сейчас
 
-- VPS-09B (studio-orchestrator): выполнен read-only post-deploy monitoring snapshot. SSH OK, repo clean `c81cb07`. All 5 containers healthy. `/health` OK, `/app/` 200, API 200. Static release `20260510-212126` active. Caddy active, 4 timers active, UFW unchanged. Logs clean: API без 500/traceback, bot polling healthy, worker ready. Healthcheck 4/4 PASS, offsite sync OK. backup-verify.log not found (timer active, likely not yet run). No deploy, no changes, no secrets printed.
+- VPS-09C (studio-orchestrator): read-only inspection backup-verify timer/log. Timer active/enabled, service ran twice SUCCESS (BACKUP_VERIFY_OK 19677 bytes). Script outputs only to journald — /var/log/agentrouter/backup-verify.log absence is expected. VPS-09B warning was false alarm. No fix needed.
 
 - DEV-09A (studio-orchestrator): выполнено локальное улучшение production UX Mini App. Убраны критические риски отображения raw session_token/initData из MorePage. HomePage улучшена: mode indicator, грид статистики, улучшенные состояния. Read-only страницы (Agents/Tasks/Topics) улучшены: счётчики, ErrorState с retry, production safety подсказки. Формы создания получили предупреждения о реальных записях. Build validation: `npm run build` PASS, `npm run build:prod` PASS. 0 errors. Safety grep чистый. Deploy не выполнялся, production не затрагивался.
 
