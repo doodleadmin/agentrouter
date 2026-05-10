@@ -12,7 +12,7 @@
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 99 files in `.ai_memory/tasks/`
+- **Task logs:** 100 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,30 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-09 (VPS-07B: Healthchecks.io Ping Integration)
+**Дата последнего обновления:** 2026-05-10 (VPS-07C: Interval Adjustment + Ops Review)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — VPS-07C: Healthcheck Interval Adjustment + Ops Review (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, timer-only change + read-only inspection, no app/Docker restart, no migrations
+- **Сделано:**
+  - VPS-07C gate CONFIRM_VPS07C_INTERVAL_OPS ✅
+  - Healthcheck timer interval changed: 5 minutes → 15 minutes (`OnUnitActiveSec=15m`) ✅
+  - Reason: free-tier limit (100 pings/day; 5min = 288/day would exceed; 15min = 96/day fits free tier) ✅
+  - Timer backed up before change, backup name recorded ✅
+  - `systemctl daemon-reload` + `restart agentrouter-healthcheck.timer` ✅
+  - Manual healthcheck PASS after change: `local=OK https=OK postgres=OK redis=OK healthchecks_ping=OK HEALTHCHECK_OK pass=4 fail=0` ✅
+  - No UUID/URL in healthcheck.log ✅
+  - Docker restart policies reviewed (all 5 containers: `unless-stopped`, json-file logging, no max-size limits) ✅ — no changes made
+  - Docker log sizes inspected (4k to 944k, small) ✅ — no truncation, no daemon restart
+  - All 4 systemd custom timers active: healthcheck (15min), db-backup (daily 03:20), backup-verify (daily 04:00), offsite-sync (daily 05:00) ✅
+  - Final runtime: all 5 containers healthy, HTTPS OK, UFW unchanged ✅
+  - App containers NOT restarted, Docker daemon NOT restarted, Docker config NOT changed ✅
+  - Migrations NOT run, OpenCode NOT started, secrets NOT printed ✅
+- **Production deploy:** healthy, externally monitored via Healthchecks.io (15-min interval)
+- **Warnings:** No Docker log rotation limits (daemon.json empty) — json-file logs will grow indefinitely; recommend max-size + max-file in future step
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps07c-healthcheck-interval-ops-review.md](.ai_memory/tasks/2026-05-10-task-vps07c-healthcheck-interval-ops-review.md)
 
 ### 2026-05-09 — VPS-07B: Healthchecks.io Ping Integration (45.130.213.12)
 
