@@ -29,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-07C: Interval Adjustment + Ops Review)
+**Дата последнего обновления:** 2026-05-10 (VPS-07D: Offsite Backup Restore Drill)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-10 — VPS-07C: Healthcheck Interval Adjustment + Ops Review (45.130.213.12)
@@ -53,6 +53,38 @@
 - **Production deploy:** healthy, externally monitored via Healthchecks.io (15-min interval)
 - **Warnings:** No Docker log rotation limits (daemon.json empty) — json-file logs will grow indefinitely; recommend max-size + max-file in future step
 - Task summary: [.ai_memory/tasks/2026-05-10-task-vps07c-healthcheck-interval-ops-review.md](.ai_memory/tasks/2026-05-10-task-vps07c-healthcheck-interval-ops-review.md)
+
+### 2026-05-10 — VPS-07D: Offsite Backup Restore Drill (45.130.213.12)
+
+- **Агент:** studio-orchestrator
+- **Контур:** VPS 45.130.213.12, isolated restore drill script execution attempt, no app restart, no migrations
+- **Сделано:**
+  - VPS-07D gate `CONFIRM_VPS07D_RESTORE_DRILL=yes` ✅
+  - Local/GitHub sync baseline: clean tree, `main...origin/main`, expected VPS-07C commit present ✅
+  - VPS runtime baseline PASS: 5/5 containers healthy, HTTPS `/health` OK, 4 timers active, UFW unchanged (22/80/443) ✅
+  - Restore drill script installed: `/usr/local/sbin/agentrouter-restore-drill.sh` (`root:root`, `750`), syntax validated ✅
+  - Manual run result: `RESTORE_DRILL_FAIL rclone_target_env_missing` (sanitized) ⚠️
+  - Cleanup check PASS: no `agentrouter-restore-drill-*` temp containers, no `/tmp/agentrouter-restore-drill-*` dirs ✅
+  - Existing restore log evidence found: `RESTORE_DRILL_OK backup=agentrouter-20260510-050111.sql source=s3 size=19677 table_count=10 alembic_version=0002_add_security_audit_events` ✅
+  - Final runtime verify PASS: containers healthy, HTTPS OK, 4 timers active, UFW unchanged ✅
+  - Production DB NOT touched, app containers NOT restarted, Docker daemon NOT restarted ✅
+  - Caddy config unchanged, migrations NOT run, OpenCode NOT started, secrets NOT printed ✅
+  - VPS-07D retry gate `CONFIRM_VPS07D_RETRY=yes` ✅
+  - Temporary SSH instability observed (`Connection closed by ... port 22`), then recovered ✅
+  - `rclone` verified, `rclone.conf` permissions verified (`root:root 600`), remote `agentrouter-s3` exists ✅
+  - Non-secret metadata file recreated: `/root/.config/rclone/agentrouter-s3-target.env` (`root:root 600`) ✅
+  - S3 listing check: backup files exist in bucket root (filenames only), but not under `agentrouter/backups/` path ⚠️
+  - Retry run result: `RESTORE_DRILL_FAIL backup_not_found_in_s3 agentrouter-20260510-050111.sql` (sanitized) ⚠️
+  - Retry cleanup PASS: no temporary restore-drill container/dir left ✅
+  - Retry final runtime PASS: 5/5 containers healthy, HTTPS OK, 4 timers active, UFW unchanged ✅
+  - VPS-07D.1 gate `CONFIRM_VPS07D1_PATH_ALIGN=yes` ✅
+  - S3 path alignment complete: copied root-level `agentrouter-*.sql` backups to canonical `agentrouter/backups/` (copy-only, no delete) ✅
+  - Offsite sync script aligned to canonical path `agentrouter/backups/`; script backup created; syntax PASS; mode `root:root 750` ✅
+  - Manual offsite sync PASS: `OFFSITE_SYNC_OK latest=agentrouter-20260510-050111.sql remote_path=agentrouter/backups` ✅
+  - Restore drill rerun PASS: `RESTORE_DRILL_OK backup=agentrouter-20260510-050111.sql source=s3 size=19677 table_count=10 alembic_version=0002_add_security_audit_events` ✅
+  - Post-run cleanup PASS and final runtime PASS (5/5 healthy, HTTPS OK, 4 timers active, UFW unchanged) ✅
+- **Статус:** VPS-07D completed successfully after path alignment; production runtime healthy
+- Task summary: [.ai_memory/tasks/2026-05-10-task-vps07d-restore-drill.md](.ai_memory/tasks/2026-05-10-task-vps07d-restore-drill.md)
 
 ### 2026-05-09 — VPS-07B: Healthchecks.io Ping Integration (45.130.213.12)
 

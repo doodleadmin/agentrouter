@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-07C: Interval Adjustment + Ops Review) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (VPS-07D: Offsite Backup Restore Drill) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-07D (studio-orchestrator): initial safe-fail `rclone_target_env_missing` и retry safe-fail `backup_not_found_in_s3` закрыты через VPS-07D.1 path alignment. Root-level `agentrouter-*.sql` копированы в canonical `agentrouter/backups/` (без удаления исходных объектов), `/usr/local/sbin/agentrouter-offsite-sync.sh` обновлён на canonical path (backup + syntax PASS), manual offsite sync PASS, final restore drill PASS: `RESTORE_DRILL_OK backup=agentrouter-20260510-050111.sql source=s3 size=19677 table_count=10 alembic_version=0002_add_security_audit_events`. Cleanup PASS, final runtime PASS (5 контейнеров healthy, HTTPS OK, 4 timers active, UFW unchanged). Production DB не затрагивалась, рестартов контейнеров/daemon не было, миграции не запускались, OpenCode не запускался, секреты не выводились.
 
 - VPS-05B (studio-orchestrator): на VPS `45.130.213.12` — DNS `polyrouter.ru → 45.130.213.12` подтверждён, Caddy 2.6.2 установлен и настроен как reverse proxy `https://polyrouter.ru → http://127.0.0.1:8000`, Let's Encrypt сертификат получен, порты 80/443 открыты в UFW (теперь 22+80+443), HTTPS `/health` возвращает `{"status":"ok","checks":{"api":"ok","database":"ok","redis":"ok"}}`, все 5 контейнеров healthy, Telegram manual smoke PASS, миграции не запускались, OpenCode не запущен, секреты не выводились.
 

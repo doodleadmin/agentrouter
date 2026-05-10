@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 100 |
+| **Task logs** | 101 |
 | **Шаблоны** | 5 |
 
 ---
@@ -166,6 +166,7 @@
 | [2026-05-09-task-vps05b-domain-caddy-https.md](tasks/2026-05-09-task-vps05b-domain-caddy-https.md) | VPS-05B: Domain + Caddy + HTTPS Verification |
 | [2026-05-09-task-vps06c-offsite-s3-sync.md](tasks/2026-05-09-task-vps06c-offsite-s3-sync.md) | VPS-06C: Offsite Backup Sync to Beget S3 |
 | [2026-05-10-task-vps07c-healthcheck-interval-ops-review.md](tasks/2026-05-10-task-vps07c-healthcheck-interval-ops-review.md) | VPS-07C: Interval Adjustment + Ops Review |
+| [2026-05-10-task-vps07d-restore-drill.md](tasks/2026-05-10-task-vps07d-restore-drill.md) | VPS-07D: Offsite Backup Restore Drill |
 | [2026-05-09-task-vps07b-healthchecks-ping.md](tasks/2026-05-09-task-vps07b-healthchecks-ping.md) | VPS-07B: Healthchecks.io Ping Integration |
 | [2026-05-09-task-vps06b-logrotate-backup-verify.md](tasks/2026-05-09-task-vps06b-logrotate-backup-verify.md) | VPS-06B: Log Rotation + Backup Verification |
 | [2026-05-09-task-vps06a-backups-health-monitoring.md](tasks/2026-05-09-task-vps06a-backups-health-monitoring.md) | VPS-06A: Backups + Health Monitoring Baseline |
