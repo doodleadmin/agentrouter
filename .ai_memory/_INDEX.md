@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 116 |
+| **Task logs** | 117 |
 | **Шаблоны** | 5 |
 
 ---
@@ -173,6 +173,7 @@
 | [2026-05-10-task-dev08c-backend-bot-safe-stubs.md](tasks/2026-05-10-task-dev08c-backend-bot-safe-stubs.md) | DEV-08C: Backend/Bot safe stubs (WebApp auth + launch) |
 | [2026-05-10-task-dev08c-miniapp-foundation.md](tasks/2026-05-10-task-dev08c-miniapp-foundation.md) | DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation |
 | [2026-05-10-task-vps08i-webapp-auth-smoke.md](tasks/2026-05-10-task-vps08i-webapp-auth-smoke.md) | VPS-08I: Focused WebApp Auth Smoke |
+| [2026-05-10-task-dev10a-safe-create-approval-ux.md](tasks/2026-05-10-task-dev10a-safe-create-approval-ux.md) | DEV-10A: Safe Create + Approval UX |
 | [2026-05-10-task-vps09c-backup-verify-log-sanity.md](tasks/2026-05-10-task-vps09c-backup-verify-log-sanity.md) | VPS-09C: Backup Verify Log Sanity |
 | [2026-05-10-task-vps09b-post-deploy-monitoring-snapshot.md](tasks/2026-05-10-task-vps09b-post-deploy-monitoring-snapshot.md) | VPS-09B: Post-deploy Monitoring Snapshot |
 | [2026-05-10-task-vps09a-miniapp-ux-polish-deploy.md](tasks/2026-05-10-task-vps09a-miniapp-ux-polish-deploy.md) | VPS-09A: Mini App UX Polish Deploy |

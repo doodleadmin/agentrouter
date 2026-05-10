@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { api, getSessionToken, useApi } from '../api/client';
 import { getTelegramContext } from '../lib/telegram';
 import { useMemo } from 'react';
-import type { AgentSummary, EventItem, SystemStatusSummary, TaskSummary } from '../types';
+import type { AgentSummary, ApprovalItem, EventItem, SystemStatusSummary, TaskSummary } from '../types';
 import { ActivityItem } from '../components/ActivityItem';
 import { AgentCard } from '../components/AgentCard';
+import { ApprovalsCard } from '../components/ApprovalsCard';
 import { EmptyState, LoadingState } from '../components/States';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
@@ -18,6 +19,7 @@ export function HomePage() {
   const statusState = useApi<SystemStatusSummary>(api.getSystemStatus);
   const agentsState = useApi<AgentSummary[]>(api.getAgents);
   const tasksState = useApi<TaskSummary[]>(api.getTasks);
+  const approvalsState = useApi<ApprovalItem[]>(api.getApprovals);
   const activityState = useApi<EventItem[]>(api.getEvents);
 
   // Determine API mode for indicator
@@ -47,11 +49,15 @@ export function HomePage() {
     ? tasksState.data.filter((t) => ['created', 'routed', 'planning', 'waiting_approval'].includes(t.status)).length
     : 0);
 
+  const pendingApprovalCount = (approvalsState.status === 'success'
+    ? approvalsState.data.filter((a) => a.status === 'pending').length
+    : 0);
+
   return (
     <PageContainer>
       <Header title="AI Office" subtitle="Mission Control" />
 
-      {/* Mode indicator */}
+      {/* Mode + guarded indicator */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -62,6 +68,7 @@ export function HomePage() {
         backgroundColor: context.isTelegramWebApp ? '#ecfdf5' : '#f3f4f6',
         fontSize: '0.80rem',
         color: modeTone[apiMode],
+        flexWrap: 'wrap',
       }}>
         <span style={{
           width: 8,
@@ -72,6 +79,7 @@ export function HomePage() {
         }} />
         {modeLabel[apiMode] || 'Preview'}
         {context.isTelegramWebApp && ' • Telegram'}
+        {token && ' • Guarded mode'}
       </div>
 
       {/* System status */}
@@ -97,10 +105,8 @@ export function HomePage() {
           </small>
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.4rem' }}>
-            {activityState.status === 'success' ? activityState.data.length : '-'}
-          </h3>
-          <small style={{ color: '#6b7280' }}>Events</small>
+          <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{pendingApprovalCount}</h3>
+          <small style={{ color: '#6b7280' }}>Pending approvals</small>
         </div>
       </section>
 
@@ -130,6 +136,19 @@ export function HomePage() {
           </small>
         </article>
       </div>
+
+      {/* Approvals */}
+      <div className="section-title">Approvals</div>
+      <ApprovalsCard
+        approvals={approvalsState.status === 'success' ? approvalsState.data : []}
+        loading={approvalsState.status === 'loading'}
+      />
+      {approvalsState.status === 'error' && (
+        <div className="card" style={{ color: '#dc2626', fontSize: '0.85rem' }}>
+          Failed to load approvals.{' '}
+          <button onClick={approvalsState.refetch} className="retry-btn" style={{ marginLeft: 4 }}>Retry</button>
+        </div>
+      )}
 
       {/* Active agents */}
       <div className="section-title">Active agents</div>

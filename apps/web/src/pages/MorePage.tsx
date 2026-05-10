@@ -164,6 +164,27 @@ export function MorePage() {
         </section>
       )}
 
+      {/* Guarded mode explanation */}
+      {token && (
+        <>
+          <div className="section-title">Production mode</div>
+          <section className="card">
+            <div className="row-between">
+              <div>
+                <h4 style={{ margin: 0 }}>Guarded mode</h4>
+                <small style={{ color: '#92400e' }}>Create records only</small>
+              </div>
+              <span className="pill pill-orange">GUARDED</span>
+            </div>
+            <small style={{ display: 'block', marginTop: 8, color: '#6b7280', lineHeight: 1.5 }}>
+              In production, creating agents, tasks, and topic bindings creates real database records.
+              Dangerous actions (deploy, migrations, environment changes) require explicit approval
+              through the approvals system. Task creation does not trigger OpenCode or command execution.
+            </small>
+          </section>
+        </>
+      )}
+
       {/* Production links */}
       <div className="section-title">Public URL</div>
       <section className="card">

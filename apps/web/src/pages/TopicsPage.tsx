@@ -6,6 +6,7 @@ import {
   TOPIC_KIND_DESCRIPTIONS,
   TOPIC_KINDS,
 } from '../types';
+import { ConfirmSubmitCard } from '../components/ConfirmSubmitCard';
 import { TopicBindingForm } from '../components/forms/TopicBindingForm';
 import { TopicMappingCard } from '../components/TopicMappingCard';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
@@ -17,31 +18,44 @@ export function TopicsPage() {
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [formState, setFormState] = useState<FormState>({ status: 'idle' });
   const [showForm, setShowForm] = useState(false);
+  const [pendingData, setPendingData] = useState<{
+    chat_id: number;
+    message_thread_id: number;
+    title: string;
+    kind: string;
+    agent_id: string | null;
+  } | null>(null);
   const token = getSessionToken();
 
   useEffect(() => {
     void api.getAgents().then(setAgents);
   }, []);
 
-  const handleBindingSubmit = async (data: {
+  const handleFormSubmit = async (data: {
     chat_id: number;
     message_thread_id: number;
     title: string;
     kind: string;
     agent_id: string | null;
   }) => {
+    setPendingData(data);
+  };
+
+  const handleConfirm = async () => {
+    if (!pendingData) return;
     setFormState({ status: 'submitting' });
     try {
       await api.createTelegramTopic({
-        chat_id: data.chat_id,
-        message_thread_id: data.message_thread_id,
-        title: data.title,
-        kind: data.kind as 'general' | 'agent' | 'approvals' | 'system_logs' | 'task',
-        agent_id: data.agent_id,
+        chat_id: pendingData.chat_id,
+        message_thread_id: pendingData.message_thread_id,
+        title: pendingData.title,
+        kind: pendingData.kind as 'general' | 'agent' | 'approvals' | 'system_logs' | 'task',
+        agent_id: pendingData.agent_id,
       });
       setFormState({ status: 'success' });
       setTimeout(() => {
         setShowForm(false);
+        setPendingData(null);
         setFormState({ status: 'idle' });
         topicsState.refetch();
       }, 1200);
@@ -52,6 +66,15 @@ export function TopicsPage() {
       });
     }
   };
+
+  const handleCancel = () => {
+    setPendingData(null);
+    setFormState({ status: 'idle' });
+  };
+
+  const pendingKindLabel = pendingData
+    ? TOPIC_KIND_LABELS[pendingData.kind as keyof typeof TOPIC_KIND_LABELS] ?? pendingData.kind
+    : '';
 
   return (
     <PageContainer>
@@ -78,7 +101,7 @@ export function TopicsPage() {
       {topicsState.status === 'loading' && <LoadingState message="Loading topics…" />}
       {topicsState.status === 'error' && <ErrorState message="Failed to load topics" onRetry={topicsState.refetch} />}
       {topicsState.status === 'success' && topicsState.data.length === 0 && (
-        <EmptyState message="No topic bindings registered yet" />
+        <EmptyState message="No topic bindings yet. Create a topic manually in your Telegram Forum group first, then register the mapping here." />
       )}
       {topicsState.status === 'success' && topicsState.data.length > 0 && (
         <div className="stack">
@@ -98,10 +121,10 @@ export function TopicsPage() {
         <div className="card">
           <TopicBindingForm
             agents={agents}
-            onSubmit={handleBindingSubmit}
-            formState={formState}
+            onSubmit={handleFormSubmit}
+            formState={pendingData ? { status: 'idle' } : formState}
           />
-          {formState.status !== 'success' && (
+          {formState.status !== 'success' && !pendingData && (
             <button
               className="retry-btn"
               style={{ marginTop: 8 }}
@@ -111,6 +134,29 @@ export function TopicsPage() {
             </button>
           )}
         </div>
+      )}
+
+      {pendingData && (
+        <ConfirmSubmitCard
+          title="Confirm topic binding"
+          items={[
+            { label: 'Chat ID', value: String(pendingData.chat_id) },
+            { label: 'Thread ID', value: String(pendingData.message_thread_id) },
+            { label: 'Title', value: pendingData.title },
+            { label: 'Kind', value: pendingKindLabel },
+            { label: 'Agent', value: pendingData.agent_id ? agents.find((a) => a.id === pendingData.agent_id)?.name ?? '—' : '—' },
+          ]}
+          warning={
+            token
+              ? 'This will create a real topic mapping record in production. It will NOT create a Telegram topic.'
+              : 'Preview mode: API is not connected. A mock record will be created. It does NOT create a Telegram topic.'
+          }
+          secondaryNote="Create the topic manually in Telegram first, then register the mapping here."
+          confirmLabel="Register Binding"
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+          submitting={formState.status === 'submitting'}
+        />
       )}
 
       {token && (

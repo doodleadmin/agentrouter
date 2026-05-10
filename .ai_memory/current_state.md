@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-09C: Backup Verify Log Sanity) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (DEV-10A: Safe Create + Approval UX) | Автор: studio-orchestrator
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Что происходит сейчас
 
-- VPS-09C (studio-orchestrator): read-only inspection backup-verify timer/log. Timer active/enabled, service ran twice SUCCESS (BACKUP_VERIFY_OK 19677 bytes). Script outputs only to journald — /var/log/agentrouter/backup-verify.log absence is expected. VPS-09B warning was false alarm. No fix needed.
+- DEV-10A (studio-orchestrator): выполнена локальная реализация safe production create flows + approvals UX. Добавлен `ConfirmSubmitCard` — двухшаговый confirm перед create agent/task/topic. `ApprovalsCard` с read-only approvals overview + pending count. HomePage: approvals section, guarded-mode indicator. MorePage: guarded-mode explanation (create records only, approvals required for dangerous actions). Build PASS (63 modules, 0 errors). Deploy не выполнялся.
 
 - DEV-09A (studio-orchestrator): выполнено локальное улучшение production UX Mini App. Убраны критические риски отображения raw session_token/initData из MorePage. HomePage улучшена: mode indicator, грид статистики, улучшенные состояния. Read-only страницы (Agents/Tasks/Topics) улучшены: счётчики, ErrorState с retry, production safety подсказки. Формы создания получили предупреждения о реальных записях. Build validation: `npm run build` PASS, `npm run build:prod` PASS. 0 errors. Safety grep чистый. Deploy не выполнялся, production не затрагивался.
 

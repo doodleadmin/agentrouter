@@ -29,8 +29,25 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-09C: Backup Verify Log Sanity)
+**Дата последнего обновления:** 2026-05-10 (DEV-10A: Safe Create + Approval UX)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — DEV-10A: Safe Production Create Flows + Approval UX
+
+- **Агент:** studio-orchestrator
+- **Контур:** local frontend only, no deploy, no infrastructure changes
+- **Сделано:**
+  - **Confirmation UX:** добавлен `ConfirmSubmitCard` — reusable двухшаговый confirm перед create agent/task/topic binding. Пользователь видит summary данных, предупреждения (real record / mock), что НЕ делает (не запускает OpenCode, не выполняет команды) ✅
+  - **Create flow safety:** AgentForm, TaskForm, TopicBindingForm теперь двухшаговые — форма → confirm → API call ✅
+  - **Approvals UX:** добавлен `ApprovalsCard` — read-only approvals overview с pending count, списком последних approvals, пустым состоянием с объяснением workflow ✅
+  - **HomePage:** approvals section + pending count в overview grid, guarded-mode indicator ✅
+  - **MorePage:** "Guarded mode" explanation — create records only, dangerous actions require approval, task creation ≠ execution ✅
+  - **Empty states:** Topics — setup instructions, Approvals — workflow explanation ✅
+- **Build validation:** `npm run build` PASS, `npm run build:prod` PASS (63 modules, 0 errors) ✅
+- **Safety grep:** no secrets, no raw session_token/initData в изменённых файлах ✅
+- **Files:** 8 files (2 new, 6 modified), frontend only
+- **Развёртывание не выполнялось:** no deploy, no VPS, no .env/Caddy/UFW, no restarts, no migrations, no Telegram, no OpenCode, no real tasks, secrets not printed
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev10a-safe-create-approval-ux.md](.ai_memory/tasks/2026-05-10-task-dev10a-safe-create-approval-ux.md)
 
 ### 2026-05-10 — VPS-09C: Backup Verify Log Sanity Check
 

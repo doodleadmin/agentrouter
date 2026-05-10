@@ -53,7 +53,15 @@ No secrets required at build time.
 | `/tasks` | TasksPage | Task queue with status/risk badges |
 | `/tasks/new` | CreateTaskPage | Create task form (warns about real record creation) |
 | `/topics` | TopicsPage | Telegram topic bindings with role explanations |
-| `/more` | MorePage (Settings) | Safe auth/session info, API mode, system diagnostics |
+| `/more` | MorePage (Settings) | Safe auth/session info, API mode, guarded-mode explanation |
+
+## Create Flow Safety
+
+- **Confirmation required** before creating agents, tasks, or topic bindings
+- Explicit warnings when connected to production API (real record will be created)
+- Task/agent creation does **not** start OpenCode or execute commands
+- Topic binding registers a mapping only — does **not** create Telegram topics
+- Approvals overview on Home dashboard (pending approvals count)
 
 ## Security
 
