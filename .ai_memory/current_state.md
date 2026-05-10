@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (DEV-08D: Auth Hardening + API-backed UI + Topic Role Policy) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (DEV-08E: Create Agent/Task Flows + Topic Binding UX) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-08E (studio-orchestrator): добавлены create-agent, create-task и topic-binding UX flows в Mini App. Созданы формы (AgentForm, TaskForm, TopicBindingForm) и страницы (CreateAgentPage, CreateTaskPage, TopicsPage). API client расширен методами createAgent/createTask/getTelegramTopics/createTelegramTopic. Все формы поддерживают real API + mock fallback + loading/error/success states. Topic Binding UX показывает существующие маппинги, имеет форму регистрации с disclaimer "не создаёт топик в Telegram". Навигация обновлена: quick actions на HomePage, кнопки на AgentsPage/TasksPage/AgentDetailPage, Topics доступен через MorePage. Frontend build PASS, backend tests 37/37 PASS, bot 83/83, worker 98/98. Deploy не выполнялся, production не затрагивался.
 
 - DEV-08D (studio-orchestrator): выполнена локальная реализация auth hardening, API-backed UI flow и topic role policy. В `telegram_webapp_auth.py` добавлена freshness-проверка `auth_date` (max age 300s, future rejection), session token derivation (`SHA256(hash:bot_token)[:32]`). В API response добавлено поле `session_token`. Создан `telegram_topic_policy.py` с `VALID_TOPIC_KINDS` frozenset и `validate_topic_policy()` (agent→agent_id, task→project_id, invalid→short-circuit). Frontend переписан на реальные backend API типы (Agent/TaskItem/ApprovalItem/EventItem/SystemStatus), добавлен `useApi` hook с loading/error/empty/success states, обновлены все 5 страниц. Добавлены компоненты `LoadingState`/`EmptyState`/`ErrorState`. Тесты: auth 12/12, topics 8/8, topic policy 14/14 — всего 34 новых PASS. Bot 83/83, Worker 98/98. Frontend build PASS. Deploy не выполнялся, production не затрагивался.
 

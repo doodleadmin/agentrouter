@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { api, useApi } from '../api/client';
 import type { TaskSummary } from '../types';
 import { EmptyState } from '../components/States';
@@ -25,11 +26,15 @@ const riskTone: Record<string, 'green' | 'orange' | 'gray'> = {
 };
 
 export function TasksPage() {
+  const navigate = useNavigate();
   const tasksState = useApi<TaskSummary[]>(api.getTasks);
 
   return (
     <PageContainer>
       <Header title="Tasks" subtitle="Queue and execution status" />
+      <button className="form-submit" style={{ marginBottom: 12 }} onClick={() => navigate('/tasks/new')}>
+        + Create Task
+      </button>
       {tasksState.status === 'loading' && <div className="card">Loading tasks…</div>}
       {tasksState.status === 'error' && (
         <div className="card" style={{ color: '#dc2626' }}>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Agent } from '../types';
 import { AgentDetailCard } from '../components/AgentDetailCard';
@@ -9,6 +9,7 @@ import { PageContainer } from '../components/PageContainer';
 
 export function AgentDetailPage() {
   const { id = '' } = useParams();
+  const navigate = useNavigate();
   const [state, setState] = useState<'loading' | 'success' | 'error' | 'empty'>('loading');
   const [agent, setAgent] = useState<Agent | null>(null);
 
@@ -37,7 +38,18 @@ export function AgentDetailPage() {
         <div className="card" style={{ color: '#dc2626' }}>Failed to load agent details</div>
       )}
       {state === 'empty' && <EmptyState message="Agent not found" />}
-      {state === 'success' && agent && <AgentDetailCard agent={agent} />}
+      {state === 'success' && agent && (
+        <>
+          <AgentDetailCard agent={agent} />
+          <button
+            className="form-submit"
+            style={{ marginTop: 12 }}
+            onClick={() => navigate(`/tasks/new?agent_id=${agent.id}`)}
+          >
+            Create task for this agent
+          </button>
+        </>
+      )}
     </PageContainer>
   );
 }

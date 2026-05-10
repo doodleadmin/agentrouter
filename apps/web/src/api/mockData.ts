@@ -4,6 +4,7 @@ import type {
   SystemStatus,
   SystemStatusSummary,
   TaskSummary,
+  TelegramTopicRead,
 } from '../types';
 
 export const mockAgentSummaries: AgentSummary[] = [
@@ -63,3 +64,42 @@ export const mockSystemStatusSummary: SystemStatusSummary = {
   redis: 'ok',
   version: '0.1.0',
 };
+
+export const mockTopics: TelegramTopicRead[] = [
+  {
+    id: 'topic-001',
+    chat_id: -1001234567890,
+    message_thread_id: 1,
+    title: 'General',
+    kind: 'general',
+    agent_id: null,
+    project_id: null,
+    is_active: true,
+    created_at: '2026-05-09T10:00:00Z',
+    updated_at: '2026-05-09T10:00:00Z',
+  },
+  {
+    id: 'topic-002',
+    chat_id: -1001234567890,
+    message_thread_id: 17,
+    title: 'Agent: Backend',
+    kind: 'agent',
+    agent_id: 'backend-architect',
+    project_id: null,
+    is_active: true,
+    created_at: '2026-05-09T10:01:00Z',
+    updated_at: '2026-05-09T10:01:00Z',
+  },
+  {
+    id: 'topic-003',
+    chat_id: -1001234567890,
+    message_thread_id: 23,
+    title: 'Approvals',
+    kind: 'approvals',
+    agent_id: null,
+    project_id: null,
+    is_active: true,
+    created_at: '2026-05-09T10:02:00Z',
+    updated_at: '2026-05-09T10:02:00Z',
+  },
+];

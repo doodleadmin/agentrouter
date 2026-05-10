@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { api, useApi } from '../api/client';
 import type { AgentSummary, EventItem, SystemStatusSummary } from '../types';
 import { ActivityItem } from '../components/ActivityItem';
@@ -5,10 +6,10 @@ import { AgentCard } from '../components/AgentCard';
 import { EmptyState } from '../components/States';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
-import { QuickActionCard } from '../components/QuickActionCard';
 import { StatusCard } from '../components/StatusCard';
 
 export function HomePage() {
+  const navigate = useNavigate();
   const statusState = useApi<SystemStatusSummary>(api.getSystemStatus);
   const agentsState = useApi<AgentSummary[]>(api.getAgents);
   const activityState = useApi<EventItem[]>(api.getEvents);
@@ -25,8 +26,14 @@ export function HomePage() {
       {/* Quick actions */}
       <div className="section-title">Quick actions</div>
       <div className="stack">
-        <QuickActionCard title="Create task" caption="Route a new request to agent queue" />
-        <QuickActionCard title="Approvals" caption="Review pending high-risk actions" />
+        <article className="card quick-action" style={{ cursor: 'pointer' }} onClick={() => navigate('/tasks/new')}>
+          <h3>Create task</h3>
+          <p>Route a new request to agent queue</p>
+        </article>
+        <article className="card quick-action" style={{ cursor: 'pointer' }} onClick={() => navigate('/agents/new')}>
+          <h3>Register agent</h3>
+          <p>Add a new agent to the system</p>
+        </article>
       </div>
 
       {/* Active agents */}

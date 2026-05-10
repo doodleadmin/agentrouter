@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { api, useApi } from '../api/client';
 import type { AgentSummary } from '../types';
 import { AgentListItem } from '../components/AgentListItem';
@@ -6,11 +7,15 @@ import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
 
 export function AgentsPage() {
+  const navigate = useNavigate();
   const agentsState = useApi<AgentSummary[]>(api.getAgents);
 
   return (
     <PageContainer>
       <Header title="Agents" subtitle="All registered agents" />
+      <button className="form-submit" style={{ marginBottom: 12 }} onClick={() => navigate('/agents/new')}>
+        + Register Agent
+      </button>
       {agentsState.status === 'loading' && <div className="card">Loading agents…</div>}
       {agentsState.status === 'error' && (
         <div className="card" style={{ color: '#dc2626' }}>

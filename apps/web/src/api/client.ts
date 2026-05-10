@@ -2,26 +2,31 @@
  * API client — connects to real backend when available, falls back to mocks.
  *
  * Real endpoints (proxied through Vite dev server):
- *   /api/agents          → GET list
+ *   /api/agents          → GET list, POST create
  *   /api/agents/:id      → GET single
- *   /api/tasks           → GET list (with query params)
+ *   /api/tasks           → GET list (with query params), POST create
  *   /api/approvals       → GET list
  *   /api/events          → GET list
  *   /api/health          → GET system status
  *   /api/telegram/webapp/auth → POST auth
+ *   /api/telegram/topics → GET list, POST create
  */
 
-import { mockActivity, mockAgentSummaries, mockSystemStatus, mockTaskSummaries } from './mockData';
+import { mockActivity, mockAgentSummaries, mockSystemStatus, mockTaskSummaries, mockTopics } from './mockData';
 import type {
   Agent,
+  AgentCreatePayload,
   ApiState,
   ApprovalItem,
   AuthResponse,
   EventItem,
   SystemStatus,
   SystemStatusSummary,
+  TaskCreatePayload,
   TaskItem,
   TaskSummary,
+  TelegramTopicCreatePayload,
+  TelegramTopicRead,
 } from '../types';
 
 const API_BASE = '/api';
@@ -132,11 +137,69 @@ export const api = {
     return fromApi;
   },
 
+  createAgent: async (payload: AgentCreatePayload): Promise<Agent> => {
+    try {
+      return await apiFetch<Agent>('/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Mock fallback: return simulated created agent
+      return {
+        id: crypto.randomUUID(),
+        slug: payload.slug,
+        name: payload.name,
+        role: payload.role,
+        system_prompt: payload.system_prompt,
+        model: payload.model ?? null,
+        permissions: payload.permissions ?? {},
+        status: payload.status ?? 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+  },
+
   // Tasks
   getTasks: (): Promise<TaskSummary[]> =>
     safeFetch<TaskItem[]>('/tasks?limit=20', []).then((tasks) =>
       tasks.length > 0 ? tasks.map(taskToSummary) : mockTaskSummaries
     ),
+
+  createTask: async (payload: TaskCreatePayload): Promise<TaskItem> => {
+    try {
+      return await apiFetch<TaskItem>('/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Mock fallback: return simulated created task
+      return {
+        id: crypto.randomUUID(),
+        external_id: `task-${String(Date.now()).slice(-6)}`,
+        title: payload.title,
+        raw_text: payload.raw_text,
+        normalized_text: payload.normalized_text,
+        status: 'created',
+        risk_level: payload.risk_level ?? 'low',
+        intent: payload.intent ?? null,
+        project_id: payload.project_id ?? null,
+        agent_id: payload.agent_id ?? null,
+        telegram_chat_id: payload.telegram_chat_id ?? null,
+        telegram_thread_id: payload.telegram_thread_id ?? null,
+        created_by: payload.created_by ?? null,
+        branch_name: null,
+        worktree_path: null,
+        plan_text: null,
+        result_summary: null,
+        payload: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+  },
 
   // Approvals
   getApprovals: (): Promise<ApprovalItem[]> =>
@@ -145,6 +208,34 @@ export const api = {
   // Events
   getEvents: (limit = 10): Promise<EventItem[]> =>
     safeFetch<EventItem[]>(`/events?limit=${limit}`, mockActivity as unknown as EventItem[]),
+
+  // Telegram Topics
+  getTelegramTopics: (): Promise<TelegramTopicRead[]> =>
+    safeFetch<TelegramTopicRead[]>('/telegram/topics?active_only=false', mockTopics),
+
+  createTelegramTopic: async (payload: TelegramTopicCreatePayload): Promise<TelegramTopicRead> => {
+    try {
+      return await apiFetch<TelegramTopicRead>('/telegram/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Mock fallback: return simulated created topic
+      return {
+        id: crypto.randomUUID(),
+        chat_id: payload.chat_id,
+        message_thread_id: payload.message_thread_id,
+        title: payload.title,
+        kind: payload.kind,
+        agent_id: payload.agent_id ?? null,
+        project_id: payload.project_id ?? null,
+        is_active: payload.is_active ?? true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+  },
 };
 
 // ── Hook helper: useApi ──────────────────────────────────────────────

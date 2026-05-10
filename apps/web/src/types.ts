@@ -147,10 +147,90 @@ export interface AuthResponse {
   session_token: string;
 }
 
+/* ── Telegram Topic ─────────────────────────────────────────────── */
+
+export const TOPIC_KINDS = ['general', 'agent', 'approvals', 'system_logs', 'task'] as const;
+export type TopicKind = (typeof TOPIC_KINDS)[number];
+
+export const TOPIC_KIND_LABELS: Record<TopicKind, string> = {
+  general: 'General / Orchestrator',
+  agent: 'Agent',
+  approvals: 'Approvals',
+  system_logs: 'System Logs',
+  task: 'Task Thread',
+};
+
+export const TOPIC_KIND_DESCRIPTIONS: Record<TopicKind, string> = {
+  general: 'Default chat, system messages, coordination',
+  agent: 'Bound to a specific agent for direct communication',
+  approvals: 'Approval flow notifications and decisions',
+  system_logs: 'Infrastructure, deploy, and error logs',
+  task: 'Per-task conversation thread',
+};
+
+/** Matches backend TelegramTopicRead. */
+export interface TelegramTopicRead {
+  id: string;
+  chat_id: number;
+  message_thread_id: number;
+  title: string;
+  kind: string;
+  agent_id: string | null;
+  project_id: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/* ── Create payloads ────────────────────────────────────────────── */
+
+/** Matches backend AgentCreate. */
+export interface AgentCreatePayload {
+  slug: string;
+  name: string;
+  role: string;
+  system_prompt: string;
+  model?: string | null;
+  permissions?: Record<string, unknown>;
+  status?: string;
+}
+
+/** Matches backend TaskCreate. */
+export interface TaskCreatePayload {
+  title: string;
+  raw_text: string;
+  normalized_text: string;
+  risk_level?: string;
+  intent?: string | null;
+  project_id?: string | null;
+  agent_id?: string | null;
+  telegram_chat_id?: number | null;
+  telegram_thread_id?: number | null;
+  created_by?: number | null;
+}
+
+/** Matches backend TelegramTopicCreate. */
+export interface TelegramTopicCreatePayload {
+  chat_id: number;
+  message_thread_id: number;
+  title: string;
+  kind: TopicKind;
+  agent_id?: string | null;
+  project_id?: string | null;
+  is_active?: boolean;
+}
+
 /* ── API state ──────────────────────────────────────────────────── */
 
 export type ApiState<T> =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'success'; data: T }
+  | { status: 'error'; error: string };
+
+/** Form submission state. */
+export type FormState =
+  | { status: 'idle' }
+  | { status: 'submitting' }
+  | { status: 'success' }
   | { status: 'error'; error: string };

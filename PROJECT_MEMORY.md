@@ -29,8 +29,23 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (DEV-08D: Auth Hardening + API-backed UI + Topic Role Policy)
+**Дата последнего обновления:** 2026-05-10 (DEV-08E: Create Agent/Task Flows + Topic Binding UX)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — DEV-08E: Create Agent/Task Flows + Topic Binding UX
+
+- **Агент:** studio-orchestrator
+- **Контур:** local frontend code only, no backend changes, no deploy, no secrets edits
+- **Сделано:**
+  - **Create Agent flow:** AgentForm + CreateAgentPage, fields matching backend AgentCreate schema, success→navigate ✅
+  - **Create Task flow:** TaskForm + CreateTaskPage with agent select, risk level, preselected agent via query param ✅
+  - **Topic Binding UX:** TopicsPage with existing mappings display, TopicBindingForm with disclaimer, kind-aware agent_id requirement ✅
+  - **API client:** createAgent(), createTask(), getTelegramTopics(), createTelegramTopic() with mock fallback ✅
+  - **Types:** TelegramTopicRead, create payloads, TOPIC_KINDS/labels/descriptions, FormState ✅
+  - **Navigation:** routes /agents/new, /tasks/new, /topics; buttons on AgentsPage/TasksPage/AgentDetailPage; MorePage link to Topics ✅
+  - **Form styles:** iOS-like form inputs, submit buttons, error/success/disclaimer cards ✅
+- **Validation:** backend 37/37 PASS, bot 83/83 PASS, worker 98/98 PASS, frontend build PASS
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev08e-create-flows-topic-binding.md](.ai_memory/tasks/2026-05-10-task-dev08e-create-flows-topic-binding.md)
 
 ### 2026-05-10 — DEV-08D: Mini App Auth Hardening + API-backed UI Flow + Topic Role Policy
 

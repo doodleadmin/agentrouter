@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 106 |
+| **Task logs** | 107 |
 | **Шаблоны** | 5 |
 
 ---
@@ -172,6 +172,7 @@
 | [2026-05-10-task-dev-08c-frontend-foundation.md](tasks/2026-05-10-task-dev-08c-frontend-foundation.md) | DEV-08C: Frontend Foundation (apps/web) |
 | [2026-05-10-task-dev08c-backend-bot-safe-stubs.md](tasks/2026-05-10-task-dev08c-backend-bot-safe-stubs.md) | DEV-08C: Backend/Bot safe stubs (WebApp auth + launch) |
 | [2026-05-10-task-dev08c-miniapp-foundation.md](tasks/2026-05-10-task-dev08c-miniapp-foundation.md) | DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation |
+| [2026-05-10-task-dev08e-create-flows-topic-binding.md](tasks/2026-05-10-task-dev08e-create-flows-topic-binding.md) | DEV-08E: Create Flows + Topic Binding UX |
 | [2026-05-10-task-dev08d-auth-hardening-api-ui-topic-policy.md](tasks/2026-05-10-task-dev08d-auth-hardening-api-ui-topic-policy.md) | DEV-08D: Auth Hardening + API UI + Topic Policy |
 | [2026-05-09-task-vps07b-healthchecks-ping.md](tasks/2026-05-09-task-vps07b-healthchecks-ping.md) | VPS-07B: Healthchecks.io Ping Integration |
 | [2026-05-09-task-vps06b-logrotate-backup-verify.md](tasks/2026-05-09-task-vps06b-logrotate-backup-verify.md) | VPS-06B: Log Rotation + Backup Verification |
