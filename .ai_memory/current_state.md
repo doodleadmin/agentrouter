@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-08B: Mini App + Topics Architecture Audit) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (DEV-08C: Telegram Mini App Foundation Implementation) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-08C/VPS-08C (studio-orchestrator + frontend-developer + backend-architect): выполнена локальная реализация foundation для Telegram Mini App. Добавлен полноценный `apps/web` (Vite+React+TypeScript) с мобильными страницами Dashboard/Agents/AgentDetail/Tasks/More, компонентами карточек и bottom-nav, API client + mock fallback, utility для `Telegram.WebApp` (`ready/expand/initData` с browser fallback). В API добавлен `POST /telegram/webapp/auth` (серверная валидация `initData` подписи через `TELEGRAM_BOT_TOKEN` без вывода секрета) и тесты. В боте добавлена кнопка запуска Mini App в `/start` при наличии `TELEGRAM_WEBAPP_URL` + fallback без кнопки. В схеме topics добавлен allowlist kind: `general/agent/approvals/system_logs/task` без миграции. Локальные проверки: `npm run build` PASS, API tests `10 passed`, bot tests `9 passed`. Deploy не выполнялся, production не затрагивался.
 
 - VPS-08B (studio-orchestrator): выполнен read-only аудит готовности целевой архитектуры Telegram Mini App + Forum Topics. Runtime baseline на VPS PASS (5/5 healthy, HTTPS OK, 4 timers active, UFW unchanged). Deployed server repo отстаёт от local/origin main (зафиксировано как blocker, без pull). В коде есть backend foundations: agents/tasks/approvals/events API, topic bindings `/telegram/topics`, bot parsing `message_thread_id`, persistence `telegram_thread_id/message_thread_id`. При этом полноценный Mini App отсутствует (в `apps/web` только README-плейсхолдер), Telegram WebApp SDK/auth (`initData`) не реализованы, dedicated General/Approvals/System Logs topic orchestration policy не формализована. OpenCode не запускался, реальные задачи не выполнялись, БД не модифицировалась, сервисы не перезапускались, миграции не запускались, секреты не выводились.
 
@@ -289,5 +291,12 @@
 | Навигация | ✅ |
 | Шаблоны (5) | ✅ |
 | ADR (4) | ✅ |
-| **Task logs** | 100 |
+| **Task logs** | 104 |
 | Проекты | 0 |
+
+## 2026-05-10 — DEV-08C frontend foundation
+
+- `apps/web` upgraded from placeholder to buildable Vite + React + TypeScript app.
+- Implemented required routes (`/`, `/agents`, `/agents/:id`, `/tasks`, `/more`) and required reusable UI components.
+- Added Telegram WebApp utility with safe browser fallback and API client layer with mock fallback data.
+- Local validation completed with `npm install` and `npm run build` in `apps/web`.

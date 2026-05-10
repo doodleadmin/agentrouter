@@ -5,7 +5,11 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
+
+TelegramTopicKind = Literal["general", "agent", "approvals", "system_logs", "task"]
 
 # ---------------------------------------------------------------------------
 # Input
@@ -17,7 +21,10 @@ class TelegramTopicCreate(BaseModel):
     chat_id: int = Field(..., ge=1)
     message_thread_id: int = Field(..., ge=0)
     title: str = Field(..., max_length=255)
-    kind: str = Field(..., max_length=50, examples=["agent", "project", "general", "approvals", "system"])
+    kind: TelegramTopicKind = Field(
+        ...,
+        examples=["general", "agent", "approvals", "system_logs", "task"],
+    )
     agent_id: UUID | None = None
     project_id: UUID | None = None
     is_active: bool = True
@@ -29,7 +36,7 @@ class TelegramTopicUpdate(BaseModel):
     """Partial update to a topic binding."""
 
     title: str | None = Field(None, max_length=255)
-    kind: str | None = Field(None, max_length=50)
+    kind: TelegramTopicKind | None = None
     agent_id: UUID | None = None
     project_id: UUID | None = None
     is_active: bool | None = None

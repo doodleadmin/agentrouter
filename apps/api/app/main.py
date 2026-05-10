@@ -52,6 +52,7 @@ def create_app() -> FastAPI:
         task_events_router,
         tasks_router,
         telegram_topics_router,
+        telegram_webapp_router,
         version_router,
     )
 
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
     app.include_router(projects_router)
     app.include_router(agents_router)
     app.include_router(telegram_topics_router)
+    app.include_router(telegram_webapp_router)
     app.include_router(tasks_router)
     app.include_router(approvals_router)
     app.include_router(task_events_router)

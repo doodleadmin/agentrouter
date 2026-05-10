@@ -9,6 +9,7 @@ from app.routers.runtime import router as runtime_router
 from app.routers.task_events import router as task_events_router
 from app.routers.tasks import router as tasks_router
 from app.routers.telegram_topics import router as telegram_topics_router
+from app.routers.telegram_webapp import router as telegram_webapp_router
 from app.routers.version import router as version_router
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "projects_router",
     "agents_router",
     "telegram_topics_router",
+    "telegram_webapp_router",
     "tasks_router",
     "approvals_router",
     "task_events_router",

@@ -29,10 +29,47 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-08B: Telegram Mini App + Forum Topics Architecture Audit)
+**Дата последнего обновления:** 2026-05-10 (DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-10 — VPS-07C: Healthcheck Interval Adjustment + Ops Review (45.130.213.12)
+
+### 2026-05-10 — DEV-08C: Backend/Bot safe stubs (Mini App auth + launch surface)
+
+- **Агент:** backend-architect
+- **Контур:** local code changes only, no migrations, no deploy, no secrets edits
+- **Сделано:**
+  - Added `POST /telegram/webapp/auth` with server-side Telegram `initData` signature verification using `TELEGRAM_BOT_TOKEN` ✅
+  - Added dedicated request/response schemas and validation utility service (`TODO` for replay protection with safe recommendation) ✅
+  - Added tests for valid/invalid/missing `initData` ✅
+  - Added private `/start` WebApp launch button **"Открыть AI Office"** when `TELEGRAM_WEBAPP_URL` is configured ✅
+  - Added graceful fallback without button when `TELEGRAM_WEBAPP_URL` is missing ✅
+  - Added bot config support for `TELEGRAM_WEBAPP_URL` (no `.env` edits) ✅
+  - Hardened `TelegramTopic` schema kinds allowlist to `general|agent|approvals|system_logs|task` without Alembic migration ✅
+  - Updated/added tests for topic kind validation and start-handler behavior ✅
+- **Validation:** targeted pytest suites passed (API 10/10, Bot 9/9)
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev08c-backend-bot-safe-stubs.md](.ai_memory/tasks/2026-05-10-task-dev08c-backend-bot-safe-stubs.md)
+
+### 2026-05-10 — DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation (local only)
+
+- **Агент:** studio-orchestrator (frontend-developer + backend-architect)
+- **Контур:** local code implementation only, no deploy, no production changes
+- **Сделано:**
+  - Implemented real frontend foundation in `apps/web` (Vite + React + TypeScript) with iOS-like mobile UI shell ✅
+  - Added pages/routes: `/`, `/agents`, `/agents/:id`, `/tasks`, `/more` ✅
+  - Added required UI components (`AppShell`, `BottomNav`, `Header`, cards, list/detail/status components) ✅
+  - Added Telegram WebApp client utility (`ready`, `expand`, `initData` access, browser fallback) ✅
+  - Added API client layer + mock fallback data for local preview ✅
+  - Added backend endpoint `POST /telegram/webapp/auth` with server-side `initData` signature verification ✅
+  - Added bot `/start` WebApp launch button “Открыть AI Office” via `TELEGRAM_WEBAPP_URL` + graceful fallback ✅
+  - Added topic kind allowlist validation in schema (`general|agent|approvals|system_logs|task`) without migration ✅
+  - Local validation PASS:
+    - `npm run build` (apps/web)
+    - `pytest tests/test_telegram_webapp_auth.py tests/test_telegram_topics.py` (10 passed)
+    - `pytest tests/test_start_handler.py tests/test_tg04_config.py` (9 passed)
+- **Безопасность:** not deployed, production untouched, services not restarted, migrations not run, Telegram messages not sent by execution flow, OpenCode not started, real agent tasks not run ✅
+- **Статус:** Mini App foundation ready for DEV-08D integration hardening
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev08c-miniapp-foundation.md](.ai_memory/tasks/2026-05-10-task-dev08c-miniapp-foundation.md)
 
 - **Агент:** studio-orchestrator
 - **Контур:** VPS 45.130.213.12, timer-only change + read-only inspection, no app/Docker restart, no migrations
@@ -1482,3 +1519,10 @@
 ### 2026-05-03 — Инициализация проекта
 - Создана структура директорий и документация
 - Спроектирована архитектура и схема БД
+
+### 2026-05-10 — DEV-08C: Frontend Foundation (apps/web)
+- **Агент:** frontend-developer
+- **Контур:** local only, no deploy/migrations/secrets.
+- **Сделано:** создан buildable Vite + React + TypeScript foundation в `apps/web` с маршрутами `/`, `/agents`, `/agents/:id`, `/tasks`, `/more`; добавлены обязательные UI-компоненты; реализован Telegram WebApp utility с browser fallback; добавлен API client с mock fallback.
+- **Проверка:** `npm install` + `npm run build` (apps/web).
+- Task summary: `.ai_memory/tasks/2026-05-10-task-dev-08c-frontend-foundation.md`

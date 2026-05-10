@@ -1,26 +1,36 @@
-# apps/web — Web Dashboard
+# apps/web — DEV-08C Frontend Foundation
 
-## Описание
+This folder now contains a real **Vite + React + TypeScript** frontend foundation for Agent Mission Control.
 
-React-приложение — web UI в стиле Mission Control (v2).
+## Implemented
 
-## Ответственности
+- Vite app scaffold (`index.html`, `vite.config.ts`, `tsconfig*`, `src/*`)
+- Mobile-first, iOS-like light UI baseline (rounded cards, soft shadows, sticky bottom nav)
+- App routes:
+  - `/`
+  - `/agents`
+  - `/agents/:id`
+  - `/tasks`
+  - `/more`
+- Required UI components:
+  - `AppShell`, `BottomNav`, `Header`, `StatusCard`, `AgentCard`, `QuickActionCard`
+  - `ActivityItem`, `AgentListItem`, `AgentDetailCard`, `StatusPill`, `PageContainer`
+- Telegram WebApp utility with safe browser fallback:
+  - Detects `window.Telegram?.WebApp`
+  - Calls `ready()` and `expand()` when available
+  - Reads `initData` and `initDataUnsafe` safely
+- API client layer with local mock fallback for preview/dev
 
-- Dashboard с обзором системы
-- Список агентов и статусы
-- Очередь задач с live updates (SSE/WebSocket)
-- Карточки проектов
-- Просмотр memory vault через `.ai_memory/`
-- Управление approvals
+## Scripts
 
-## Стек
+```bash
+npm install
+npm run dev
+npm run build
+npm run preview
+```
 
-- React 18+, Vite, TypeScript, TailwindCSS, shadcn/ui
+## Notes
 
-## Приоритет
-
-Разработка — **Phase 8** (после стабилизации backend и Telegram).
-
-## Статус
-
-> Код ещё не создан. Сейчас — стадия планирования.
+- No secrets are used or required for the local UI foundation.
+- API methods fall back to mock data when backend endpoints are unavailable.

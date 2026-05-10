@@ -33,6 +33,25 @@ class TestTelegramTopicCreateSchema:
                 kind="general",
             )
 
+    def test_rejects_unsupported_kind(self):
+        with pytest.raises(ValidationError):
+            TelegramTopicCreate(
+                chat_id=123,
+                message_thread_id=1,
+                title="Bad kind",
+                kind="project",
+            )
+
+    def test_accepts_allowed_kinds(self):
+        for kind in ["general", "agent", "approvals", "system_logs", "task"]:
+            data = TelegramTopicCreate(
+                chat_id=123,
+                message_thread_id=1,
+                title=f"Topic {kind}",
+                kind=kind,
+            )
+            assert data.kind == kind
+
 
 class TestTelegramTopicUpdateSchema:
     def test_deactivate(self):

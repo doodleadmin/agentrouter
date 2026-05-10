@@ -33,3 +33,9 @@ class TestTelegramAdminUserIds:
         s = Settings(_env_file=None)
         # Fail-closed: any invalid token results in empty list (safety).
         assert s.admin_user_ids() == []
+
+
+def test_webapp_url_config_supported(monkeypatch) -> None:
+    monkeypatch.setenv("TELEGRAM_WEBAPP_URL", "https://example.com/app")
+    s = Settings(_env_file=None)
+    assert s.TELEGRAM_WEBAPP_URL == "https://example.com/app"

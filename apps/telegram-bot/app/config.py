@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     TELEGRAM_ADMIN_USER_IDS: str = ""  # comma-separated Telegram user IDs; empty = fail-closed
     API_BASE_URL: str = "http://localhost:8000"
     API_TIMEOUT_SECONDS: float = 10.0
+    TELEGRAM_WEBAPP_URL: str = ""
     POLLING_ALLOWED_UPDATES: list[str] = []
     CALLBACK_SECRET: str = ""  # HMAC signing secret for callback_data (shared with API)
 
