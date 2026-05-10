@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getSessionToken } from '../../api/client';
 import type { AgentSummary, FormState } from '../../types';
 
 interface TaskFormProps {
@@ -19,6 +20,7 @@ export function TaskForm({ agents, preselectedAgentId, onSubmit, formState }: Ta
   const [rawText, setRawText] = useState('');
   const [riskLevel, setRiskLevel] = useState('low');
   const [agentId, setAgentId] = useState(preselectedAgentId ?? '');
+  const token = getSessionToken();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +37,17 @@ export function TaskForm({ agents, preselectedAgentId, onSubmit, formState }: Ta
 
   return (
     <form onSubmit={handleSubmit} className="stack">
+      {token && (
+        <div className="form-disclaimer">
+          Connected to production API. Submitting this form will create a real task record.
+          Tasks go through a review and approval flow before execution.
+        </div>
+      )}
+      {!token && (
+        <div className="form-disclaimer">
+          Preview mode. API is not connected — submitting will create a local mock record only.
+        </div>
+      )}
       <label className="form-label">
         Title *
         <input

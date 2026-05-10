@@ -29,8 +29,26 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (VPS-08I: Focused WebApp Auth Smoke)
+**Дата последнего обновления:** 2026-05-10 (DEV-09A: Mini App Production UX Polish)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — DEV-09A: Mini App Production UX Polish + Safe Read-only Dashboards
+
+- **Агент:** studio-orchestrator
+- **Контур:** local frontend only, no deploy, no VPS changes, no infrastructure changes
+- **Сделано:**
+  - **Security fix — raw token display:** полностью переписан `MorePage.tsx` — убраны карточки с `session_token.slice(0,8)…`, `initData.slice(0,60)…` и `initDataUnsafe` keys. Теперь только безопасные статусы (verified/preview/failed/unavailable) ✅
+  - **Home dashboard:** добавлен mode indicator (Live/Preview), грид агентов/задач/событий, улучшены loading/empty/error состояния, предупреждения "creates a real record" при connected API ✅
+  - **Read-only pages:** AgentsPage/TasksPage/TopicsPage улучшены — счётчики, ErrorState с retry, production safety notes, подсказки при пустой БД ✅
+  - **Create flow safety copy:** AgentForm/TaskForm/TopicBindingForm — добавлены предупреждения при подключении к production API и при preview mode ✅
+  - **TopicsPage:** добавлены карточки-объяснения ролей топиков (`general`/`agent`/`approvals`/`system_logs`/`task`) с описаниями ✅
+  - **BottomNav:** "More" → "Settings" ✅
+  - **UI states:** консистентное использование LoadingState/EmptyState/ErrorState на всех страницах ✅
+- **Build validation:** `npm run build` PASS, `npm run build:prod` PASS (0 errors, 61 modules) ✅
+- **Safety grep:** no secrets, no raw session_token/initData в изменённых файлах ✅
+- **Files:** 11 files, +429/-88 lines (frontend only, no backend/infra changes)
+- **Развёртывание не выполнялось:** no deploy, no VPS, no .env/Caddy/UFW, no restarts, no migrations, no Telegram, no OpenCode, no real tasks, secrets not printed
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev09a-miniapp-production-ux-polish.md](.ai_memory/tasks/2026-05-10-task-dev09a-miniapp-production-ux-polish.md)
 
 ### 2026-05-10 — VPS-08I: Focused WebApp Auth Smoke + Safe Mini App API Validation
 

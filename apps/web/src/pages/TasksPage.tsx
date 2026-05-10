@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { api, useApi } from '../api/client';
+import { api, getSessionToken, useApi } from '../api/client';
 import type { TaskSummary } from '../types';
-import { EmptyState } from '../components/States';
+import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
 import { StatusPill } from '../components/StatusPill';
@@ -28,21 +28,27 @@ const riskTone: Record<string, 'green' | 'orange' | 'gray'> = {
 export function TasksPage() {
   const navigate = useNavigate();
   const tasksState = useApi<TaskSummary[]>(api.getTasks);
+  const token = getSessionToken();
+
+  const taskCount = tasksState.status === 'success' ? tasksState.data.length : 0;
+  const pendingCount = tasksState.status === 'success'
+    ? tasksState.data.filter((t) => ['created', 'routed', 'planning', 'waiting_approval'].includes(t.status)).length
+    : 0;
 
   return (
     <PageContainer>
-      <Header title="Tasks" subtitle="Queue and execution status" />
+      <Header
+        title="Tasks"
+        subtitle={taskCount > 0
+          ? `${taskCount} task${taskCount !== 1 ? 's' : ''}${pendingCount > 0 ? ` (${pendingCount} pending)` : ''}`
+          : 'Queue and execution status'}
+      />
       <button className="form-submit" style={{ marginBottom: 12 }} onClick={() => navigate('/tasks/new')}>
         + Create Task
       </button>
-      {tasksState.status === 'loading' && <div className="card">Loading tasks…</div>}
-      {tasksState.status === 'error' && (
-        <div className="card" style={{ color: '#dc2626' }}>
-          Failed to load tasks. {tasksState.error}
-          <br />
-          <button onClick={tasksState.refetch} className="retry-btn">Retry</button>
-        </div>
-      )}
+
+      {tasksState.status === 'loading' && <LoadingState message="Loading tasks…" />}
+      {tasksState.status === 'error' && <ErrorState message={tasksState.error || 'Failed to load tasks'} onRetry={tasksState.refetch} />}
       {tasksState.status === 'success' && tasksState.data.length === 0 && (
         <EmptyState message="No tasks in the queue" />
       )}
@@ -57,12 +63,19 @@ export function TasksPage() {
                   <StatusPill label={task.status} tone={statusTone[task.status] ?? 'blue'} />
                 </div>
               </div>
-              <p>{task.title}</p>
+              <p style={{ margin: '6px 0' }}>{task.title}</p>
               <small style={{ color: '#6b7280' }}>
                 {new Date(task.created_at).toLocaleString()}
               </small>
             </article>
           ))}
+        </div>
+      )}
+
+      {token && (
+        <div className="form-disclaimer" style={{ marginTop: 16 }}>
+          Connected to production API. Creating a new task will create a real task record.
+          Tasks in production will go through the normal review and approval flow.
         </div>
       )}
     </PageContainer>

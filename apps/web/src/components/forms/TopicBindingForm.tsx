@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getSessionToken } from '../../api/client';
 import type { AgentSummary, FormState, TopicKind } from '../../types';
 import { TOPIC_KINDS, TOPIC_KIND_LABELS } from '../../types';
 
@@ -20,6 +21,7 @@ export function TopicBindingForm({ agents, onSubmit, formState }: TopicBindingFo
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState<TopicKind>('general');
   const [agentId, setAgentId] = useState('');
+  const token = getSessionToken();
 
   const requiresAgent = kind === 'agent';
 
@@ -48,6 +50,11 @@ export function TopicBindingForm({ agents, onSubmit, formState }: TopicBindingFo
         It does <strong>not</strong> create a topic in Telegram.
         Create the topic manually in your Telegram group first.
       </div>
+      {token && (
+        <div className="form-disclaimer">
+          Connected to production API. Registering will create a real topic binding record.
+        </div>
+      )}
       <label className="form-label">
         Chat ID *
         <input

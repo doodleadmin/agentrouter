@@ -1,12 +1,12 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (VPS-08I: Focused WebApp Auth Smoke) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (DEV-09A: Mini App Production UX Polish) | Автор: studio-orchestrator
 
 ---
 
 ## Статус проекта
 
-**Current state:** MVP v1 COMPLETE
+**Current state:** MVP v1 COMPLETE + Mini App UX Polish
 **Latest stable commit:** `7f51829` (pushed to `doodleadmin/agentrouter`)
 **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — Total 578/578 PASS
 **Production deploy:** EXECUTED 2026-05-09 — API/Worker/Bot running on VPS 45.130.213.12
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-09A (studio-orchestrator): выполнено локальное улучшение production UX Mini App. Убраны критические риски отображения raw session_token/initData из MorePage. HomePage улучшена: mode indicator, грид статистики, улучшенные состояния. Read-only страницы (Agents/Tasks/Topics) улучшены: счётчики, ErrorState с retry, production safety подсказки. Формы создания получили предупреждения о реальных записях. Build validation: `npm run build` PASS, `npm run build:prod` PASS. 0 errors. Safety grep чистый. Deploy не выполнялся, production не затрагивался.
 
 - VPS-08I (studio-orchestrator): выполнен focused production smoke WebApp auth + read-only Mini App API validation. Baseline healthy: `/health` OK, `/app/` 200, containers/Caddy/timers/UFW OK. Host env/status checks без значений: `TELEGRAM_WEBAPP_URL` set, bot settings видит `TELEGRAM_WEBAPP_URL`, `can_build_webapp_button=yes`. Пользователь подтвердил smoke PASS: `/start` кнопка есть, Mini App открывается, страницы Home/Agents/Tasks/More/Topic Bindings работают. Read-only API checks: `/agents`, `/tasks`, `/events`, `/telegram/topics` -> HTTP 200. Логи bot/api без traceback/500. Никакие записи не создавались, initData/session_token не выводились.
 

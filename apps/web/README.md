@@ -46,18 +46,23 @@ No secrets required at build time.
 
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | HomePage | Dashboard overview |
+| `/` | HomePage | Dashboard with status cards, summaries, mode indicator |
 | `/agents` | AgentsPage | All registered agents |
-| `/agents/new` | CreateAgentPage | Register new agent form |
+| `/agents/new` | CreateAgentPage | Register new agent form (warns about real record creation) |
 | `/agents/:id` | AgentDetailPage | Agent details |
-| `/tasks` | TasksPage | Task queue and status |
-| `/tasks/new` | CreateTaskPage | Create task form |
-| `/topics` | TopicsPage | Telegram topic bindings |
-| `/more` | MorePage | Environment info |
+| `/tasks` | TasksPage | Task queue with status/risk badges |
+| `/tasks/new` | CreateTaskPage | Create task form (warns about real record creation) |
+| `/topics` | TopicsPage | Telegram topic bindings with role explanations |
+| `/more` | MorePage (Settings) | Safe auth/session info, API mode, system diagnostics |
 
-## Deployment
+## Security
 
-See [docs/miniapp-deploy.md](../../docs/miniapp-deploy.md) for full deployment guide.
+- Raw `session_token` is **never displayed** in the UI.
+- Raw `initData` is **never displayed** in the UI.
+- `initDataUnsafe` keys are **not leaked**.
+- Auth/session cards show only safe status indicators (verified/preview/failed).
+- Session token is stored in-memory only (not persisted to localStorage).
+- No secrets are included at build time.
 
 ## Features
 
@@ -65,4 +70,19 @@ See [docs/miniapp-deploy.md](../../docs/miniapp-deploy.md) for full deployment g
 - Real backend API integration with mock fallback
 - Telegram WebApp SDK integration (initData auth, ready/expand)
 - Loading/error/empty/success states on all pages
-- Create agent, create task, topic binding forms
+- Create agent, create task, topic binding forms (with production safety warnings)
+- API mode indicator (Live / Preview)
+- Safe auth diagnostics (no raw token leakage)
+
+## UI Mode Indicators
+
+| Mode | Description |
+|------|-------------|
+| Live API (green) | Connected to production API, session active |
+| Preview data (gray) | API connected but no active session |
+| Preview mode (gray) | Opened outside Telegram, using mock data |
+| API unavailable (red) | API health check failed |
+
+## Deployment
+
+See [docs/miniapp-deploy.md](../../docs/miniapp-deploy.md) for full deployment guide.

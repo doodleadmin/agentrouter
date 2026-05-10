@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getSessionToken } from '../../api/client';
 import type { FormState } from '../../types';
 
 interface AgentFormProps {
@@ -12,6 +13,7 @@ export function AgentForm({ onSubmit, formState }: AgentFormProps) {
   const [role, setRole] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [model, setModel] = useState('');
+  const token = getSessionToken();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,11 @@ export function AgentForm({ onSubmit, formState }: AgentFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="stack">
+      {token && (
+        <div className="form-disclaimer">
+          Connected to production API. Submitting this form will create a real agent record.
+        </div>
+      )}
       <label className="form-label">
         Name *
         <input

@@ -4,7 +4,7 @@ const links = [
   { to: '/', label: 'Home' },
   { to: '/agents', label: 'Agents' },
   { to: '/tasks', label: 'Tasks' },
-  { to: '/more', label: 'More' },
+  { to: '/more', label: 'Settings' },
 ];
 
 export function BottomNav() {

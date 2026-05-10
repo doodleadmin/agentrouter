@@ -9,18 +9,18 @@ export function StatusCard({ status }: StatusCardProps) {
   return (
     <section className="card grid-3">
       <div>
-        <h3>
+        <h4 style={{ margin: 0 }}>
           <span className={`pill pill-${statusColor}`}>{status.healthy ? 'OK' : 'WARN'}</span>
-        </h3>
-        <p>System</p>
+        </h4>
+        <small style={{ color: '#6b7280' }}>System</small>
       </div>
       <div>
-        <h3>{status.database === 'ok' ? '✓' : '✗'}</h3>
-        <p>Database</p>
+        <h4 style={{ margin: 0 }}>{status.database === 'ok' ? '✓' : '✗'}</h4>
+        <small style={{ color: '#6b7280' }}>Database</small>
       </div>
       <div>
-        <h3>{status.redis === 'ok' ? '✓' : '✗'}</h3>
-        <p>Redis</p>
+        <h4 style={{ margin: 0 }}>{status.redis === 'ok' ? '✓' : '✗'}</h4>
+        <small style={{ color: '#6b7280' }}>Redis</small>
       </div>
     </section>
   );
