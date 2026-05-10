@@ -29,8 +29,24 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (DEV-08C/VPS-08C: Telegram Mini App Foundation Implementation)
+**Дата последнего обновления:** 2026-05-10 (DEV-08D: Auth Hardening + API-backed UI + Topic Role Policy)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-10 — DEV-08D: Mini App Auth Hardening + API-backed UI Flow + Topic Role Policy
+
+- **Агент:** studio-orchestrator
+- **Контур:** local code changes only, no migrations, no deploy, no secrets edits
+- **Сделано:**
+  - **Auth hardening:** `auth_date` freshness check (max 300s, future rejection), session token derivation (`SHA256[:32]`), `_now` parameter for testing ✅
+  - **Session token:** deterministic token returned in auth response for replay-protection foundation ✅
+  - **Topic role policy:** `telegram_topic_policy.py` with `VALID_TOPIC_KINDS`, `validate_topic_policy()` (agent→agent_id, task→project_id, invalid→short-circuit), `TopicPolicyViolation` dataclass ✅
+  - **Frontend types:** rewritten to match real backend schemas (Agent/TaskItem/ApprovalItem/EventItem/SystemStatus/AuthResponse/ApiState) ✅
+  - **Frontend API client:** real endpoint paths, auth header injection, transformers (agentToSummary/taskToSummary/statusToSummary), `useApi` hook with loading/error/empty/success + refetch ✅
+  - **Frontend pages:** all 5 pages updated with proper loading/error/empty states ✅
+  - **Frontend components:** States.tsx (LoadingState/EmptyState/ErrorState), updated StatusCard/AgentCard/AgentListItem/AgentDetailCard/ActivityItem for new types ✅
+  - **Styles:** added spinner animation + retry button ✅
+- **Validation:** auth tests 12/12 PASS, topics 8/8 PASS, topic policy 14/14 PASS, bot 83/83 PASS, worker 98/98 PASS, frontend build PASS
+- Task summary: [.ai_memory/tasks/2026-05-10-task-dev08d-auth-hardening-api-ui-topic-policy.md](.ai_memory/tasks/2026-05-10-task-dev08d-auth-hardening-api-ui-topic-policy.md)
 
 ### 2026-05-10 — VPS-07C: Healthcheck Interval Adjustment + Ops Review (45.130.213.12)
 

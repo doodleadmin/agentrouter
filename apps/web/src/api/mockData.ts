@@ -1,46 +1,65 @@
-import type { Activity, Agent, SystemStatus, TaskItem } from '../types';
+import type {
+  AgentSummary,
+  EventItem,
+  SystemStatus,
+  SystemStatusSummary,
+  TaskSummary,
+} from '../types';
 
-export const mockAgents: Agent[] = [
+export const mockAgentSummaries: AgentSummary[] = [
   {
     id: 'backend-architect',
+    slug: 'backend-architect',
     name: 'Backend Architect',
     role: 'FastAPI / DB / Services',
     status: 'active',
-    projectCount: 3,
     lastActivity: '2m ago',
   },
   {
     id: 'frontend-developer',
+    slug: 'frontend-developer',
     name: 'Frontend Developer',
     role: 'React Dashboard',
     status: 'active',
-    projectCount: 2,
     lastActivity: '5m ago',
   },
   {
     id: 'devops-automator',
+    slug: 'devops-automator',
     name: 'DevOps Automator',
     role: 'Docker / Deploy / Logs',
     status: 'idle',
-    projectCount: 4,
     lastActivity: '21m ago',
   },
 ];
 
-export const mockActivity: Activity[] = [
-  { id: 'a1', title: 'Task completed', detail: 'DEV-08B closed', time: '09:41' },
-  { id: 'a2', title: 'Approval requested', detail: 'Prod deploy gate', time: '09:36' },
-  { id: 'a3', title: 'Memory indexed', detail: '7 files updated', time: '09:31' },
+export const mockActivity: EventItem[] = [
+  { id: 'a1', task_id: 't1', event_type: 'task_completed', actor_type: 'system', actor_id: null, payload: { detail: 'DEV-08B closed' }, created_at: '09:41' },
+  { id: 'a2', task_id: 't2', event_type: 'approval_requested', actor_type: 'agent', actor_id: 'backend', payload: { detail: 'Prod deploy gate' }, created_at: '09:36' },
+  { id: 'a3', task_id: 't3', event_type: 'memory_retrieved', actor_type: 'system', actor_id: null, payload: { detail: '7 files updated' }, created_at: '09:31' },
 ];
 
-export const mockTasks: TaskItem[] = [
-  { id: 'DEV-08C', title: 'Frontend foundation', risk: 'medium', status: 'running' },
-  { id: 'SEC-03A', title: 'Audit log review', risk: 'low', status: 'queued' },
-  { id: 'DEP-02F', title: 'Staging smoke', risk: 'medium', status: 'waiting_approval' },
+export const mockTaskSummaries: TaskSummary[] = [
+  { id: 'DEV-08C', external_id: 'task-0008', title: 'Frontend foundation', status: 'running', risk_level: 'medium', created_at: '2026-05-10T09:00:00Z' },
+  { id: 'SEC-03A', external_id: 'task-0009', title: 'Audit log review', status: 'created', risk_level: 'low', created_at: '2026-05-10T08:30:00Z' },
+  { id: 'DEP-02F', external_id: 'task-0010', title: 'Staging smoke', status: 'waiting_approval', risk_level: 'medium', created_at: '2026-05-10T08:00:00Z' },
 ];
 
 export const mockSystemStatus: SystemStatus = {
-  onlineAgents: 6,
-  queuedTasks: 9,
-  approvalsPending: 2,
+  status: 'ok',
+  service: 'agent-mission-control-api',
+  version: '0.1.0',
+  timestamp: new Date().toISOString(),
+  checks: {
+    api: 'ok',
+    database: 'ok',
+    redis: 'ok',
+  },
+};
+
+export const mockSystemStatusSummary: SystemStatusSummary = {
+  healthy: true,
+  database: 'ok',
+  redis: 'ok',
+  version: '0.1.0',
 };

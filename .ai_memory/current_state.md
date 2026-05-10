@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (DEV-08C: Telegram Mini App Foundation Implementation) | Автор: studio-orchestrator
+Обновлено: 2026-05-10 (DEV-08D: Auth Hardening + API-backed UI + Topic Role Policy) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-08D (studio-orchestrator): выполнена локальная реализация auth hardening, API-backed UI flow и topic role policy. В `telegram_webapp_auth.py` добавлена freshness-проверка `auth_date` (max age 300s, future rejection), session token derivation (`SHA256(hash:bot_token)[:32]`). В API response добавлено поле `session_token`. Создан `telegram_topic_policy.py` с `VALID_TOPIC_KINDS` frozenset и `validate_topic_policy()` (agent→agent_id, task→project_id, invalid→short-circuit). Frontend переписан на реальные backend API типы (Agent/TaskItem/ApprovalItem/EventItem/SystemStatus), добавлен `useApi` hook с loading/error/empty/success states, обновлены все 5 страниц. Добавлены компоненты `LoadingState`/`EmptyState`/`ErrorState`. Тесты: auth 12/12, topics 8/8, topic policy 14/14 — всего 34 новых PASS. Bot 83/83, Worker 98/98. Frontend build PASS. Deploy не выполнялся, production не затрагивался.
 
 - DEV-08C/VPS-08C (studio-orchestrator + frontend-developer + backend-architect): выполнена локальная реализация foundation для Telegram Mini App. Добавлен полноценный `apps/web` (Vite+React+TypeScript) с мобильными страницами Dashboard/Agents/AgentDetail/Tasks/More, компонентами карточек и bottom-nav, API client + mock fallback, utility для `Telegram.WebApp` (`ready/expand/initData` с browser fallback). В API добавлен `POST /telegram/webapp/auth` (серверная валидация `initData` подписи через `TELEGRAM_BOT_TOKEN` без вывода секрета) и тесты. В боте добавлена кнопка запуска Mini App в `/start` при наличии `TELEGRAM_WEBAPP_URL` + fallback без кнопки. В схеме topics добавлен allowlist kind: `general/agent/approvals/system_logs/task` без миграции. Локальные проверки: `npm run build` PASS, API tests `10 passed`, bot tests `9 passed`. Deploy не выполнялся, production не затрагивался.
 

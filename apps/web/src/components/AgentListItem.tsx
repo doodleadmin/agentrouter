@@ -1,23 +1,28 @@
-import { Link } from 'react-router-dom';
-import type { Agent } from '../types';
-import { StatusPill } from './StatusPill';
+import { useNavigate } from 'react-router-dom';
+import type { AgentSummary } from '../types';
 
 interface AgentListItemProps {
-  agent: Agent;
+  agent: AgentSummary;
 }
 
+const statusTone: Record<string, string> = {
+  active: 'green',
+  idle: 'blue',
+  offline: 'gray',
+};
+
 export function AgentListItem({ agent }: AgentListItemProps) {
-  const tone = agent.status === 'active' ? 'green' : agent.status === 'idle' ? 'blue' : 'gray';
+  const navigate = useNavigate();
+  const tone = statusTone[agent.status] ?? 'gray';
 
   return (
-    <Link to={`/agents/${agent.id}`} className="card list-link">
+    <article className="card" onClick={() => navigate(`/agents/${agent.id}`)} style={{ cursor: 'pointer' }}>
       <div className="row-between">
-        <div>
-          <strong>{agent.name}</strong>
-          <p>{agent.role}</p>
-        </div>
-        <StatusPill label={agent.status} tone={tone} />
+        <strong>{agent.name}</strong>
+        <span className={`pill pill-${tone}`}>{agent.status}</span>
       </div>
-    </Link>
+      <p>{agent.role}</p>
+      <small style={{ color: '#6b7280' }}>Last: {agent.lastActivity}</small>
+    </article>
   );
 }

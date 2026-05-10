@@ -1,24 +1,35 @@
 import type { Agent } from '../types';
-import { StatusPill } from './StatusPill';
 
 interface AgentDetailCardProps {
   agent: Agent;
 }
 
 export function AgentDetailCard({ agent }: AgentDetailCardProps) {
-  const tone = agent.status === 'active' ? 'green' : agent.status === 'idle' ? 'blue' : 'gray';
-
   return (
-    <section className="card">
-      <div className="row-between">
-        <h2>{agent.name}</h2>
-        <StatusPill label={agent.status} tone={tone} />
-      </div>
-      <p>{agent.role}</p>
-      <ul>
-        <li>Projects: {agent.projectCount}</li>
-        <li>Last activity: {agent.lastActivity}</li>
-      </ul>
-    </section>
+    <div className="stack">
+      <section className="card">
+        <div className="row-between">
+          <h3>{agent.name}</h3>
+          <span className="pill pill-green">{agent.status}</span>
+        </div>
+        <p><strong>Slug:</strong> {agent.slug}</p>
+        <p><strong>Role:</strong> {agent.role}</p>
+        {agent.model && <p><strong>Model:</strong> {agent.model}</p>}
+      </section>
+      <section className="card">
+        <h3>Permissions</h3>
+        <pre style={{ fontSize: '0.8rem', overflow: 'auto', margin: 0 }}>
+          {JSON.stringify(agent.permissions, null, 2)}
+        </pre>
+      </section>
+      <section className="card">
+        <p style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+          Created: {new Date(agent.created_at).toLocaleString()}
+        </p>
+        <p style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+          Updated: {new Date(agent.updated_at).toLocaleString()}
+        </p>
+      </section>
+    </div>
   );
 }

@@ -20,3 +20,4 @@ class TelegramWebAppAuthResponse(BaseModel):
     username: str | None = None
     auth_date: int
     hash_summary: str
+    session_token: str

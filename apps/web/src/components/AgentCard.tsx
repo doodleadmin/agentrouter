@@ -1,23 +1,27 @@
-import type { Agent } from '../types';
-import { StatusPill } from './StatusPill';
+import { useNavigate } from 'react-router-dom';
+import type { AgentSummary } from '../types';
 
 interface AgentCardProps {
-  agent: Agent;
+  agent: AgentSummary;
 }
 
+const statusTone: Record<string, string> = {
+  active: 'green',
+  idle: 'blue',
+  offline: 'gray',
+};
+
 export function AgentCard({ agent }: AgentCardProps) {
-  const tone = agent.status === 'active' ? 'green' : agent.status === 'idle' ? 'blue' : 'gray';
+  const navigate = useNavigate();
+  const tone = statusTone[agent.status] ?? 'gray';
 
   return (
-    <article className="card">
+    <article className="card" onClick={() => navigate(`/agents/${agent.id}`)} style={{ cursor: 'pointer' }}>
       <div className="row-between">
-        <h3>{agent.name}</h3>
-        <StatusPill label={agent.status} tone={tone} />
+        <strong>{agent.name}</strong>
+        <span className={`pill pill-${tone}`}>{agent.status}</span>
       </div>
       <p>{agent.role}</p>
-      <small>
-        {agent.projectCount} projects · last activity {agent.lastActivity}
-      </small>
     </article>
   );
 }

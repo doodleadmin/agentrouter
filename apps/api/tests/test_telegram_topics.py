@@ -52,12 +52,46 @@ class TestTelegramTopicCreateSchema:
             )
             assert data.kind == kind
 
+    def test_task_kind_with_project_id(self):
+        pid = uuid.uuid4()
+        data = TelegramTopicCreate(
+            chat_id=123,
+            message_thread_id=1,
+            title="Task thread",
+            kind="task",
+            project_id=pid,
+        )
+        assert data.kind == "task"
+        assert data.project_id == pid
+
+    def test_approvals_kind(self):
+        data = TelegramTopicCreate(
+            chat_id=123,
+            message_thread_id=1,
+            title="Approvals",
+            kind="approvals",
+        )
+        assert data.kind == "approvals"
+
+    def test_system_logs_kind(self):
+        data = TelegramTopicCreate(
+            chat_id=123,
+            message_thread_id=1,
+            title="System Logs",
+            kind="system_logs",
+        )
+        assert data.kind == "system_logs"
+
 
 class TestTelegramTopicUpdateSchema:
     def test_deactivate(self):
         data = TelegramTopicUpdate(is_active=False)
         assert data.is_active is False
         assert data.title is None
+
+    def test_update_kind(self):
+        data = TelegramTopicUpdate(kind="task")
+        assert data.kind == "task"
 
 
 class TestRouterStructure:
