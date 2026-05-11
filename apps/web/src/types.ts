@@ -249,3 +249,48 @@ export interface WorkspaceSourceCard {
   cta: string;
   icon: string;
 }
+
+/* ── Local Runner (protocol design, non-executing) ─────────────── */
+
+export type RunnerStatus = 'not_connected' | 'pairing' | 'online' | 'offline' | 'suspended' | 'revoked' | 'error';
+
+export type RunnerConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+export type RunnerSafetyMode = 'read_only' | 'approval_gated' | 'execution_disabled';
+
+export type RunnerOperationKind =
+  | 'read_file'
+  | 'search_files'
+  | 'list_tree'
+  | 'propose_patch'
+  | 'apply_patch'
+  | 'create_file'
+  | 'rename_file'
+  | 'delete_file'
+  | 'propose_command'
+  | 'run_command';
+
+export type RunnerApprovalClass =
+  | 'read_safe'
+  | 'read_sensitive'
+  | 'write_file'
+  | 'delete_file'
+  | 'run_command'
+  | 'network_access'
+  | 'git_commit'
+  | 'git_push'
+  | 'dependency_install'
+  | 'env_access'
+  | 'destructive_action';
+
+export interface RunnerCapability {
+  name: 'read_tree' | 'read_file' | 'search' | 'propose_patch' | 'apply_patch' | 'propose_command' | 'run_command';
+  enabled: boolean;
+  approval_required: boolean;
+}
+
+export interface WorkspaceProject {
+  name: string;
+  relative_path: string;
+  last_modified?: string;
+}

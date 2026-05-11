@@ -22,8 +22,8 @@ const WORKSPACE_SOURCES: WorkspaceSourceCardData[] = [
   {
     id: 'local_runner',
     title: 'Local Runner',
-    description: 'Work with projects on your own computer. Agents will only access folders inside the allowed root.',
-    safetyNote: 'Local file access requires a local runner app. The browser cannot directly access your folders.',
+    description: 'Work with projects on your own computer. Example allowed root: F:\\dev. Access is limited to the selected root.',
+    safetyNote: 'Requires local runner app. Browser/Mini App cannot access folders directly. File edits and commands require approvals.',
     status: 'not_connected',
     cta: 'Connect Local Runner',
     icon: CodeIcon,

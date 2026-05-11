@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 124 |
+| **Task logs** | 125 |
 | **Шаблоны** | 5 |
 
 ---
@@ -208,4 +208,5 @@
 - [2026-05-11 — DEV-11C: Mini App contrast + floating nav hotfix](tasks/2026-05-11-task-dev11c-miniapp-contrast-nav-hotfix.md)
 - [2026-05-11 — VPS-11B: Controlled Liquid Glass Visual Hotfix Deploy](tasks/2026-05-11-task-vps11b-visual-hotfix-deploy.md)
 - [2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix](tasks/2026-05-11-task-vps11c-source-sync-monitoring.md)
+- [2026-05-11 — DEV-12A: Local Runner Protocol Design + Safety Model](tasks/2026-05-11-task-dev12a-local-runner-protocol-design.md)
 - [2026-05-11 — DEV-11A.1: Liquid Glass visual hotfix after mobile smoke](tasks/2026-05-11-task-dev11a1-liquid-glass-visual-hotfix.md)

@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-11 (VPS-11C: Source Sync + Monitoring) | Автор: studio-orchestrator
+Обновлено: 2026-05-11 (DEV-12A: Local Runner Protocol Design) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-12A (studio-orchestrator): выполнен design/contracts этап для Local Runner архитектуры. Созданы docs: product model, protocol draft, security boundary model, API contract draft, phased roadmap. Рекомендован outbound-only transport (runner-initiated polling/WebSocket) без inbound ports на user PC. Зафиксированы allowed-root boundary (`F:\dev` example), path safety, approvals classes, audit requirements, а также FUTURE-only approval-gated operations (`apply-patch`, `run-command`). Обновлены frontend non-executing runner types и Workspaces copy (runner required, browser cannot access local folders directly, root-limited access, approvals required). Реализация runner/file access/command execution не выполнялась.
 
 - VPS-11C (studio-orchestrator): выполнен source sync + read-only post-deploy monitoring после VPS-11B. Server repo fast-forward `4b7adcf -> 8946b82` (ff-only, clean). Статический релиз НЕ менялся: `current` остался `/var/www/agentrouter-web/releases/20260511-102930`, symlink switch не выполнялся, новые release dirs в рамках VPS-11C не создавались. `/health` OK, `/app/` 200, API read-only 200/200/200/200, 5 containers healthy, Caddy active, timers active, UFW unchanged. Логи clean (без 500/traceback в окне проверки), healthcheck/offsite/backup-verify sanity OK.
 

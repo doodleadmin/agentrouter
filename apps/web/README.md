@@ -117,3 +117,18 @@ Bottom navigation now has 5 tabs:
 ## Deployment
 
 See [docs/miniapp-deploy.md](../../docs/miniapp-deploy.md) for full deployment guide.
+
+## Local Runner (design status)
+
+Local Runner is currently **design/contracts only** (DEV-12A):
+
+- Product model: [docs/local-runner-product-model.md](../../docs/local-runner-product-model.md)
+- Protocol draft: [docs/local-runner-protocol.md](../../docs/local-runner-protocol.md)
+- Security model: [docs/local-runner-security-model.md](../../docs/local-runner-security-model.md)
+- API contract draft: [docs/local-runner-api-contract.md](../../docs/local-runner-api-contract.md)
+- Roadmap/phases: [docs/local-runner-roadmap.md](../../docs/local-runner-roadmap.md)
+
+Important:
+- No real local file access implemented yet
+- No File System Access API implementation in Mini App
+- No command execution implemented yet

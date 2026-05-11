@@ -258,6 +258,11 @@ See: [docs/deployment.md](docs/deployment.md), [docs/release-workflow.md](docs/r
 | [Deploy Checklist](docs/deploy-checklist.md) | Pre-flight checklist for releases |
 | [Security Policy](docs/security-policy.md) | Risk levels, permissions, audit |
 | [Agent Roles](docs/agent-roles.md) | Agent responsibilities and boundaries |
+| [Local Runner Product Model](docs/local-runner-product-model.md) | Local runner UX and source model |
+| [Local Runner Protocol](docs/local-runner-protocol.md) | Runner states, operations, transport draft |
+| [Local Runner Security Model](docs/local-runner-security-model.md) | Allowed-root boundary and approval classes |
+| [Local Runner API Contract](docs/local-runner-api-contract.md) | Draft endpoints for pairing/jobs/files/commands |
+| [Local Runner Roadmap](docs/local-runner-roadmap.md) | Phase plan from design to approved execution |
 
 ---
 

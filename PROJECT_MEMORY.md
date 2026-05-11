@@ -29,8 +29,25 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-11 (VPS-11C: Source Sync + Monitoring)
+**Дата последнего обновления:** 2026-05-11 (DEV-12A: Local Runner Protocol Design)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-11 — DEV-12A: Local Runner Protocol Design + Safety Model
+
+- **Агент:** studio-orchestrator
+- **Контур:** design/contracts only, local docs + frontend non-executing types
+- **Сделано:**
+  - Созданы документы модели/контрактов: `local-runner-product-model`, `local-runner-protocol`, `local-runner-security-model`, `local-runner-api-contract`, `local-runner-roadmap` ✅
+  - Зафиксирована рекомендация transport для MVP: outbound-only runner connection (polling/ws from runner to cloud), без inbound ports на ПК пользователя ✅
+  - Описаны allowed-root boundary, path normalization/resolution, traversal/symlink/junction escape blocking ✅
+  - Описана approval-модель классов риска и audit requirements для runner operations ✅
+  - API contract draft включает FUTURE approval-gated операции (`apply-patch`, `run-command`) без реализации ✅
+  - Обновлены frontend-only non-executing types для runner model в `apps/web/src/types.ts` ✅
+  - Обновлён copy в `WorkspacesPage` про required local runner, root boundary и approvals ✅
+  - Обновлены README-ссылки на Local Runner docs ✅
+- **Валидация:** `npm run build` PASS, `npm run build:prod` PASS ✅
+- **Safety:** no deploy, no VPS changes, no `.env`/Caddy changes, no restarts, no migrations, no Telegram/manual topic actions, no OpenCode, no real tasks, no real local file access, no command execution
+- Task summary: [.ai_memory/tasks/2026-05-11-task-dev12a-local-runner-protocol-design.md](.ai_memory/tasks/2026-05-11-task-dev12a-local-runner-protocol-design.md)
 
 ### 2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix
 
