@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-11 (DEV-12B: Local Runner Skeleton CLI) | Автор: backend-architect
+Обновлено: 2026-05-11 (DEV-12C: Local Runner Read-only Discovery) | Автор: backend-architect
 
 ---
 
@@ -21,6 +21,8 @@
 ## Что происходит сейчас
 
 - DEV-12B (backend-architect): реализован local-only skeleton `apps/runner` без интеграций и без исполнения команд. Добавлены `agentrouter_runner` CLI-команды `status`/`doctor`/`check-path`, strict root/path boundary helpers (traversal/absolute outside block, symlink escape detect where resolvable), sensitive path classifier и статусная модель с disabled capabilities. Покрыто тестами `apps/runner/tests` (temp dirs only, boundary/symlink/sensitive/CLI/no-env-dump assertions). Документация обновлена (`apps/runner/README.md`, `docs/local-runner-roadmap.md`, root `README.md`).
+
+- DEV-12C (backend-architect): расширен local-only runner `apps/runner` read-only discovery функционалом. Добавлены metadata-only функции `list_projects`/`build_tree`/`stat_path` и новые CLI-команды `list-projects`/`tree`/`stat`. Для всех requested paths сохранён strict allowed-root boundary через existing helpers (`validate_root`, `resolve_requested_path`, `safe_relative_path`). Реализация не читает file contents и не выполняет команды; cloud/pairing/heartbeat/OpenCode/Telegram интеграции не добавлялись. Тесты: `python -m pytest apps/runner/tests -q` → 16 passed, 1 skipped; temp-dir CLI smoke PASS.
 
 - DEV-12A (studio-orchestrator): выполнен design/contracts этап для Local Runner архитектуры. Созданы docs: product model, protocol draft, security boundary model, API contract draft, phased roadmap. Рекомендован outbound-only transport (runner-initiated polling/WebSocket) без inbound ports на user PC. Зафиксированы allowed-root boundary (`F:\dev` example), path safety, approvals classes, audit requirements, а также FUTURE-only approval-gated operations (`apply-patch`, `run-command`). Обновлены frontend non-executing runner types и Workspaces copy (runner required, browser cannot access local folders directly, root-limited access, approvals required). Реализация runner/file access/command execution не выполнялась.
 

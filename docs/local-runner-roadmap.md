@@ -17,10 +17,12 @@
 - Runner appears online in WebUI
 - Heartbeats + basic status
 
-## Phase 3 — Read-only project discovery
+## Phase 3 — Read-only project discovery ✅ DEV-12C
 - List project folders under allowed root
-- List tree + read non-sensitive files
-- No writes
+- List metadata-only tree and path stats
+- Enforce boundary for all requested paths
+- No file content reads/writes
+- No command execution
 
 ## Phase 4 — Patch proposal
 - Agent proposes diff/patch only

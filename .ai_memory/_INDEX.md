@@ -210,4 +210,5 @@
 - [2026-05-11 — VPS-11B: Controlled Liquid Glass Visual Hotfix Deploy](tasks/2026-05-11-task-vps11b-visual-hotfix-deploy.md)
 - [2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix](tasks/2026-05-11-task-vps11c-source-sync-monitoring.md)
 - [2026-05-11 — DEV-12A: Local Runner Protocol Design + Safety Model](tasks/2026-05-11-task-dev12a-local-runner-protocol-design.md)
+- [2026-05-11 — DEV-12C: Local Runner Read-only Discovery](tasks/2026-05-11-task-dev12c-runner-readonly-discovery.md)
 - [2026-05-11 — DEV-11A.1: Liquid Glass visual hotfix after mobile smoke](tasks/2026-05-11-task-dev11a1-liquid-glass-visual-hotfix.md)

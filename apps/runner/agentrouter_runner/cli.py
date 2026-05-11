@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .config import RunnerConfig
+from .discovery import build_tree, list_projects, stat_path
 from .paths import PathOutsideRootError, RootValidationError, resolve_requested_path, safe_relative_path
 from .safety import classify_path, explain_safety_flags
 from .status import build_status
@@ -30,6 +31,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     check_path = sub.add_parser("check-path", help="Validate requested path against allowed root")
     check_path.add_argument("--path", required=True, dest="requested", help="Requested path")
+
+    sub.add_parser("list-projects", help="List top-level project directories under root")
+
+    tree = sub.add_parser("tree", help="List metadata-only tree for one project")
+    tree.add_argument("--project", required=True, help="Top-level project directory name")
+    tree.add_argument("--max-depth", type=int, default=3, dest="max_depth", help="Maximum depth")
+
+    stat = sub.add_parser("stat", help="Show metadata-only stat for a path under root")
+    stat.add_argument("--path", required=True, dest="requested", help="Requested path")
 
     return parser
 
@@ -77,6 +87,57 @@ def run(argv: list[str] | None = None) -> int:
         except (RootValidationError, PathOutsideRootError) as exc:
             payload = {
                 "allowed": False,
+                "requested": args.requested,
+                "error": type(exc).__name__,
+                "message": str(exc),
+            }
+            print(_render(payload, config.json_output))
+            return 2
+
+    if args.command == "list-projects":
+        try:
+            projects = list_projects(config.root)
+            payload = {
+                "root": str(Path(config.root).resolve(strict=False)),
+                "count": len(projects),
+                "items": [item.to_dict() for item in projects],
+            }
+            print(_render(payload, config.json_output))
+            return 0
+        except RootValidationError as exc:
+            payload = {"error": type(exc).__name__, "message": str(exc)}
+            print(_render(payload, config.json_output))
+            return 2
+
+    if args.command == "tree":
+        try:
+            items = build_tree(config.root, args.project, max_depth=args.max_depth)
+            payload = {
+                "root": str(Path(config.root).resolve(strict=False)),
+                "project": args.project,
+                "max_depth": args.max_depth,
+                "count": len(items),
+                "items": [item.to_dict() for item in items],
+            }
+            print(_render(payload, config.json_output))
+            return 0
+        except (RootValidationError, PathOutsideRootError, FileNotFoundError, ValueError) as exc:
+            payload = {
+                "project": args.project,
+                "error": type(exc).__name__,
+                "message": str(exc),
+            }
+            print(_render(payload, config.json_output))
+            return 2
+
+    if args.command == "stat":
+        try:
+            item = stat_path(config.root, args.requested)
+            payload = item.to_dict()
+            print(_render(payload, config.json_output))
+            return 0
+        except (RootValidationError, PathOutsideRootError) as exc:
+            payload = {
                 "requested": args.requested,
                 "error": type(exc).__name__,
                 "message": str(exc),

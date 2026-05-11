@@ -29,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-11 (DEV-12B: Local Runner Skeleton CLI)
+**Дата последнего обновления:** 2026-05-11 (DEV-12C: Local Runner Read-only Discovery)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-11 — DEV-12A: Local Runner Protocol Design + Safety Model
@@ -64,6 +64,21 @@
 - **Safety:** no deploy, no SSH, no migrations, no `.env` changes, no cloud/API/Telegram/OpenCode integration, no command execution feature
 - Task summary: [.ai_memory/tasks/2026-05-11-task-dev12b-runner-skeleton-cli.md](.ai_memory/tasks/2026-05-11-task-dev12b-runner-skeleton-cli.md)
 - **Next recommended step:** DEV-12C Runner Pairing/Heartbeat Design or DEV-12C Read-only Project Discovery.
+
+### 2026-05-11 — DEV-12C: Local Runner Read-only Discovery (metadata-only)
+
+- **Агент:** backend-architect
+- **Контур:** local-only `apps/runner`, read-only discovery extension поверх DEV-12B
+- **Сделано:**
+  - Добавлен модуль `agentrouter_runner/discovery.py` с моделями `ProjectInfo`, `TreeEntry`, `PathStat` и функциями `list_projects`, `build_tree`, `stat_path` ✅
+  - Добавлены CLI-команды `list-projects`, `tree --project --max-depth`, `stat --path` с JSON/human output и non-zero exit code на boundary/errors ✅
+  - Boundary enforcement реализован через existing helpers `validate_root`/`resolve_requested_path`/`safe_relative_path`; traversal/outside paths блокируются ✅
+  - Discovery возвращает только metadata (path/type/size/mtime/extension/flags/depth), без чтения содержимого файлов ✅
+  - Добавлены тесты `test_discovery.py` и расширены CLI smoke-tests в `test_cli.py` (temp dirs only, missing project, depth limiting, skip generated dirs, outside block) ✅
+  - Обновлены docs: `apps/runner/README.md`, `docs/local-runner-roadmap.md`, root `README.md` ✅
+- **Валидация:** `python -m pytest apps/runner/tests -q` → `16 passed, 1 skipped`; temp-dir CLI smoke (`status/doctor/list-projects/tree/stat`) PASS
+- **Safety:** no content read/write feature for user projects, no command execution feature, no cloud/pairing/heartbeat/OpenCode/Telegram integrations
+- Task summary: [.ai_memory/tasks/2026-05-11-task-dev12c-runner-readonly-discovery.md](.ai_memory/tasks/2026-05-11-task-dev12c-runner-readonly-discovery.md)
 
 ### 2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix
 

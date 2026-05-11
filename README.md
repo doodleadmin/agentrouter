@@ -70,8 +70,8 @@ agentrouter/
 │   │   │   ├── jobs/         Plan, execute, complete pipelines
 │   │   │   └── pipelines/    Task lifecycle
 │   │   └── tests/            98 tests
-│   ├── runner/           ← Local Runner skeleton CLI (DEV-12B)
-│   │   ├── agentrouter_runner/  CLI + strict path/safety skeleton
+│   ├── runner/           ← Local Runner skeleton CLI (DEV-12B/12C)
+│   │   ├── agentrouter_runner/  CLI + strict path/safety + metadata-only discovery
 │   │   └── tests/             runner skeleton tests
 │   └── web/              ← React — Web Dashboard (future)
 ├── infra/
@@ -267,7 +267,7 @@ See: [docs/deployment.md](docs/deployment.md), [docs/release-workflow.md](docs/r
 | [Local Runner API Contract](docs/local-runner-api-contract.md) | Draft endpoints for pairing/jobs/files/commands |
 | [Local Runner Roadmap](docs/local-runner-roadmap.md) | Phase plan from design to approved execution |
 
-DEV-12B adds a local-only skeleton CLI under `apps/runner` (status/doctor/check-path) with strict boundary checks and all execution capabilities disabled.
+DEV-12C extends the local-only runner skeleton with read-only metadata discovery (`list-projects`, `tree`, `stat`) while preserving strict allowed-root confinement and keeping all execution/content-read features disabled.
 
 ---
 

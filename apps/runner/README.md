@@ -1,4 +1,4 @@
-# Local Runner Skeleton CLI (DEV-12B)
+# Local Runner Skeleton CLI (DEV-12B / DEV-12C)
 
 This folder contains a **local-only skeleton** for Local Runner.
 
@@ -8,9 +8,13 @@ This folder contains a **local-only skeleton** for Local Runner.
   - `status`
   - `doctor`
   - `check-path --path <requested>`
+  - `list-projects`
+  - `tree --project <name> [--max-depth N]`
+  - `stat --path <requested>`
 - strict allowed-root boundary checks
 - sensitive path classification helpers
 - skeleton status model with disabled capabilities
+- metadata-only discovery (no content reads)
 
 ## Explicit non-capabilities (by design)
 
@@ -22,6 +26,8 @@ This folder contains a **local-only skeleton** for Local Runner.
 - no command execution
 - no deploy/SSH/migrations/env handling
 
+`tree` and `stat` return metadata only (path/type/size/mtime/extension/flags).
+
 ## Usage
 
 From repository root:
@@ -31,6 +37,9 @@ python -m agentrouter_runner --root "<allowed-root>" status
 python -m agentrouter_runner --root "<allowed-root>" doctor
 python -m agentrouter_runner --root "<allowed-root>" check-path --path "apps/api"
 python -m agentrouter_runner --json --root "<allowed-root>" check-path --path "../outside"
+python -m agentrouter_runner --json --root "<allowed-root>" list-projects
+python -m agentrouter_runner --json --root "<allowed-root>" tree --project "apps" --max-depth 2
+python -m agentrouter_runner --json --root "<allowed-root>" stat --path "apps/runner/README.md"
 ```
 
 If module import path is not configured, set:
@@ -51,5 +60,5 @@ set PYTHONPATH=apps/runner
 Aligned with `docs/local-runner-roadmap.md`:
 
 - Phase 2: pairing + heartbeat
-- Phase 3: read-only discovery
+- Phase 3: read-only discovery ✅ (DEV-12C metadata-only)
 - Phase 4+: proposal/apply/approval workflows

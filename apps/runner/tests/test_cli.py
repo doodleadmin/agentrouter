@@ -46,3 +46,32 @@ def test_check_path_success_and_block_outside(tmp_path: Path) -> None:
     outside = _run_cli(["--root", str(tmp_path), "check-path", "--path", "../outside"], repo_root)
     assert outside.returncode == 2
     assert "PathOutsideRootError" in outside.stdout
+
+
+def test_discovery_commands_smoke(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[3]
+    (tmp_path / "proj1" / "src").mkdir(parents=True)
+    (tmp_path / "proj1" / "src" / "main.py").write_text("print('x')", encoding="utf-8")
+    (tmp_path / "proj2").mkdir()
+
+    list_proc = _run_cli(["--json", "--root", str(tmp_path), "list-projects"], repo_root)
+    assert list_proc.returncode == 0
+    assert '"proj1"' in list_proc.stdout
+    assert '"proj2"' in list_proc.stdout
+
+    tree_proc = _run_cli(["--json", "--root", str(tmp_path), "tree", "--project", "proj1", "--max-depth", "2"], repo_root)
+    assert tree_proc.returncode == 0
+    assert '"project": "proj1"' in tree_proc.stdout
+    assert '"relative_path": "proj1/src/main.py"' in tree_proc.stdout
+
+    missing_tree = _run_cli(["--root", str(tmp_path), "tree", "--project", "missing"], repo_root)
+    assert missing_tree.returncode == 2
+    assert "FileNotFoundError" in missing_tree.stdout
+
+    stat_proc = _run_cli(["--json", "--root", str(tmp_path), "stat", "--path", "proj1/src/main.py"], repo_root)
+    assert stat_proc.returncode == 0
+    assert '"is_file": true' in stat_proc.stdout
+
+    blocked = _run_cli(["--root", str(tmp_path), "stat", "--path", "../outside"], repo_root)
+    assert blocked.returncode == 2
+    assert "PathOutsideRootError" in blocked.stdout
