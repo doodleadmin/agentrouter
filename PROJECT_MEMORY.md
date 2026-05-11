@@ -29,8 +29,23 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-11 (VPS-10A: Guarded Create + Approval UX Deploy)
+**Дата последнего обновления:** 2026-05-11 (VPS-10B: Post-deploy Monitoring Snapshot)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-11 — VPS-10B: Post-deploy Monitoring Snapshot after Guarded Create UX Deploy
+
+- **Агент:** studio-orchestrator
+- **Контур:** read-only production snapshot (без изменений)
+- **Сделано:**
+  - SSH OK, server repo clean `aa2d803`, all 5 containers healthy (api 8h, postgres 42h, redis 42h, bot 6h, worker 32h) ✅
+  - `/health` OK (api/db/redis all ok), `/app/` 200 with `<div id="root">` + assets ✅
+  - API read-only: `/agents`, `/tasks`, `/events`, `/telegram/topics` → 200 ✅
+  - Static release: `20260510-225034` active (VPS-10A), `20260510-212126` preserved (VPS-09A) ✅
+  - Caddy active, 4 timers active (healthcheck 15min, db-backup daily, backup-verify daily, offsite-sync daily), UFW 22/80/443 ✅
+  - API logs clean (no 500/traceback), bot polling healthy, worker ready ✅
+  - Healthcheck 4/4 PASS continuous (latest 01:18 UTC), backup verify OK, offsite sync scheduled ✅
+- **Safety:** no deploy, no VPS changes, no .env/Caddy changes, no service restarts, no migrations, no Telegram messages/data/topic creation, no OpenCode, no real tasks, secrets not printed
+- Task summary: [.ai_memory/tasks/2026-05-11-task-vps10b-post-deploy-monitoring-snapshot.md](.ai_memory/tasks/2026-05-11-task-vps10b-post-deploy-monitoring-snapshot.md)
 
 ### 2026-05-11 — VPS-10A: Controlled Guarded Create + Approval UX Deploy
 
