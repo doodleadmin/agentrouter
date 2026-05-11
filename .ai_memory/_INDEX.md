@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 119 |
+| **Task logs** | 120 |
 | **Шаблоны** | 5 |
 
 ---
@@ -68,6 +68,7 @@
 
 | Файл | Задача |
 |------|--------|
+| [2026-05-11-task-dev11a-liquid-glass-workspace-foundation.md](tasks/2026-05-11-task-dev11a-liquid-glass-workspace-foundation.md) | DEV-11A |
 | [2026-05-03-task-fnd01-fnd02.md](tasks/2026-05-03-task-fnd01-fnd02.md) | FND-01 + FND-02 |
 | [2026-05-09-task-vps03a-ssh-swap-repo-bootstrap.md](tasks/2026-05-09-task-vps03a-ssh-swap-repo-bootstrap.md) | VPS-03A |
 | [2026-05-03-task-fnd03-db-foundation.md](tasks/2026-05-03-task-fnd03-db-foundation.md) | FND-03 |

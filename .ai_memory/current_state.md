@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-11 (VPS-10B: Post-deploy Monitoring Snapshot) | Автор: studio-orchestrator
+Обновлено: 2026-05-11 (DEV-11A: Liquid Glass WebUI + Workspace Source Foundation) | Автор: frontend-developer
 
 ---
 
@@ -21,6 +21,8 @@
 ## Что происходит сейчас
 
 - VPS-10B (studio-orchestrator): выполнен read-only post-deploy monitoring snapshot после VPS-10A. SSH OK, server repo clean `aa2d803`, all 5 containers healthy (api 8h, postgres 42h, redis 42h, bot 6h, worker 32h). `/health` OK (api/db/redis ok), `/app/` 200 + assets. API read-only: `/agents`/`/tasks`/`/events`/`/telegram/topics` → 200. Static release `20260510-225034` active (VPS-10A). Caddy active, 4 timers active (healthcheck 15min, db-backup/backup-verify/offsite-sync daily), UFW 22/80/443. Logs clean: no 500/traceback, bot polling healthy, worker ready. Healthcheck 4/4 PASS continuous, backup verify OK, offsite sync scheduled. Никакие изменения не производились, production runtime стабилен.
+
+- DEV-11A (frontend-developer): выполнен локальный UI foundation апгрейд Mini App. Полностью переписан `styles.css` в Liquid Glass token system; добавлены `GlassCard`/`SectionHeader`/`MetricCard`/`LiquidButton`; добавлена страница `Workspaces` и маршрут `/workspaces`; bottom-nav расширен до 5 вкладок; обновлены Home/Agents/AgentDetail/CreateAgent/Tasks/CreateTask/Topics/More и core components/forms под новый дизайн без изменения бизнес-логики. Добавлены Product overview, Agent templates, Topic setup guide, Product roadmap. Build validation: `npm run build` PASS, `npm run build:prod` PASS. Deploy/VPS/.env/migrations/Telegram/OpenCode не выполнялись.
 
 - VPS-10A (studio-orchestrator): выполнен controlled production deploy guarded create + approval UX. Server repo fast-forward `c81cb07..aa2d803` (clean, ff-only). Local build `npm run build:prod` PASS (63 modules, 0 errors). Artifact `miniapp-guarded-create-20260511-024932.zip` SHA256 `6350dd02…` (64973 bytes). New release `/var/www/agentrouter-web/releases/20260510-225034` + atomic symlink switch. Previous release preserved: `20260510-212126` (VPS-09A). User smoke ALL PASS: navigation + create flow confirmation cards + approvals card + guarded-mode indicator. Runtime: all 5 containers healthy, Caddy active, 4 timers active, UFW 22/80/443. No .env/Caddy/migrations/restarts/Telegram/OpenCode.
 

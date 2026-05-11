@@ -43,7 +43,7 @@ export function TasksPage() {
           ? `${taskCount} task${taskCount !== 1 ? 's' : ''}${pendingCount > 0 ? ` (${pendingCount} pending)` : ''}`
           : 'Queue and execution status'}
       />
-      <button className="form-submit" style={{ marginBottom: 12 }} onClick={() => navigate('/tasks/new')}>
+      <button className="liquid-button liquid-button--primary" style={{ marginBottom: 12 }} onClick={() => navigate('/tasks/new')}>
         + Create Task
       </button>
 
@@ -55,7 +55,7 @@ export function TasksPage() {
       {tasksState.status === 'success' && tasksState.data.length > 0 && (
         <div className="stack">
           {tasksState.data.map((task) => (
-            <article className="card" key={task.id}>
+            <article className="glass-card" key={task.id}>
               <div className="row-between">
                 <strong>{task.external_id}</strong>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -64,7 +64,7 @@ export function TasksPage() {
                 </div>
               </div>
               <p style={{ margin: '6px 0' }}>{task.title}</p>
-              <small style={{ color: '#6b7280' }}>
+              <small style={{ color: 'var(--text-secondary)' }}>
                 {new Date(task.created_at).toLocaleString()}
               </small>
             </article>

@@ -47,6 +47,7 @@ No secrets required at build time.
 | Route | Page | Description |
 |-------|------|-------------|
 | `/` | HomePage | Dashboard with status cards, summaries, mode indicator |
+| `/workspaces` | WorkspacesPage | Workspace source foundation (Local Runner / Cloud / GitHub) |
 | `/agents` | AgentsPage | All registered agents |
 | `/agents/new` | CreateAgentPage | Register new agent form (warns about real record creation) |
 | `/agents/:id` | AgentDetailPage | Agent details |
@@ -54,6 +55,28 @@ No secrets required at build time.
 | `/tasks/new` | CreateTaskPage | Create task form (warns about real record creation) |
 | `/topics` | TopicsPage | Telegram topic bindings with role explanations |
 | `/more` | MorePage (Settings) | Safe auth/session info, API mode, guarded-mode explanation |
+
+## Liquid Glass Design System
+
+The UI now uses a token-based **Liquid Glass** foundation in `src/styles.css`:
+
+- CSS custom properties for colors, glass surfaces, spacing, radius, typography, safe-area
+- glass primitives: `.glass-card`, `.glass-card--clickable`
+- button system: `.liquid-button` with `primary`, `secondary`, `ghost` variants
+- section and metric primitives: `.section-header`, `.metric-card`
+- refreshed form controls and state components using design tokens
+
+No Tailwind and no new UI library dependencies were introduced.
+
+## Navigation Structure
+
+Bottom navigation now has 5 tabs:
+
+1. Home (`/`)
+2. Spaces (`/workspaces`)
+3. Agents (`/agents`)
+4. Tasks (`/tasks`)
+5. More (`/more`)
 
 ## Create Flow Safety
 

@@ -8,12 +8,14 @@ import { HomePage } from './pages/HomePage';
 import { MorePage } from './pages/MorePage';
 import { TasksPage } from './pages/TasksPage';
 import { TopicsPage } from './pages/TopicsPage';
+import { WorkspacesPage } from './pages/WorkspacesPage';
 
 export function App() {
   return (
     <AppShell>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/workspaces" element={<WorkspacesPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/agents/new" element={<CreateAgentPage />} />
         <Route path="/agents/:id" element={<AgentDetailPage />} />

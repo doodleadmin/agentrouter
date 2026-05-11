@@ -102,8 +102,8 @@ export function TaskForm({ agents, preselectedAgentId, onSubmit, formState }: Ta
       {formState.status === 'success' ? (
         <div className="form-success">Task created successfully!</div>
       ) : (
-        <button type="submit" className="form-submit" disabled={!canSubmit}>
-          {formState.status === 'submitting' ? 'Creating…' : 'Create Task'}
+        <button type="submit" className="liquid-button liquid-button--primary" disabled={!canSubmit}>
+          {formState.status === 'submitting' ? 'Creating\u2026' : 'Create Task'}
         </button>
       )}
     </form>

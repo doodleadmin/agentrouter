@@ -47,6 +47,21 @@
 - **Safety:** no deploy, no VPS changes, no .env/Caddy changes, no service restarts, no migrations, no Telegram messages/data/topic creation, no OpenCode, no real tasks, secrets not printed
 - Task summary: [.ai_memory/tasks/2026-05-11-task-vps10b-post-deploy-monitoring-snapshot.md](.ai_memory/tasks/2026-05-11-task-vps10b-post-deploy-monitoring-snapshot.md)
 
+### 2026-05-11 — DEV-11A: Liquid Glass WebUI + Workspace Source Foundation
+
+- **Агент:** frontend-developer
+- **Контур:** local frontend only, no deploy/infrastructure changes
+- **Сделано:**
+  - Полностью переписан `apps/web/src/styles.css` на Liquid Glass design tokens (colors/surfaces/spacing/typography/safe-area) и базовые примитивы (`glass-card`, `liquid-button`, section headers, metric/state/form/nav styles) ✅
+  - Добавлены UI-компоненты: `GlassCard`, `SectionHeader`, `MetricCard`, `LiquidButton` ✅
+  - Добавлена страница `WorkspacesPage` + маршрут `/workspaces` + вкладка `Spaces` в bottom-nav (теперь 5 tabs) ✅
+  - Обновлены страницы и ключевые компоненты под новый дизайн без изменения логики/потоков данных ✅
+  - Добавлены: Product overview (Home), Agent Templates (Agents), Setup guide (Topics), Product Roadmap (More) ✅
+  - Добавлены workspace types в `types.ts`, обновлён `apps/web/README.md` ✅
+- **Build validation:** `npm run build` PASS, `npm run build:prod` PASS ✅
+- **Safety:** no deploy, no VPS/SSH, no `.env` changes, no migrations, no Telegram/OpenCode actions, no secrets printed
+- Task summary: [.ai_memory/tasks/2026-05-11-task-dev11a-liquid-glass-workspace-foundation.md](.ai_memory/tasks/2026-05-11-task-dev11a-liquid-glass-workspace-foundation.md)
+
 ### 2026-05-11 — VPS-10A: Controlled Guarded Create + Approval UX Deploy
 
 - **Агент:** studio-orchestrator

@@ -2,25 +2,25 @@
 
 export function LoadingState({ message = 'Loading…' }: { message?: string }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: '24px' }}>
+    <div className="glass-card" style={{ textAlign: 'center', padding: '32px' }}>
       <div className="spinner" />
-      <p style={{ marginTop: 12, color: '#6b7280' }}>{message}</p>
+      <p style={{ color: 'var(--text-secondary)', margin: '16px 0 0' }}>{message}</p>
     </div>
   );
 }
 
 export function EmptyState({ message = 'No items found' }: { message?: string }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: '24px' }}>
-      <p style={{ color: '#6b7280' }}>{message}</p>
+    <div className="glass-card" style={{ textAlign: 'center', padding: '32px' }}>
+      <p style={{ color: 'var(--text-secondary)' }}>{message}</p>
     </div>
   );
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: '24px' }}>
-      <p style={{ color: '#dc2626' }}>{message}</p>
+    <div className="glass-card" style={{ textAlign: 'center', padding: '32px' }}>
+      <p style={{ color: 'var(--danger)' }}>{message}</p>
       {onRetry && (
         <button onClick={onRetry} className="retry-btn">
           Retry

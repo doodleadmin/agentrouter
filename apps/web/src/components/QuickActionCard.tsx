@@ -5,7 +5,7 @@ interface QuickActionCardProps {
 
 export function QuickActionCard({ title, caption }: QuickActionCardProps) {
   return (
-    <article className="card quick-action">
+    <article className="glass-card quick-action">
       <h3>{title}</h3>
       <p>{caption}</p>
     </article>

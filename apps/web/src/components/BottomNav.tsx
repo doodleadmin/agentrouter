@@ -2,9 +2,10 @@ import { NavLink } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Home' },
+  { to: '/workspaces', label: 'Spaces' },
   { to: '/agents', label: 'Agents' },
   { to: '/tasks', label: 'Tasks' },
-  { to: '/more', label: 'Settings' },
+  { to: '/more', label: 'More' },
 ];
 
 export function BottomNav() {

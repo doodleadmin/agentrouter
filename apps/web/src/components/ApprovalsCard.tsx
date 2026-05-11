@@ -7,8 +7,8 @@ interface ApprovalsCardProps {
 
 const statusTone: Record<string, string> = {
   pending: '#f59e0b',
-  approved: '#166534',
-  rejected: '#dc2626',
+  approved: '#16a34a',
+  rejected: '#ef4444',
 };
 
 export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
@@ -16,7 +16,7 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
 
   if (loading) {
     return (
-      <section className="card">
+      <section className="glass-card">
         <div className="spinner" style={{ margin: '12px auto' }} />
       </section>
     );
@@ -24,9 +24,9 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
 
   if (approvals.length === 0) {
     return (
-      <section className="card">
+      <section className="glass-card">
         <h4 style={{ margin: 0, marginBottom: 4 }}>Approvals</h4>
-        <small style={{ color: '#6b7280' }}>
+        <small style={{ color: 'var(--text-secondary)' }}>
           No approval requests yet. Dangerous actions (deploy, migrations, environment changes) will appear here for review.
         </small>
       </section>
@@ -34,7 +34,7 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
   }
 
   return (
-    <section className="card">
+    <section className="glass-card">
       <div className="row-between" style={{ marginBottom: 8 }}>
         <h4 style={{ margin: 0 }}>Approvals</h4>
         {pendingCount > 0 && (
@@ -50,7 +50,7 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
             <span
               className="pill"
               style={{
-                backgroundColor: statusTone[a.status] ?? '#6b7280',
+                backgroundColor: statusTone[a.status] ?? 'var(--text-secondary)',
                 color: '#fff',
                 fontSize: '0.70rem',
                 padding: '2px 6px',
@@ -61,7 +61,7 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
           </div>
         ))}
         {approvals.length > 5 && (
-          <small style={{ color: '#6b7280' }}>+{approvals.length - 5} more</small>
+          <small style={{ color: 'var(--text-secondary)' }}>+{approvals.length - 5} more</small>
         )}
       </div>
     </section>

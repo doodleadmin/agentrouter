@@ -10,6 +10,7 @@ import { EmptyState, LoadingState } from '../components/States';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
 import { StatusCard } from '../components/StatusCard';
+import { SectionHeader } from '../components/ui/SectionHeader';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -34,9 +35,9 @@ export function HomePage() {
   };
 
   const modeTone: Record<string, string> = {
-    live: '#166534',
-    mock: '#6b7280',
-    preview: '#6b7280',
+    live: 'var(--success)',
+    mock: 'var(--text-secondary)',
+    preview: 'var(--text-secondary)',
   };
 
   const agentCount = (agentsState.status === 'success' ? agentsState.data.length : 0);
@@ -64,8 +65,8 @@ export function HomePage() {
         gap: 6,
         marginBottom: 12,
         padding: '6px 10px',
-        borderRadius: 8,
-        backgroundColor: context.isTelegramWebApp ? '#ecfdf5' : '#f3f4f6',
+        borderRadius: 'var(--radius-input)',
+        backgroundColor: context.isTelegramWebApp ? 'var(--success-bg)' : 'var(--accent-light)',
         fontSize: '0.80rem',
         color: modeTone[apiMode],
         flexWrap: 'wrap',
@@ -78,59 +79,115 @@ export function HomePage() {
           display: 'inline-block',
         }} />
         {modeLabel[apiMode] || 'Preview'}
-        {context.isTelegramWebApp && ' • Telegram'}
-        {token && ' • Guarded mode'}
+        {context.isTelegramWebApp && ' \u00b7 Telegram'}
+        {token && ' \u00b7 Guarded mode'}
       </div>
 
       {/* System status */}
-      {statusState.status === 'loading' && <div className="card"><span className="spinner" /></div>}
+      {statusState.status === 'loading' && <div className="glass-card"><span className="spinner" /></div>}
       {statusState.status === 'success' && statusState.data && <StatusCard status={statusState.data} />}
-      {statusState.status === 'error' && <div className="card" style={{ color: '#dc2626' }}>Status unavailable</div>}
+      {statusState.status === 'error' && <div className="glass-card" style={{ color: 'var(--danger)' }}>Status unavailable</div>}
 
-      {/* Summary cards */}
-      <div className="section-title">Overview</div>
-      <section className="card grid-3">
+      {/* Product overview cards */}
+      <SectionHeader title="Product" />
+      <div className="stack">
+        <article
+          className="glass-card glass-card--clickable"
+          onClick={() => navigate('/workspaces')}
+        >
+          <div className="row-between">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 24 }}>🗂</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Workspaces</h3>
+                <small style={{ color: 'var(--text-secondary)' }}>Where agents work</small>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article
+          className="glass-card glass-card--clickable"
+          onClick={() => navigate('/agents')}
+        >
+          <div className="row-between">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 24 }}>🤖</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Agent Team</h3>
+                <small style={{ color: 'var(--text-secondary)' }}>{agentCount} registered</small>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article
+          className="glass-card glass-card--clickable"
+          onClick={() => navigate('/topics')}
+        >
+          <div className="row-between">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 24 }}>💬</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Telegram Topics</h3>
+                <small style={{ color: 'var(--text-secondary)' }}>Agent routing</small>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article className="glass-card">
+          <div className="row-between">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 24 }}>🛡</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Approvals</h3>
+                <small style={{ color: 'var(--text-secondary)' }}>{pendingApprovalCount} pending</small>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      {/* Summary metrics */}
+      <SectionHeader title="Overview" />
+      <section className="glass-card grid-3">
         <div>
           <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{agentCount}</h3>
-          <small style={{ color: '#6b7280' }}>
+          <small style={{ color: 'var(--text-secondary)' }}>
             Agent{agentCount !== 1 ? 's' : ''}
             {activeAgentCount > 0 && activeAgentCount < agentCount ? ` (${activeAgentCount} active)` : ''}
           </small>
         </div>
         <div>
           <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{taskCount}</h3>
-          <small style={{ color: '#6b7280' }}>
+          <small style={{ color: 'var(--text-secondary)' }}>
             Task{taskCount !== 1 ? 's' : ''}
             {pendingTaskCount > 0 ? ` (${pendingTaskCount} pending)` : ''}
           </small>
         </div>
         <div>
           <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{pendingApprovalCount}</h3>
-          <small style={{ color: '#6b7280' }}>Pending approvals</small>
+          <small style={{ color: 'var(--text-secondary)' }}>Pending approvals</small>
         </div>
       </section>
 
       {/* Quick actions */}
-      <div className="section-title">Quick actions</div>
+      <SectionHeader title="Quick actions" />
       <div className="stack">
         <article
-          className="card quick-action"
-          style={{ cursor: 'pointer' }}
+          className="glass-card glass-card--clickable"
           onClick={() => navigate('/tasks/new')}
         >
           <h3 style={{ margin: 0, marginBottom: 4 }}>Create task</h3>
-          <small style={{ color: '#6b7280' }}>
+          <small style={{ color: 'var(--text-secondary)' }}>
             Route a new request to agent queue
             {token ? ' — creates a real task record' : ''}
           </small>
         </article>
         <article
-          className="card quick-action"
-          style={{ cursor: 'pointer' }}
+          className="glass-card glass-card--clickable"
           onClick={() => navigate('/agents/new')}
         >
           <h3 style={{ margin: 0, marginBottom: 4 }}>Register agent</h3>
-          <small style={{ color: '#6b7280' }}>
+          <small style={{ color: 'var(--text-secondary)' }}>
             Add a new agent to the system
             {token ? ' — creates a real agent record' : ''}
           </small>
@@ -138,20 +195,20 @@ export function HomePage() {
       </div>
 
       {/* Approvals */}
-      <div className="section-title">Approvals</div>
+      <SectionHeader title="Approvals" />
       <ApprovalsCard
         approvals={approvalsState.status === 'success' ? approvalsState.data : []}
         loading={approvalsState.status === 'loading'}
       />
       {approvalsState.status === 'error' && (
-        <div className="card" style={{ color: '#dc2626', fontSize: '0.85rem' }}>
+        <div className="glass-card" style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
           Failed to load approvals.{' '}
           <button onClick={approvalsState.refetch} className="retry-btn" style={{ marginLeft: 4 }}>Retry</button>
         </div>
       )}
 
       {/* Active agents */}
-      <div className="section-title">Active agents</div>
+      <SectionHeader title="Active agents" />
       {agentsState.status === 'loading' && <LoadingState message="Loading agents…" />}
       {agentsState.status === 'success' && agentsState.data.length === 0 && (
         <EmptyState message="No agents registered yet" />
@@ -162,14 +219,14 @@ export function HomePage() {
         </div>
       )}
       {agentsState.status === 'error' && (
-        <div className="card" style={{ color: '#dc2626' }}>
+        <div className="glass-card" style={{ color: 'var(--danger)' }}>
           Failed to load agents.
           <button onClick={agentsState.refetch} className="retry-btn" style={{ marginLeft: 8 }}>Retry</button>
         </div>
       )}
 
       {/* Recent activity */}
-      <div className="section-title">Recent activity</div>
+      <SectionHeader title="Recent activity" />
       {activityState.status === 'loading' && <LoadingState message="Loading activity…" />}
       {activityState.status === 'success' && activityState.data.length === 0 && (
         <EmptyState message="No recent activity" />
@@ -180,7 +237,7 @@ export function HomePage() {
         </ul>
       )}
       {activityState.status === 'error' && (
-        <div className="card" style={{ color: '#dc2626' }}>
+        <div className="glass-card" style={{ color: 'var(--danger)' }}>
           Failed to load activity.
           <button onClick={activityState.refetch} className="retry-btn" style={{ marginLeft: 8 }}>Retry</button>
         </div>

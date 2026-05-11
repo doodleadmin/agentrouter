@@ -125,8 +125,8 @@ export function TopicBindingForm({ agents, onSubmit, formState }: TopicBindingFo
       {formState.status === 'success' ? (
         <div className="form-success">Topic binding registered!</div>
       ) : (
-        <button type="submit" className="form-submit" disabled={!canSubmit}>
-          {formState.status === 'submitting' ? 'Registering…' : 'Register Binding'}
+        <button type="submit" className="liquid-button liquid-button--primary" disabled={!canSubmit}>
+          {formState.status === 'submitting' ? 'Registering\u2026' : 'Register Binding'}
         </button>
       )}
     </form>

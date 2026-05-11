@@ -60,7 +60,7 @@ export function CreateAgentPage() {
   return (
     <PageContainer>
       <Header title="Create Agent" subtitle="Register a new agent" />
-      <div className="card">
+      <div className="glass-card">
         <AgentForm onSubmit={handleFormSubmit} formState={pendingData ? { status: 'idle' } : formState} />
       </div>
 
@@ -71,7 +71,7 @@ export function CreateAgentPage() {
             { label: 'Name', value: pendingData.name },
             { label: 'Role', value: pendingData.role },
             { label: 'Slug', value: pendingData.slug || pendingData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') },
-            { label: 'Model', value: pendingData.model || '—' },
+            { label: 'Model', value: pendingData.model || '\u2014' },
           ]}
           warning={
             token

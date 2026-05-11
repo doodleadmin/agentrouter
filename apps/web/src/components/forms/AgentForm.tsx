@@ -89,8 +89,8 @@ export function AgentForm({ onSubmit, formState }: AgentFormProps) {
       {formState.status === 'success' ? (
         <div className="form-success">Agent created successfully!</div>
       ) : (
-        <button type="submit" className="form-submit" disabled={!canSubmit}>
-          {formState.status === 'submitting' ? 'Creating…' : 'Create Agent'}
+        <button type="submit" className="liquid-button liquid-button--primary" disabled={!canSubmit}>
+          {formState.status === 'submitting' ? 'Creating\u2026' : 'Create Agent'}
         </button>
       )}
     </form>

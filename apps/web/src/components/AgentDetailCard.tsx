@@ -7,7 +7,7 @@ interface AgentDetailCardProps {
 export function AgentDetailCard({ agent }: AgentDetailCardProps) {
   return (
     <div className="stack">
-      <section className="card">
+      <section className="glass-card">
         <div className="row-between">
           <h3>{agent.name}</h3>
           <span className="pill pill-green">{agent.status}</span>
@@ -16,17 +16,17 @@ export function AgentDetailCard({ agent }: AgentDetailCardProps) {
         <p><strong>Role:</strong> {agent.role}</p>
         {agent.model && <p><strong>Model:</strong> {agent.model}</p>}
       </section>
-      <section className="card">
+      <section className="glass-card">
         <h3>Permissions</h3>
         <pre style={{ fontSize: '0.8rem', overflow: 'auto', margin: 0 }}>
           {JSON.stringify(agent.permissions, null, 2)}
         </pre>
       </section>
-      <section className="card">
-        <p style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+      <section className="glass-card">
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
           Created: {new Date(agent.created_at).toLocaleString()}
         </p>
-        <p style={{ fontSize: '0.82rem', color: '#6b7280' }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
           Updated: {new Date(agent.updated_at).toLocaleString()}
         </p>
       </section>

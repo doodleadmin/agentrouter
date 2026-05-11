@@ -16,13 +16,13 @@ export function AgentListItem({ agent }: AgentListItemProps) {
   const tone = statusTone[agent.status] ?? 'gray';
 
   return (
-    <article className="card" onClick={() => navigate(`/agents/${agent.id}`)} style={{ cursor: 'pointer' }}>
+    <article className="glass-card glass-card--clickable" onClick={() => navigate(`/agents/${agent.id}`)}>
       <div className="row-between">
         <strong>{agent.name}</strong>
         <span className={`pill pill-${tone}`}>{agent.status}</span>
       </div>
       <p>{agent.role}</p>
-      <small style={{ color: '#6b7280' }}>Last: {agent.lastActivity}</small>
+      <small style={{ color: 'var(--text-secondary)' }}>Last: {agent.lastActivity}</small>
     </article>
   );
 }

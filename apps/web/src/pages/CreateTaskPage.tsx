@@ -68,13 +68,13 @@ export function CreateTaskPage() {
   };
 
   const selectedAgentName = pendingData?.agent_id
-    ? agents.find((a) => a.id === pendingData.agent_id)?.name ?? '—'
-    : '—';
+    ? agents.find((a) => a.id === pendingData.agent_id)?.name ?? '\u2014'
+    : '\u2014';
 
   return (
     <PageContainer>
       <Header title="Create Task" subtitle="Route a new request to the agent queue" />
-      <div className="card">
+      <div className="glass-card">
         {agentsLoaded ? (
           <TaskForm
             agents={agents}
@@ -83,7 +83,7 @@ export function CreateTaskPage() {
             formState={pendingData ? { status: 'idle' } : formState}
           />
         ) : (
-          <div className="card">Loading agents…</div>
+          <div className="glass-card">Loading agents…</div>
         )}
       </div>
 
@@ -103,7 +103,7 @@ export function CreateTaskPage() {
           secondaryNote={
             'This will not run the task, start OpenCode, or execute any commands.' +
             (pendingData.risk_level !== 'low'
-              ? ` Medium/high-risk tasks require approval before execution.`
+              ? ' Medium/high-risk tasks require approval before execution.'
               : '')
           }
           confirmLabel="Create Task"

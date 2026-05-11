@@ -234,3 +234,18 @@ export type FormState =
   | { status: 'submitting' }
   | { status: 'success' }
   | { status: 'error'; error: string };
+
+/* ── Workspace (foundation) ────────────────────────────────────── */
+
+export type WorkspaceSourceType = 'local_runner' | 'cloud' | 'github';
+export type WorkspaceSourceStatus = 'not_connected' | 'connected' | 'coming_soon';
+
+export interface WorkspaceSourceCard {
+  id: WorkspaceSourceType;
+  title: string;
+  description: string;
+  safetyNote?: string;
+  status: WorkspaceSourceStatus;
+  cta: string;
+  icon: string;
+}

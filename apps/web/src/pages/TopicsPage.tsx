@@ -12,6 +12,7 @@ import { TopicMappingCard } from '../components/TopicMappingCard';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
+import { SectionHeader } from '../components/ui/SectionHeader';
 
 export function TopicsPage() {
   const topicsState = useApi<TelegramTopicRead[]>(api.getTelegramTopics);
@@ -78,18 +79,29 @@ export function TopicsPage() {
 
   return (
     <PageContainer>
-      <Header title="Topic Bindings" subtitle="Telegram topic ↔ role mappings" />
+      <Header title="Topic Bindings" subtitle="Telegram topic \u2194 role mappings" />
+
+      {/* Setup guide */}
+      <SectionHeader title="Setup guide" />
+      <div className="glass-card">
+        <ol className="setup-guide">
+          <li>Create a Telegram group and enable Topics</li>
+          <li>Create a &quot;General&quot; topic for orchestrator input</li>
+          <li>Create one topic per agent</li>
+          <li>Register each topic binding here</li>
+        </ol>
+      </div>
 
       {/* Role explanation */}
-      <div className="section-title">Topic roles</div>
+      <SectionHeader title="Topic roles" />
       <div className="stack">
         {TOPIC_KINDS.map((kind) => (
-          <article className="card" key={kind}>
+          <article className="glass-card" key={kind}>
             <div className="row-between">
               <strong>{TOPIC_KIND_LABELS[kind]}</strong>
               <span className="pill pill-blue">{kind}</span>
             </div>
-            <small style={{ color: '#6b7280', display: 'block', marginTop: 4 }}>
+            <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: 4 }}>
               {TOPIC_KIND_DESCRIPTIONS[kind]}
             </small>
           </article>
@@ -97,7 +109,7 @@ export function TopicsPage() {
       </div>
 
       {/* Existing mappings */}
-      <div className="section-title" style={{ marginTop: 20 }}>Registered mappings</div>
+      <SectionHeader title="Registered mappings" />
       {topicsState.status === 'loading' && <LoadingState message="Loading topics…" />}
       {topicsState.status === 'error' && <ErrorState message="Failed to load topics" onRetry={topicsState.refetch} />}
       {topicsState.status === 'success' && topicsState.data.length === 0 && (
@@ -112,13 +124,13 @@ export function TopicsPage() {
       )}
 
       {/* Registration form */}
-      <div className="section-title">Register new binding</div>
+      <SectionHeader title="Register new binding" />
       {!showForm ? (
-        <button className="form-submit" onClick={() => setShowForm(true)}>
+        <button className="liquid-button liquid-button--primary" onClick={() => setShowForm(true)}>
           + Register Topic Binding
         </button>
       ) : (
-        <div className="card">
+        <div className="glass-card">
           <TopicBindingForm
             agents={agents}
             onSubmit={handleFormSubmit}
@@ -126,7 +138,7 @@ export function TopicsPage() {
           />
           {formState.status !== 'success' && !pendingData && (
             <button
-              className="retry-btn"
+              className="liquid-button liquid-button--ghost"
               style={{ marginTop: 8 }}
               onClick={() => { setShowForm(false); setFormState({ status: 'idle' }); }}
             >
@@ -144,7 +156,7 @@ export function TopicsPage() {
             { label: 'Thread ID', value: String(pendingData.message_thread_id) },
             { label: 'Title', value: pendingData.title },
             { label: 'Kind', value: pendingKindLabel },
-            { label: 'Agent', value: pendingData.agent_id ? agents.find((a) => a.id === pendingData.agent_id)?.name ?? '—' : '—' },
+            { label: 'Agent', value: pendingData.agent_id ? agents.find((a) => a.id === pendingData.agent_id)?.name ?? '\u2014' : '\u2014' },
           ]}
           warning={
             token

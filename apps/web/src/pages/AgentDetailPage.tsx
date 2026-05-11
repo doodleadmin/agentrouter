@@ -33,16 +33,16 @@ export function AgentDetailPage() {
   return (
     <PageContainer>
       <Header title="Agent details" subtitle={id} />
-      {state === 'loading' && <div className="card">Loading agent…</div>}
+      {state === 'loading' && <div className="glass-card">Loading agent…</div>}
       {state === 'error' && (
-        <div className="card" style={{ color: '#dc2626' }}>Failed to load agent details</div>
+        <div className="glass-card" style={{ color: 'var(--danger)' }}>Failed to load agent details</div>
       )}
       {state === 'empty' && <EmptyState message="Agent not found" />}
       {state === 'success' && agent && (
         <>
           <AgentDetailCard agent={agent} />
           <button
-            className="form-submit"
+            className="liquid-button liquid-button--primary"
             style={{ marginTop: 12 }}
             onClick={() => navigate(`/tasks/new?agent_id=${agent.id}`)}
           >

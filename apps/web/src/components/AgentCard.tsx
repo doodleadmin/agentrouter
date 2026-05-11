@@ -16,7 +16,7 @@ export function AgentCard({ agent }: AgentCardProps) {
   const tone = statusTone[agent.status] ?? 'gray';
 
   return (
-    <article className="card" onClick={() => navigate(`/agents/${agent.id}`)} style={{ cursor: 'pointer' }}>
+    <article className="glass-card glass-card--clickable" onClick={() => navigate(`/agents/${agent.id}`)}>
       <div className="row-between">
         <strong>{agent.name}</strong>
         <span className={`pill pill-${tone}`}>{agent.status}</span>
