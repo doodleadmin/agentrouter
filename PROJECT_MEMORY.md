@@ -29,7 +29,7 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-11 (DEV-12A: Local Runner Protocol Design)
+**Дата последнего обновления:** 2026-05-11 (DEV-12B: Local Runner Skeleton CLI)
 **Project root:** `F:\dev\agentrouter`
 
 ### 2026-05-11 — DEV-12A: Local Runner Protocol Design + Safety Model
@@ -48,6 +48,22 @@
 - **Валидация:** `npm run build` PASS, `npm run build:prod` PASS ✅
 - **Safety:** no deploy, no VPS changes, no `.env`/Caddy changes, no restarts, no migrations, no Telegram/manual topic actions, no OpenCode, no real tasks, no real local file access, no command execution
 - Task summary: [.ai_memory/tasks/2026-05-11-task-dev12a-local-runner-protocol-design.md](.ai_memory/tasks/2026-05-11-task-dev12a-local-runner-protocol-design.md)
+
+### 2026-05-11 — DEV-12B: Local Runner Skeleton CLI (local-only)
+
+- **Агент:** backend-architect
+- **Контур:** local-only skeleton implementation in `apps/runner`, stdlib-only Python
+- **Сделано:**
+  - Создан пакет `apps/runner/agentrouter_runner` с CLI: `status`, `doctor`, `check-path --path` ✅
+  - Добавлены strict path utilities: root validation, traversal/absolute outside blocking, symlink escape detection where resolvable ✅
+  - Добавлен sensitive path classifier (`.env*`, keys, `.ssh`, `credentials.*`, `.git/config`, `rclone.conf`, generated dirs) ✅
+  - Добавлен status model skeleton mode с disabled capabilities (cloud/pairing/heartbeat/read/write/exec/opencode) ✅
+  - Добавлены pytest tests (`apps/runner/tests`) с temp-dir boundary coverage + CLI return code checks + no env dump markers ✅
+  - Документация обновлена: `apps/runner/README.md`, roadmap Phase 1 marked implemented locally, root README reference ✅
+- **Валидация:** `python -m pytest apps/runner/tests -q` PASS, CLI smoke on temp dir PASS, git/diff safety checks PASS
+- **Safety:** no deploy, no SSH, no migrations, no `.env` changes, no cloud/API/Telegram/OpenCode integration, no command execution feature
+- Task summary: [.ai_memory/tasks/2026-05-11-task-dev12b-runner-skeleton-cli.md](.ai_memory/tasks/2026-05-11-task-dev12b-runner-skeleton-cli.md)
+- **Next recommended step:** DEV-12C Runner Pairing/Heartbeat Design or DEV-12C Read-only Project Discovery.
 
 ### 2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix
 

@@ -5,7 +5,7 @@
 - No runner executable
 - No real file access
 
-## Phase 1 — Runner skeleton
+## Phase 1 — Runner skeleton ✅ implemented locally (DEV-12B)
 - CLI/app starts locally
 - Accepts `--root`
 - Normalizes and validates root
