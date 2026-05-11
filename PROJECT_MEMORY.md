@@ -29,8 +29,24 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-11 (VPS-11B: Visual Hotfix Deploy)
+**Дата последнего обновления:** 2026-05-11 (VPS-11C: Source Sync + Monitoring)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix
+
+- **Агент:** studio-orchestrator
+- **Контур:** source sync + read-only monitoring only (без deploy)
+- **Сделано:**
+  - server repo fast-forward (ff-only): `4b7adcf -> 8946b82` ✅
+  - latest on server: `fix(miniapp): raise floating nav after visual smoke` ✅
+  - static release unchanged: `/var/www/agentrouter-web/releases/20260511-102930` ✅
+  - no symlink switch, no new release created by VPS-11C ✅
+  - `/health` OK, `/app/` 200, root/assets markers present ✅
+  - read-only API: `/agents` `/tasks` `/events` `/telegram/topics` -> 200 ✅
+  - runtime: 5 containers healthy, Caddy active, timers active, UFW unchanged ✅
+  - logs clean in checked window; backup/healthcheck/offsite sanity OK ✅
+- **Safety:** no static deploy, no `.env`/Caddy changes, no restarts, no migrations, no Telegram manual sends, no records/topics creation, no OpenCode/real tasks
+- Task summary: [.ai_memory/tasks/2026-05-11-task-vps11c-source-sync-monitoring.md](.ai_memory/tasks/2026-05-11-task-vps11c-source-sync-monitoring.md)
 
 ### 2026-05-11 — VPS-11B: Controlled Liquid Glass Visual Hotfix Deploy
 

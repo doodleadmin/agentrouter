@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-11 (VPS-11B: Visual Hotfix Deploy) | Автор: studio-orchestrator
+Обновлено: 2026-05-11 (VPS-11C: Source Sync + Monitoring) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-11C (studio-orchestrator): выполнен source sync + read-only post-deploy monitoring после VPS-11B. Server repo fast-forward `4b7adcf -> 8946b82` (ff-only, clean). Статический релиз НЕ менялся: `current` остался `/var/www/agentrouter-web/releases/20260511-102930`, symlink switch не выполнялся, новые release dirs в рамках VPS-11C не создавались. `/health` OK, `/app/` 200, API read-only 200/200/200/200, 5 containers healthy, Caddy active, timers active, UFW unchanged. Логи clean (без 500/traceback в окне проверки), healthcheck/offsite/backup-verify sanity OK.
 
 - VPS-11B (studio-orchestrator): выполнен controlled static deploy visual hotfix для Mini App (`/app/`) без backend/infra изменений. Server repo fast-forward `43fc821..4b7adcf`. Deployed artifact `miniapp-visual-hotfix-20260511-132809.zip` (SHA256 `ae6bae92...`, 70200 bytes), release switch `20260511-081809 -> 20260511-092839`. После user smoke сделан micro-fix nav spacing и второй static switch на final release `20260511-102930` через artifact `miniapp-visual-hotfix-navraise-20260511-142901.zip` (SHA256 `5e6088fc...`, 70201 bytes). `/health` OK, `/app/` 200, read-only API 200/200/200/200, logs clean, 5 containers healthy, Caddy active, timers active, UFW unchanged. User final verdict: "Да отлично".
 

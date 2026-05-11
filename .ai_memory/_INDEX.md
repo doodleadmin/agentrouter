@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 123 |
+| **Task logs** | 124 |
 | **Шаблоны** | 5 |
 
 ---
@@ -207,4 +207,5 @@
 - [2026-05-11 — DEV-11B: Liquid Glass second-pass redesign (apps/web)](tasks/2026-05-11-task-dev11b-liquid-glass-second-pass.md)
 - [2026-05-11 — DEV-11C: Mini App contrast + floating nav hotfix](tasks/2026-05-11-task-dev11c-miniapp-contrast-nav-hotfix.md)
 - [2026-05-11 — VPS-11B: Controlled Liquid Glass Visual Hotfix Deploy](tasks/2026-05-11-task-vps11b-visual-hotfix-deploy.md)
+- [2026-05-11 — VPS-11C: Source Sync + Post-deploy Monitoring after Visual Hotfix](tasks/2026-05-11-task-vps11c-source-sync-monitoring.md)
 - [2026-05-11 — DEV-11A.1: Liquid Glass visual hotfix after mobile smoke](tasks/2026-05-11-task-dev11a1-liquid-glass-visual-hotfix.md)
