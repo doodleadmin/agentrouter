@@ -29,8 +29,25 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-11 (VPS-10B: Post-deploy Monitoring Snapshot)
+**Дата последнего обновления:** 2026-05-11 (VPS-11B: Visual Hotfix Deploy)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-11 — VPS-11B: Controlled Liquid Glass Visual Hotfix Deploy
+
+- **Агент:** studio-orchestrator
+- **Контур:** production static frontend deploy only, no backend/infra changes
+- **Сделано:**
+  - server repo fast-forward `43fc821..4b7adcf` (ff-only, clean) ✅
+  - artifact `miniapp-visual-hotfix-20260511-132809.zip` (SHA256 `ae6bae92...`, 70200 bytes) deployed ✅
+  - release switched: `20260511-081809` → `20260511-092839` ✅
+  - post-smoke nav spacing micro-fix deployed: `miniapp-visual-hotfix-navraise-20260511-142901.zip` (SHA256 `5e6088fc...`, 70201 bytes) ✅
+  - final release: `/var/www/agentrouter-web/releases/20260511-102930` ✅
+  - `/health` OK, `/app/` 200, root/assets markers present ✅
+  - read-only API checks: agents/tasks/events/topics all 200 ✅
+  - final runtime: 5 containers healthy, Caddy active, timers active, UFW unchanged ✅
+- **User smoke:** visual hotfix accepted; nav fixed/floating resolved; requested extra bottom spacing added; final feedback: "Да отлично" ✅
+- **Safety:** no `.env`/Caddy changes, no restarts, no migrations, no Telegram manual sends, no topic/data creation, no OpenCode/real tasks
+- Task summary: [.ai_memory/tasks/2026-05-11-task-vps11b-visual-hotfix-deploy.md](.ai_memory/tasks/2026-05-11-task-vps11b-visual-hotfix-deploy.md)
 
 ### 2026-05-11 — VPS-10B: Post-deploy Monitoring Snapshot after Guarded Create UX Deploy
 

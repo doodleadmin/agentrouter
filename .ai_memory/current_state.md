@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-11 (DEV-11A.1: Liquid Glass visual hotfix after mobile smoke) | Автор: frontend-developer
+Обновлено: 2026-05-11 (VPS-11B: Visual Hotfix Deploy) | Автор: studio-orchestrator
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-11B (studio-orchestrator): выполнен controlled static deploy visual hotfix для Mini App (`/app/`) без backend/infra изменений. Server repo fast-forward `43fc821..4b7adcf`. Deployed artifact `miniapp-visual-hotfix-20260511-132809.zip` (SHA256 `ae6bae92...`, 70200 bytes), release switch `20260511-081809 -> 20260511-092839`. После user smoke сделан micro-fix nav spacing и второй static switch на final release `20260511-102930` через artifact `miniapp-visual-hotfix-navraise-20260511-142901.zip` (SHA256 `5e6088fc...`, 70201 bytes). `/health` OK, `/app/` 200, read-only API 200/200/200/200, logs clean, 5 containers healthy, Caddy active, timers active, UFW unchanged. User final verdict: "Да отлично".
 
 - DEV-11A.1 (frontend-developer): выполнен локальный visual hotfix после iPhone Telegram Mini App smoke без отката существующих uncommitted changes. В `apps/web/src/styles.css` усилены text tokens (`--text`, `--text-secondary`, `--text-tertiary`), осветлены surfaces, упрощён/ослаблен background wash, добавлены `html/body/#root` min-height и более комфортный `padding-bottom` для fixed nav. Bottom nav закреплён как floating capsule c safe-area insets, `z-index: 120`, stronger translucent white background и более заметным active state. Улучшена читаемость Home/Workspaces/Agents, а также shared `States`/`ApprovalsCard`/`StatusCard`. Валидация: `npm run build` PASS, `npm run build:prod` PASS. Deploy/VPS/.env/migrations/API changes не выполнялись.
 

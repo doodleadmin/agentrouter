@@ -82,6 +82,12 @@ body,
   min-height: 100%;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   font: var(--font-body);
@@ -124,7 +130,7 @@ body::after {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  animation: pageEnter var(--duration-flow) var(--ease-liquid) both;
+  position: relative;
 }
 
 .app-content {
@@ -433,7 +439,7 @@ body::after {
   position: fixed;
   left: max(12px, env(safe-area-inset-left, 0px));
   right: max(12px, env(safe-area-inset-right, 0px));
-  bottom: calc(12px + var(--safe-bottom));
+  bottom: calc(44px + var(--safe-bottom));
   margin: 0 auto;
   width: auto;
   max-width: calc(520px - 24px);
