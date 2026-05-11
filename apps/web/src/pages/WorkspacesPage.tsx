@@ -1,6 +1,8 @@
+import type { ComponentType, SVGProps } from 'react';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
 import { GlassCard } from '../components/ui/GlassCard';
+import { CloudIcon, CodeIcon, FolderIcon, PackageIcon } from '../components/ui/icons';
 import { SectionHeader } from '../components/ui/SectionHeader';
 
 type WorkspaceSource = 'local_runner' | 'cloud' | 'github';
@@ -13,7 +15,7 @@ interface WorkspaceSourceCardData {
   safetyNote?: string;
   status: SourceStatus;
   cta: string;
-  icon: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 const WORKSPACE_SOURCES: WorkspaceSourceCardData[] = [
@@ -24,7 +26,7 @@ const WORKSPACE_SOURCES: WorkspaceSourceCardData[] = [
     safetyNote: 'Local file access requires a local runner app. The browser cannot directly access your folders.',
     status: 'not_connected',
     cta: 'Connect Local Runner',
-    icon: '💻',
+    icon: CodeIcon,
   },
   {
     id: 'cloud',
@@ -32,7 +34,7 @@ const WORKSPACE_SOURCES: WorkspaceSourceCardData[] = [
     description: 'Create isolated online workspaces for agent-generated projects. Download as ZIP or connect GitHub.',
     status: 'coming_soon',
     cta: 'Create Cloud Workspace',
-    icon: '☁️',
+    icon: CloudIcon,
   },
   {
     id: 'github',
@@ -40,7 +42,7 @@ const WORKSPACE_SOURCES: WorkspaceSourceCardData[] = [
     description: 'Connect a repository for reviewed agent changes.',
     status: 'coming_soon',
     cta: 'Connect GitHub',
-    icon: '📦',
+    icon: PackageIcon,
   },
 ];
 
@@ -54,22 +56,23 @@ export function WorkspacesPage() {
       {/* Empty state */}
       <GlassCard>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '15px' }}>
+          <FolderIcon width={26} height={26} style={{ color: 'var(--text-tertiary)', marginBottom: 8 }} />
+          <p className="card-copy" style={{ marginBottom: 0 }}>
             No active workspace yet.
           </p>
-          <p style={{ color: 'var(--text-tertiary)', margin: '4px 0 0', fontSize: '13px' }}>
+          <p className="card-copy card-copy--compact" style={{ marginTop: 4 }}>
             Choose where agents should work: local folder, cloud workspace, or GitHub.
           </p>
         </div>
       </GlassCard>
 
       {/* Source cards */}
-      <div className="stack">
+      <div className="stack list-stagger">
         {WORKSPACE_SOURCES.map((source) => (
           <GlassCard key={source.id}>
             <div className="row-between" style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 28 }}>{source.icon}</span>
+                <source.icon width={28} height={28} />
                 <div>
                   <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 600 }}>{source.title}</h3>
                 </div>
@@ -78,9 +81,7 @@ export function WorkspacesPage() {
                 {source.status === 'coming_soon' ? 'Coming soon' : 'Not connected'}
               </span>
             </div>
-            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
-              {source.description}
-            </p>
+            <p className="card-copy">{source.description}</p>
             {source.safetyNote && (
               <div className="form-disclaimer" style={{ marginTop: 12 }}>
                 {source.safetyNote}
@@ -100,7 +101,7 @@ export function WorkspacesPage() {
       {/* How it works */}
       <SectionHeader title="How workspaces work" />
       <GlassCard>
-        <ol style={{ margin: 0, paddingLeft: 20, color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.8 }}>
+        <ol className="support-list">
           <li>Choose a workspace source above</li>
           <li>Create or select an agent team</li>
           <li>Connect your Telegram group with topics</li>

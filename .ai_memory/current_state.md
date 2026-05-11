@@ -1,6 +1,6 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-11 (DEV-11A: Liquid Glass WebUI + Workspace Source Foundation) | Автор: frontend-developer
+Обновлено: 2026-05-11 (DEV-11A.1: Liquid Glass visual hotfix after mobile smoke) | Автор: frontend-developer
 
 ---
 
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- DEV-11A.1 (frontend-developer): выполнен локальный visual hotfix после iPhone Telegram Mini App smoke без отката существующих uncommitted changes. В `apps/web/src/styles.css` усилены text tokens (`--text`, `--text-secondary`, `--text-tertiary`), осветлены surfaces, упрощён/ослаблен background wash, добавлены `html/body/#root` min-height и более комфортный `padding-bottom` для fixed nav. Bottom nav закреплён как floating capsule c safe-area insets, `z-index: 120`, stronger translucent white background и более заметным active state. Улучшена читаемость Home/Workspaces/Agents, а также shared `States`/`ApprovalsCard`/`StatusCard`. Валидация: `npm run build` PASS, `npm run build:prod` PASS. Deploy/VPS/.env/migrations/API changes не выполнялись.
 
 - VPS-10B (studio-orchestrator): выполнен read-only post-deploy monitoring snapshot после VPS-10A. SSH OK, server repo clean `aa2d803`, all 5 containers healthy (api 8h, postgres 42h, redis 42h, bot 6h, worker 32h). `/health` OK (api/db/redis ok), `/app/` 200 + assets. API read-only: `/agents`/`/tasks`/`/events`/`/telegram/topics` → 200. Static release `20260510-225034` active (VPS-10A). Caddy active, 4 timers active (healthcheck 15min, db-backup/backup-verify/offsite-sync daily), UFW 22/80/443. Logs clean: no 500/traceback, bot polling healthy, worker ready. Healthcheck 4/4 PASS continuous, backup verify OK, offsite sync scheduled. Никакие изменения не производились, production runtime стабилен.
 
@@ -328,3 +330,10 @@
 - Implemented required routes (`/`, `/agents`, `/agents/:id`, `/tasks`, `/more`) and required reusable UI components.
 - Added Telegram WebApp utility with safe browser fallback and API client layer with mock fallback data.
 - Local validation completed with `npm install` and `npm run build` in `apps/web`.
+
+
+## 2026-05-11 — DEV-11B frontend update
+
+- apps/web second-pass liquid-glass redesign completed
+- Skeleton-first loading and inline SVG icon system applied
+- Build + build:prod validated locally

@@ -34,6 +34,20 @@
 
 ### 2026-05-11 — VPS-10B: Post-deploy Monitoring Snapshot after Guarded Create UX Deploy
 
+### 2026-05-11 — DEV-11A.1: Liquid Glass Visual Hotfix after Mobile Smoke
+
+- **Агент:** frontend-developer
+- **Контур:** local frontend only, no backend/API changes, no deploy/infrastructure changes
+- **Сделано:**
+  - Обновлены Liquid Glass tokens в `apps/web/src/styles.css`: более тёмные/читаемые text colors, более светлые white surfaces, более лёгкий background gradient, уменьшена сила overlay/grey wash ✅
+  - Bottom nav закреплён как явно floating/fixed capsule: safe-area insets left/right/bottom, `z-index` 120, более светлый translucent background, заметный active state, увеличен нижний отступ контента ✅
+  - Улучшена читаемость Home/Workspaces/Agents и shared cards (`States`, `ApprovalsCard`, `StatusCard`) без изменения маршрутов и DEV-11A product features ✅
+  - Build validation: `npm run build` PASS, `npm run build:prod` PASS ✅
+- **Safety:** existing uncommitted frontend pass preserved, no reverts, no backend/API changes, no deploy, no VPS, no `.env`, no migrations
+- Task summary: [.ai_memory/tasks/2026-05-11-task-dev11a1-liquid-glass-visual-hotfix.md](.ai_memory/tasks/2026-05-11-task-dev11a1-liquid-glass-visual-hotfix.md)
+
+### 2026-05-11 — VPS-10B: Post-deploy Monitoring Snapshot after Guarded Create UX Deploy
+
 - **Агент:** studio-orchestrator
 - **Контур:** read-only production snapshot (без изменений)
 - **Сделано:**
@@ -1781,3 +1795,10 @@
 - **Сделано:** создан buildable Vite + React + TypeScript foundation в `apps/web` с маршрутами `/`, `/agents`, `/agents/:id`, `/tasks`, `/more`; добавлены обязательные UI-компоненты; реализован Telegram WebApp utility с browser fallback; добавлен API client с mock fallback.
 - **Проверка:** `npm install` + `npm run build` (apps/web).
 - Task summary: `.ai_memory/tasks/2026-05-10-task-dev-08c-frontend-foundation.md`
+
+### 2026-05-11 — DEV-11B: Liquid Glass second-pass redesign (apps/web)
+- **Агент:** frontend-developer
+- **Контур:** local frontend only, no backend/deploy/infrastructure changes
+- **Сделано:** усилены liquid-glass токены и эффекты (iridescent gradients, dynamic blur, chromatic highlights), обновлены motion timings (480–540ms), добавлен SVG icon set без зависимостей, заменены emoji, внедрён skeleton-first loading.
+- **Build validation:** `npm run build` PASS, `npm run build:prod` PASS
+- **Safety:** raw `initData` / `session_token` не рендерятся.

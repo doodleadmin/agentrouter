@@ -6,16 +6,17 @@ import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
 import { SectionHeader } from '../components/ui/SectionHeader';
+import { ClipboardIcon, CogIcon, FlaskIcon, PaletteIcon, SearchIcon, SparklesIcon, TargetIcon, WrenchIcon } from '../components/ui/icons';
 
 const AGENT_TEMPLATES = [
-  { role: 'Orchestrator', desc: 'Coordinates tasks across agents, routes messages, manages workflow', icon: '🎯' },
-  { role: 'Frontend Developer', desc: 'React, TypeScript, UI components, styling, API integration', icon: '🎨' },
-  { role: 'Backend Developer', desc: 'FastAPI, databases, API endpoints, services, workers', icon: '⚙️' },
-  { role: 'DevOps Engineer', desc: 'Docker, CI/CD, deployment, monitoring, infrastructure', icon: '🔧' },
-  { role: 'QA Engineer', desc: 'Testing, verification, consistency review, edge cases', icon: '🧪' },
-  { role: 'Designer', desc: 'UI/UX design, design tokens, component specs, accessibility', icon: '✨' },
-  { role: 'Product Manager', desc: 'Requirements, priorities, roadmap, user stories', icon: '📋' },
-  { role: 'Code Reviewer', desc: 'PR review, code quality, standards enforcement, security audit', icon: '🔍' },
+  { role: 'Orchestrator', desc: 'Coordinates tasks across agents, routes messages, manages workflow', icon: TargetIcon },
+  { role: 'Frontend Developer', desc: 'React, TypeScript, UI components, styling, API integration', icon: PaletteIcon },
+  { role: 'Backend Developer', desc: 'FastAPI, databases, API endpoints, services, workers', icon: CogIcon },
+  { role: 'DevOps Engineer', desc: 'Docker, CI/CD, deployment, monitoring, infrastructure', icon: WrenchIcon },
+  { role: 'QA Engineer', desc: 'Testing, verification, consistency review, edge cases', icon: FlaskIcon },
+  { role: 'Designer', desc: 'UI/UX design, design tokens, component specs, accessibility', icon: SparklesIcon },
+  { role: 'Product Manager', desc: 'Requirements, priorities, roadmap, user stories', icon: ClipboardIcon },
+  { role: 'Code Reviewer', desc: 'PR review, code quality, standards enforcement, security audit', icon: SearchIcon },
 ];
 
 export function AgentsPage() {
@@ -50,7 +51,7 @@ export function AgentsPage() {
 
       {/* Agent Templates */}
       <SectionHeader title="Agent templates" />
-      <div className="stack">
+      <div className="stack list-stagger">
         {AGENT_TEMPLATES.map((tmpl) => (
           <article
             key={tmpl.role}
@@ -59,10 +60,10 @@ export function AgentsPage() {
           >
             <div className="row-between">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 24 }}>{tmpl.icon}</span>
+                 <tmpl.icon width={24} height={24} />
                 <div>
                   <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>{tmpl.role}</h3>
-                  <small style={{ color: 'var(--text-secondary)' }}>{tmpl.desc}</small>
+                  <small className="product-card-subtitle">{tmpl.desc}</small>
                 </div>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import type { ApprovalItem } from '../types';
+import { ShieldIcon } from './ui/icons';
 
 interface ApprovalsCardProps {
   approvals: ApprovalItem[];
@@ -17,7 +18,11 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
   if (loading) {
     return (
       <section className="glass-card">
-        <div className="spinner" style={{ margin: '12px auto' }} />
+        <div className="skeleton-stack" aria-hidden="true">
+          <div className="skeleton skeleton--title" />
+          <div className="skeleton skeleton--line" />
+          <div className="skeleton skeleton--line" style={{ width: '78%' }} />
+        </div>
       </section>
     );
   }
@@ -25,8 +30,9 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
   if (approvals.length === 0) {
     return (
       <section className="glass-card">
+        <ShieldIcon width={20} height={20} style={{ color: 'var(--text-tertiary)', marginBottom: 8 }} />
         <h4 style={{ margin: 0, marginBottom: 4 }}>Approvals</h4>
-        <small style={{ color: 'var(--text-secondary)' }}>
+        <small className="product-card-subtitle">
           No approval requests yet. Dangerous actions (deploy, migrations, environment changes) will appear here for review.
         </small>
       </section>
@@ -61,7 +67,7 @@ export function ApprovalsCard({ approvals, loading }: ApprovalsCardProps) {
           </div>
         ))}
         {approvals.length > 5 && (
-          <small style={{ color: 'var(--text-secondary)' }}>+{approvals.length - 5} more</small>
+          <small className="product-card-subtitle">+{approvals.length - 5} more</small>
         )}
       </div>
     </section>

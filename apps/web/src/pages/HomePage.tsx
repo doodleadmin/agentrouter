@@ -11,6 +11,7 @@ import { Header } from '../components/Header';
 import { PageContainer } from '../components/PageContainer';
 import { StatusCard } from '../components/StatusCard';
 import { SectionHeader } from '../components/ui/SectionHeader';
+import { ChatIcon, GridIcon, RobotIcon, ShieldIcon } from '../components/ui/icons';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -59,18 +60,13 @@ export function HomePage() {
       <Header title="AI Office" subtitle="Mission Control" />
 
       {/* Mode + guarded indicator */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 12,
-        padding: '6px 10px',
-        borderRadius: 'var(--radius-input)',
-        backgroundColor: context.isTelegramWebApp ? 'var(--success-bg)' : 'var(--accent-light)',
-        fontSize: '0.80rem',
-        color: modeTone[apiMode],
-        flexWrap: 'wrap',
-      }}>
+      <div
+        className="page-mode-badge"
+        style={{
+          backgroundColor: context.isTelegramWebApp ? 'rgba(240, 253, 244, 0.95)' : 'rgba(255, 255, 255, 0.82)',
+          color: modeTone[apiMode],
+        }}
+      >
         <span style={{
           width: 8,
           height: 8,
@@ -84,23 +80,23 @@ export function HomePage() {
       </div>
 
       {/* System status */}
-      {statusState.status === 'loading' && <div className="glass-card"><span className="spinner" /></div>}
+      {statusState.status === 'loading' && <LoadingState message="Loading system status…" />}
       {statusState.status === 'success' && statusState.data && <StatusCard status={statusState.data} />}
       {statusState.status === 'error' && <div className="glass-card" style={{ color: 'var(--danger)' }}>Status unavailable</div>}
 
       {/* Product overview cards */}
       <SectionHeader title="Product" />
-      <div className="stack">
+      <div className="stack list-stagger">
         <article
           className="glass-card glass-card--clickable"
           onClick={() => navigate('/workspaces')}
         >
           <div className="row-between">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>🗂</span>
+              <GridIcon width={24} height={24} />
               <div>
                 <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Workspaces</h3>
-                <small style={{ color: 'var(--text-secondary)' }}>Where agents work</small>
+                <small className="product-card-subtitle">Where agents work</small>
               </div>
             </div>
           </div>
@@ -111,10 +107,10 @@ export function HomePage() {
         >
           <div className="row-between">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>🤖</span>
+              <RobotIcon width={24} height={24} />
               <div>
                 <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Agent Team</h3>
-                <small style={{ color: 'var(--text-secondary)' }}>{agentCount} registered</small>
+                <small className="product-card-subtitle">{agentCount} registered</small>
               </div>
             </div>
           </div>
@@ -125,10 +121,10 @@ export function HomePage() {
         >
           <div className="row-between">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>💬</span>
+              <ChatIcon width={24} height={24} />
               <div>
                 <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Telegram Topics</h3>
-                <small style={{ color: 'var(--text-secondary)' }}>Agent routing</small>
+                <small className="product-card-subtitle">Agent routing</small>
               </div>
             </div>
           </div>
@@ -136,10 +132,10 @@ export function HomePage() {
         <article className="glass-card">
           <div className="row-between">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>🛡</span>
+              <ShieldIcon width={24} height={24} />
               <div>
                 <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Approvals</h3>
-                <small style={{ color: 'var(--text-secondary)' }}>{pendingApprovalCount} pending</small>
+                <small className="product-card-subtitle">{pendingApprovalCount} pending</small>
               </div>
             </div>
           </div>
@@ -177,7 +173,7 @@ export function HomePage() {
           onClick={() => navigate('/tasks/new')}
         >
           <h3 style={{ margin: 0, marginBottom: 4 }}>Create task</h3>
-          <small style={{ color: 'var(--text-secondary)' }}>
+          <small className="product-card-subtitle">
             Route a new request to agent queue
             {token ? ' — creates a real task record' : ''}
           </small>
@@ -187,7 +183,7 @@ export function HomePage() {
           onClick={() => navigate('/agents/new')}
         >
           <h3 style={{ margin: 0, marginBottom: 4 }}>Register agent</h3>
-          <small style={{ color: 'var(--text-secondary)' }}>
+          <small className="product-card-subtitle">
             Add a new agent to the system
             {token ? ' — creates a real agent record' : ''}
           </small>
