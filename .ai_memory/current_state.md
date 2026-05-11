@@ -1,13 +1,13 @@
 # current_state.md — Текущий активный статус
 
-Обновлено: 2026-05-10 (DEV-10A: Safe Create + Approval UX) | Автор: studio-orchestrator
+Обновлено: 2026-05-11 (VPS-10A: Guarded Create + Approval UX Deploy) | Автор: studio-orchestrator
 
 ---
 
 ## Статус проекта
 
-**Current state:** MVP v1 COMPLETE + Mini App UX Polish
-**Latest stable commit:** `7f51829` (pushed to `doodleadmin/agentrouter`)
+**Current state:** MVP v1 COMPLETE + Mini App UX Polish + Guarded Create UX
+**Latest stable commit:** `aa2d803` (pushed to `doodleadmin/agentrouter`)
 **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — Total 578/578 PASS
 **Production deploy:** EXECUTED 2026-05-09 — API/Worker/Bot running on VPS 45.130.213.12
 **Security chain:** SEC-01..SEC-03B — all PASS
@@ -19,6 +19,8 @@
 **Критические проблемы:** Нет
 
 ## Что происходит сейчас
+
+- VPS-10A (studio-orchestrator): выполнен controlled production deploy guarded create + approval UX. Server repo fast-forward `c81cb07..aa2d803` (clean, ff-only). Local build `npm run build:prod` PASS (63 modules, 0 errors). Artifact `miniapp-guarded-create-20260511-024932.zip` SHA256 `6350dd02…` (64973 bytes). New release `/var/www/agentrouter-web/releases/20260510-225034` + atomic symlink switch. Previous release preserved: `20260510-212126` (VPS-09A). User smoke ALL PASS: navigation + create flow confirmation cards + approvals card + guarded-mode indicator. Runtime: all 5 containers healthy, Caddy active, 4 timers active, UFW 22/80/443. No .env/Caddy/migrations/restarts/Telegram/OpenCode.
 
 - DEV-10A (studio-orchestrator): выполнена локальная реализация safe production create flows + approvals UX. Добавлен `ConfirmSubmitCard` — двухшаговый confirm перед create agent/task/topic. `ApprovalsCard` с read-only approvals overview + pending count. HomePage: approvals section, guarded-mode indicator. MorePage: guarded-mode explanation (create records only, approvals required for dangerous actions). Build PASS (63 modules, 0 errors). Deploy не выполнялся.
 
@@ -179,6 +181,10 @@
 | VPS-07B: Healthchecks.io Ping Integration | ✅ Выполнена | studio-orchestrator |
 | VPS-06B: Log Rotation + Backup Verification | ✅ Выполнена | studio-orchestrator |
 | VPS-06A: Backups + Health Monitoring Baseline | ✅ Выполнена | studio-orchestrator |
+| VPS-09A: Mini App UX Polish Deploy | ✅ Выполнена | studio-orchestrator |
+| VPS-09B: Post-deploy Monitoring Snapshot | ✅ Выполнена | studio-orchestrator |
+| VPS-09C: Backup Verify Log Sanity Check | ✅ Выполнена | studio-orchestrator |
+| VPS-10A: Guarded Create + Approval UX Deploy | ✅ Выполнена | studio-orchestrator |
 
 - **SEC-03B Phase 2 SQLAlchemy Log Safety (security-engineer):** Decoupled SQLAlchemy `echo` from `DEBUG` config. Root cause from SEC-03 Phase 3 live smoke: `session.py` used `echo=settings.DEBUG`, dev scripts always set `DEBUG=true`, causing SQLAlchemy engine logger to emit all SQL + bind params (including `tasks.raw_text`) into `api-stub.log`. Fix: added `SQL_ECHO: bool = False` to config (independent of DEBUG), changed `session.py` to use `echo=settings.SQL_ECHO`, updated 2 dev-linux scripts with opt-in comments. Design: DEBUG can remain true in dev (FastAPI error detail), SQL_ECHO defaults to false (no bind param logging), SQL echo requires explicit `SQL_ECHO=true`. Validation: API 397/397 (was 393, +4 config tests), Bot 79/79, Worker 98/98, Total 574/574, ruff clean, compileall clean. 5 files changed (4 modified + 1 new).
 

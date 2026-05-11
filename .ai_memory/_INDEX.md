@@ -26,7 +26,7 @@
 | **Проекты** | 0 |
 | **Агенты (профили)** | 0 |
 | **ADR** | 4 |
-| **Task logs** | 117 |
+| **Task logs** | 118 |
 | **Шаблоны** | 5 |
 
 ---
@@ -187,6 +187,7 @@
 | [2026-05-09-task-vps07b-healthchecks-ping.md](tasks/2026-05-09-task-vps07b-healthchecks-ping.md) | VPS-07B: Healthchecks.io Ping Integration |
 | [2026-05-09-task-vps06b-logrotate-backup-verify.md](tasks/2026-05-09-task-vps06b-logrotate-backup-verify.md) | VPS-06B: Log Rotation + Backup Verification |
 | [2026-05-09-task-vps06a-backups-health-monitoring.md](tasks/2026-05-09-task-vps06a-backups-health-monitoring.md) | VPS-06A: Backups + Health Monitoring Baseline |
+| [2026-05-11-task-vps10a-guarded-create-ux-deploy.md](tasks/2026-05-11-task-vps10a-guarded-create-ux-deploy.md) | VPS-10A: Guarded Create + Approval UX Deploy |
 
 ---
 

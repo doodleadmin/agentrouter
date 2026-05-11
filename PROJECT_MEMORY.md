@@ -6,13 +6,13 @@
 ## MVP v1 Complete Summary
 
 - **MVP v1 original backlog: 23/23 COMPLETE**
-- **Latest commit:** `7f51829` (docs: sync MVP backlog completion status)
+- **Latest commit:** `aa2d803` (feat(miniapp): add guarded create approval ux)
 - **Pushed to:** `doodleadmin/agentrouter` on GitHub
 - **Test baseline:** API 401/401, Bot 79/79, Worker 98/98 — **Total 578/578 PASS**
 - **Security:** SEC-01 Permission Engine, SEC-02 Audit Trail, SEC-03 Secrets Redaction, SEC-03B SQLAlchemy Log Safety — all PASS
 - **Deploy:** DOP-03 templates dry-run validated, DOP-04 release workflow dry-run validated
 - **Production deploy: EXECUTED on 2026-05-09** — VPS 45.130.213.12 (API/Worker/Bot running, DB migrated)
-- **Task logs:** 100 files in `.ai_memory/tasks/`
+- **Task logs:** 118 files in `.ai_memory/tasks/`
 
 ### Next recommended options
 
@@ -29,8 +29,25 @@
 ## Текущий статус
 
 **Фаза:** MVP v1 DEPLOYED (production app running on VPS 45.130.213.12)
-**Дата последнего обновления:** 2026-05-10 (DEV-10A: Safe Create + Approval UX)
+**Дата последнего обновления:** 2026-05-11 (VPS-10A: Guarded Create + Approval UX Deploy)
 **Project root:** `F:\dev\agentrouter`
+
+### 2026-05-11 — VPS-10A: Controlled Guarded Create + Approval UX Deploy
+
+- **Агент:** studio-orchestrator
+- **Контур:** production static frontend deploy only, no backend/infrastructure changes
+- **Сделано:**
+  - server repo fast-forward `c81cb07..aa2d803` (clean, ff-only) ✅
+  - local build `npm run build:prod` PASS (63 modules, 0 errors) ✅
+  - artifact `miniapp-guarded-create-20260511-024932.zip` SHA256 `6350dd0212ef1250f475828b8c9f7ee93e56aa13d23053a778e33e89ef135bc9` (64973 bytes) ✅
+  - new release `/var/www/agentrouter-web/releases/20260510-225034` + atomic symlink switch ✅
+  - previous release preserved: `/var/www/agentrouter-web/releases/20260510-212126` (VPS-09A) ✅
+  - `/health` OK, `/app/` 200, `<div id="root">` + assets present ✅
+  - user smoke: ALL PASS — navigation + create flow confirmation cards (no submit) + approvals card + guarded-mode indicator ✅
+  - runtime: all 5 containers healthy, Caddy active, 4 timers active, UFW 22/80/443 ✅
+- **Safety:** no .env/Caddy/migrations/restarts, no Telegram API sends, no topics/data created, no OpenCode, no real tasks, secrets not printed
+- **Rollback:** `ln -sfn /var/www/agentrouter-web/releases/20260510-212126 /var/www/agentrouter-web/current` — static only, no infra changes needed
+- Task summary: [.ai_memory/tasks/2026-05-11-task-vps10a-guarded-create-ux-deploy.md](.ai_memory/tasks/2026-05-11-task-vps10a-guarded-create-ux-deploy.md)
 
 ### 2026-05-10 — DEV-10A: Safe Production Create Flows + Approval UX
 
